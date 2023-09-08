@@ -1,0 +1,208 @@
+
+:calc test { 1 + 2 * 3 }
+:calc test2 { 100 * sin 100 }
+:calc test3 { message - main }
+
+# :stringmode text8 "ABCDEFGHIJKLMNOPQRSTUVWXYZ !" { :byte { 8 * VALUE }
+# : message	text8 "GAME OVER!"
+
+:macro swap A B {
+	vf := A
+	A  := B
+	B  := vf
+}
+
+: main	jp start
+
+: sindemo
+	hires
+	: sinloop
+		scd 2
+		i := table
+		i += v2
+		load v1
+		i := thin
+		sprite v0 v3 2
+		i := thick
+		sprite v1 v3 2
+		v2 += 2
+	jp sinloop
+
+: table
+	:macro S2 {
+		:calc rads { ( HERE - table ) * ( 2 * PI ) / 256 }
+		:byte { 56 + 38 * sin rads }
+		:byte { 56 + 16 * cos rads }
+	}
+
+	# expand S2 2*8*8 times for a 256-byte table:
+	:macro S1 { S2 S2 S2 S2 S2 S2 S2 S2 }
+	:macro S0 { S1 S1 S1 S1 S1 S1 S1 S1 }
+	S0 S0
+	#S2 S2
+
+: thin  0x0F 0x0F
+: thick 0xFF 0xFF
+
+: start
+       sindemo
+	vA := 0
+	vB := 0
+	vc := 12
+	hires
+: schleife
+  printNumbers	
+	printCompare1
+	printCompare1a
+	printCompare2
+	printCompare3
+	printCompare4
+	printCompare2a
+	printCompare3a
+	printCompare4a
+
+	v7 := key
+
+	call printNumbers
+	printCompare1
+	printCompare1a
+
+	printCompare2
+  printCompare3
+	printCompare4
+	printCompare2a
+  printCompare3a
+	printCompare4a
+		
+	if v7 == 1 then va += 1
+	if v7 == 2 then va -= 1
+	if v7 == 4 then vb += 1
+	if v7 == 5 then vb -= 1
+	
+    jp schleife
+
+: printCompare1
+	v4 := 20
+	v5 := 0
+	if va == vb then i := imgEqual
+	if va >  vb then i := imgBigger
+	if va <  vb then i := imgLess
+	sprite v4 v5 7
+  return
+
+: printCompare1a
+	v4 := 20
+	v5 := 10
+	if vb == 12 then i := imgEqual
+	if vb >  12 then i := imgBigger
+	if vb <  12 then i := imgLess
+	sprite v4 v5 7
+  return
+
+: printCompare2
+	v4 := 30
+	v5 := 0
+	if va != vb  begin 
+	   i := imgUnequal
+	   sprite v4 v5 7
+	end
+  return
+	
+: printCompare3
+	v4 := 40
+	v5 := 0
+	if va >=  vb  begin 
+	   i := imgBiggerEqual
+	   sprite v4 v5 7
+	end
+  return
+
+: printCompare4
+	v4 := 50
+	v5 := 0
+	if va <=  vb  begin 
+	   i := imgLessEqual
+	   sprite v4 v5 7
+  end
+  return
+
+: printCompare2a
+	v4 := 30
+	v5 := 10
+	if vb != 12  begin 
+	   i := imgUnequal
+	   sprite v4 v5 7
+	end
+  return
+	
+: printCompare3a
+	v4 := 40
+	v5 := 10
+	if vb >=  12  begin 
+	   i := imgBiggerEqual
+	   sprite v4 v5 7
+	end
+  return
+
+: printCompare4a
+	v4 := 50
+	v5 := 10
+	if vb <=  12  begin 
+	   i := imgLessEqual
+	   sprite v4 v5 7
+  end
+  return
+
+
+: printNumbers
+	v4 := 0
+	v5 := 0
+	v0 := va
+	printNumber
+	
+	v4 := 0
+	v5 := 10
+	v0 := vb
+	printNumber
+
+	v4 := 0
+	v5 := 20
+	v0 := vc
+	printNumber
+
+ return
+
+: printNumber
+  i := bcdbuf
+  bcd v0
+	v3 := 0
+: printNumber1
+        if v3 == 3 then return
+	  i := bcdbuf
+		i += v3
+		load v0
+		i := hex v0
+		sprite v4 v5 5
+		v4 += 5
+		v3 += 1
+	jp printNumber1
+	return
+
+
+	 
+	
+: bcdbuf	
+ 0 0 0
+: imgBigger
+0x80 0x40 0x20 0x10 0x20 0x40 0x80
+: imgLess
+0x08 0x10 0x20 0x40 0x20 0x10 0x08
+: imgBiggerEqual
+0x80 0x4f 0x20 0x10 0x20 0x4f 0x80
+: imgLessEqual
+0x10 0x2f 0x40 0x80 0x40 0x2f 0x10
+: imgEqual
+0x00 0x78 0x00 0x00 0x00 0x78 0x00
+: imgUnequal
+0x00 0x24 0x42 0x81 0x42 0x24 0x00
+

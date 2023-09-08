@@ -1,0 +1,111 @@
+label0001:              cls
+                        ld     i, data0003	
+                        ld     v0, 12	;0c
+                        ld     v1, 8	;08
+                        drw    v0 v1 15
+                        add    v0, 9	;09
+                        ld     i, data0004	
+                        drw    v0 v1 15
+                        ld     i, data0005	
+                        add    v0, 8	;08
+                        drw    v0 v1 15
+                        add    v0, 4	;04
+                        ld     i, data0006	
+                        drw    v0 v1 15
+                        add    v0, 8	;08
+                        ld     i, data0007	
+                        drw    v0 v1 15
+                        add    v0, 8	;08
+                        ld     i, data0008	
+                        drw    v0 v1 15
+label0002:              jp     label0002	
+data0003:               db $ff	;########  
+                        db $00	;          
+                        db $ff	;########  
+                        db $00	;          
+                        db $3c	;  ####   <
+                        db $00	;          
+                        db $3c	;  ####   <
+                        db $00	;          
+                        db $3c	;  ####   <
+                        db $00	;          
+                        db $3c	;  ####   <
+                        db $00	;          
+                        db $ff	;########  
+                        db $00	;          
+                        db $ff	;########  
+data0004:               db $ff	;########  
+                        db $00	;          
+                        db $ff	;########  
+                        db $00	;          
+                        db $38	;  ###    8
+                        db $00	;          
+                        db $3f	;  ###### ?
+                        db $00	;          
+                        db $3f	;  ###### ?
+                        db $00	;          
+                        db $38	;  ###    8
+                        db $00	;          
+                        db $ff	;########  
+                        db $00	;          
+                        db $ff	;########  
+data0005:               db $80	;#         
+                        db $00	;          
+                        db $e0	;###       
+                        db $00	;          
+                        db $e0	;###       
+                        db $00	;          
+                        db $80	;#         
+                        db $00	;          
+                        db $80	;#         
+                        db $00	;          
+                        db $e0	;###       
+                        db $00	;          
+                        db $e0	;###       
+                        db $00	;          
+                        db $80	;#         
+data0006:               db $f8	;#####     
+                        db $00	;          
+                        db $fc	;######    
+                        db $00	;          
+                        db $3e	;  #####  >
+                        db $00	;          
+                        db $3f	;  ###### ?
+                        db $00	;          
+                        db $3b	;  ### ## ;
+                        db $00	;          
+                        db $39	;  ###  # 9
+                        db $00	;          
+                        db $f8	;#####     
+                        db $00	;          
+                        db $f8	;#####     
+data0007:               db $03	;      ##  
+                        db $00	;          
+                        db $07	;     ###  
+                        db $00	;          
+                        db $0f	;    ####  
+                        db $00	;          
+                        db $bf	;# ######  
+                        db $00	;          
+                        db $fb	;##### ##  
+                        db $00	;          
+                        db $f3	;####  ##  
+                        db $00	;          
+                        db $e3	;###   ##  
+                        db $00	;          
+                        db $43	; #    ## C
+data0008:               db $e0	;###       
+                        db $00	;          
+                        db $e0	;###       
+                        db $00	;          
+                        db $80	;#         
+                        db $00	;          
+                        db $80	;#         
+                        db $00	;          
+                        db $80	;#         
+                        db $00	;          
+                        db $80	;#         
+                        db $00	;          
+                        db $e0	;###       
+                        db $00	;          
+                        db $e0	;###       
