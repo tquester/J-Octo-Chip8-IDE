@@ -607,6 +607,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	private void disassAndInitDebugger(String filename) {
 
+		C8DebugSource sourceHints = mDebugSource;
 		mDisassEmitter.createDebugSource();
 		if (filename != null) {
 			mDisassembler.loadHints(filename + ".hints");
@@ -615,7 +616,8 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				mDisassembler.setAssemblerLabels(mLabels);
 		}
 		mDisassembler.start(mCPU.getMemory(), bytesRead);
-		mDebugSource = mDisassEmitter.getDebugSource();
+		mDebugSource = mDisassEmitter.getDebugSource(sourceHints);
+		
 		if (mDebugSource != null)
 			initListDebugSource();
 

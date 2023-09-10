@@ -27,7 +27,6 @@ public class CWordParser {
 		if (c == 0) return null;
 		word += c;
 		if (c == '"') {
-			
 			while (pos < len) {
 				c = text.charAt(pos++);
 				word += c;
@@ -45,13 +44,19 @@ public class CWordParser {
 	}
 
 	public int findignorecase(String str) {
-		int p = lowercaseText.indexOf(str, pos);
-		return p;
+		if (pos != 0) pos++;
+		pos = lowercaseText.indexOf(str, pos);
+		return pos;
 	}
 
 	public int find(String str) {
-		int p = text.indexOf(str, pos);
-		return p;
+		if (pos != 0) pos++;
+		pos = text.indexOf(str, pos);
+		return pos;
+	}
+
+	public boolean hasData() {
+		return pos < len;
 	}
 
 }

@@ -20,7 +20,16 @@ public abstract class C8Emitter {
 		mDebugSource = new C8DebugSource();
 	}
 	
-	public C8DebugSource getDebugSource() {
+	public C8DebugSource getDebugSource(C8DebugSource sourceHints) {
+		if (sourceHints != null) {
+			for (C8DebugSourceLine hint : sourceHints) {
+				for (C8DebugSourceLine disass: mDebugSource) {
+					if (disass.org == hint.org) {
+						disass.line = String.format("%-85s # %s", disass.line.replaceAll("\t"," ").trim(), hint.line.trim());
+					}
+				}
+			}
+		}
 		return mDebugSource;
 	}
 

@@ -5,13 +5,13 @@ import java.util.TreeMap;
 public class CTokens {
 
 	TreeMap<String, Token> mMapTokens = new TreeMap<>();
-	CTokens() {
+	public CTokens() {
 		for (Object[] token: AllTokens) {
 			mMapTokens.put((String)token[0], (Token)token[1]);
 		}
 	}
 	public Token parse(String str) {
-		return mMapTokens.get(str.toUpperCase());
+		return mMapTokens.get(str.toLowerCase());
 	}
 	
 	Token getToken(String str) {

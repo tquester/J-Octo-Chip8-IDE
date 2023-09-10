@@ -17,6 +17,7 @@ public class CTokenizer {
 	private int mLastLine;
 	TreeMap<String, String> mMapAlias = new TreeMap<>();
 	public int mBaseline=0;
+	private Object mPrevPos;
 
 	public String toString() {
 		try {
@@ -66,18 +67,22 @@ public class CTokenizer {
 	}
 
 	public boolean getToken(CToken token) {
-		return getToken(token, true);
+		boolean r = getToken(token,true);
+		return r;
 	}
 	public boolean getToken(CToken token, boolean replaceTokens) {
 		mLastLine = mLine;
+		mPrevPos = mPos;
 		token.token = Token.none;
 		if (mUngetToken != null) {
 			token.copyFrom(mUngetToken);
 			mUngetToken = null;
+			myassert(token.token != null);
 			return true;
 		}
-		if (mPos >= mEnd - 1)
+		if (mPos >= mEnd - 1) {
 			return false;
+		}
 		char c = 0;
 		int nibble;
 		StringBuilder sb;
@@ -94,19 +99,23 @@ public class CTokenizer {
 		switch (c) {
 		case '\n':
 			token.token = Token.newline;
+			myassert(token.token != null);
 			return true;
 		case '#':
 			token.literal = skipToEndOfLine();
 			token.token = Token.comment;
+			myassert(token.token != null);
 			return true;
 		case ';':
 			token.literal = skipToEndOfLine();
 			token.token = Token.comment;
 			if (token.literal.length() == 0 && modeOcto) 
 				token.token = Token.rts;
+			myassert(token.token != null);
 			return true;
 		case ',':
 			token.token = Token.comma;
+			myassert(token.token != null);
 			return true;
 		case '\'':
 			if (mPos + 1 < mEnd) {
@@ -115,10 +124,12 @@ public class CTokenizer {
 				if (c2 == '\'') {
 					token.cliteral = c1;
 					token.token = Token.octochar;
+					myassert(token.token != null);
 					return true;
 				}
 				token.cliteral = c;
 				token.token = Token.octochar;
+				myassert(token.token != null);
 				return true;
 			}
 		case '"':
@@ -131,6 +142,7 @@ public class CTokenizer {
 			}
 			token.token = Token.string;
 			token.literal = sb.toString();
+			myassert(token.token != null);
 			return true;
 		default:
 			c2 = 0;
@@ -155,6 +167,7 @@ public class CTokenizer {
 						sb.append(c);
 					}
 					token.literal = replace(sb.toString());
+					myassert(token.token != null);
 					return true;
 				}
 			}
@@ -215,13 +228,25 @@ public class CTokenizer {
 					} else {
 						if (token.literal.length() > 0)
 							token.token = Token.literal;
+						else {
+							token.token = Token.none;
+							return false;
+						}
 					}
 				}
 			}
 			if (token.token != null)
 				return true;
 		}
+		myassert(token.token != null);
 		return false;
+	}
+
+	private void myassert(boolean b) {
+		if (false) {
+			System.out.println("stop");
+		}
+		
 	}
 
 	boolean isMathChar(char c) {
@@ -318,7 +343,30 @@ public class CTokenizer {
 	}
 
 	public String getCurrentLine() {
-		return getSourceLine(mLastLine-1);
+		int start = mPos-1;
+		int end = mPos;
+		char c;
+		while (start > 0) {
+			c = mInput.charAt(start);
+			if (c == '\n') {
+				start ++;
+				break;
+			}
+			start--;
+		}
+		while (end < mInput.length()) {
+			c = mInput.charAt(end);
+			if (c == '\n') {
+				end--;
+				break;
+			}
+			end++;
+		}
+		if (start < end) {
+			return mInput.substring(start, end);
+		} else 
+			return "";
+		
 	}
 
 	public void addAlias(String strA, String literal) {

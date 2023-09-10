@@ -643,7 +643,6 @@ spriteDrawSub:
 : decompress1                                                         # v0 = char
             decompressStart
             loop
-# while v3 < 9
               if v3 == 9 then return
               i := scene1tiles
               decompressByte
@@ -652,7 +651,6 @@ spriteDrawSub:
 : decompress3                                                         # v0 = char
             decompressStart
             loop
-# while v3 < 9
               if v3 == 9 then return
               i := scene3tilesOpt
               decompressByte
@@ -661,7 +659,6 @@ spriteDrawSub:
 : decompress4                                                         # v0 = char
             decompressStart
             loop 
-#while v3 < 9
 			  if v3 == 9 then return
               i := scene4tilesOpt
               decompressByte
@@ -685,7 +682,6 @@ spriteDrawSub:
 : decompressCopyBytes
             loop 
             if v6 == 0 then return
-# while v6 > 0
               decompressByteWrite
               decompressByteCheckNewLine
               v6 -= 1

@@ -14,6 +14,7 @@ import emulator.C8DebugSource;
 public class CChip8Assembler {
 	public C8DebugSource mDebugSource = new C8DebugSource();
 	C8DisassEmitter mEmitter = new C8DisassEmitter();
+	int mLevel=0;
 
 	StringBuilder mSBErrors = null;
 
@@ -306,6 +307,9 @@ public class CChip8Assembler {
 	CTokenizer mTokenizer = new CTokenizer();
 	private int mPass;
 	private boolean modeOcto=true;
+	private boolean mOptAnnotateAllLines = true;
+	private boolean mOptIncludeSourceLine = true;
+	String mContext="";
 
 	void initData() {
 		mStackLoopData.clear();
@@ -385,12 +389,14 @@ public class CChip8Assembler {
 		CBeginEndData beginEndData;
 		try {
 			while (mTokenizer.getToken(token)) {
-				if (token.line == 211)
-					System.out.println("Stop");
 				if (token.token == null)
 					continue;
-				 System.out.println(mTokenizer.toString());
-				 printToken(token);
+//				 System.out.println(mTokenizer.toString());
+//				 printToken(token);
+				if (mOptAnnotateAllLines ) {
+					if (token.token != Token.comment && token.token != Token.alias && token.token != Token.macro) 
+						writeSourceLine();
+				}
 				switch (token.token) {
 				case label:
 					label = mLabels.get(token.literal);
@@ -830,13 +836,15 @@ public class CChip8Assembler {
 					break;
 
 				case octoend: {
+					mLevel--;
+					//writeSourceLine();
 					beginEndData = mBeginEndStack.pop();
 					patch(beginEndData.patchAdr, pc);
 					break;
 				}
 
 				case octoelse: {
-
+					if (!mOptAnnotateAllLines) 	writeSourceLine();
 					beginEndData = mBeginEndStack.pop();
 					int pc2 = pc;
 					writeCode(0x1, 0);
@@ -864,6 +872,7 @@ public class CChip8Assembler {
 				// if vx operator vx begin ... end
 				// if vx operator byte begin ... end
 				case octoif: {
+					if (!mOptAnnotateAllLines) 	writeSourceLine();
 					CToken tokenb = new CToken();
 					mTokenizer.getToken(token);
 					reg1 = regNr(token.token);
@@ -887,6 +896,7 @@ public class CChip8Assembler {
 					beginEndData = null;
 					switch (tokenb.token) {
 					case octobegin:
+						mLevel++;
 						beginEndData = new CBeginEndData();
 						mBeginEndStack.push(beginEndData);
 						break;
@@ -916,11 +926,13 @@ public class CChip8Assembler {
 					compileLiteral(token);
 					break;
 				case loop: {
+					mLevel++;
 					CLoopData loopData = new CLoopData(pc);
 					mStackLoopData.push(loopData);
 				}
 					break;
 				case again: {
+					mLevel--;
 					CLoopData loopData = mStackLoopData.pop();
 					writeCode(0x01, loopData.mLoopAdr); // 1nnn JP
 					for (Integer addr : loopData.patchAddresses) {
@@ -987,7 +999,9 @@ public class CChip8Assembler {
 					modeOcto = false;
 					mTokenizer.modeOcto = true;
 				case newline:
+				case none:
 					break;
+					
 
 				default:
 					error("Undef token " + token.toString());
@@ -1152,8 +1166,11 @@ public class CChip8Assembler {
 		try {
 			CMacroData macroData = mMapMacros.get(token.literal);
 			if (macroData != null) {
+				if (mTokenizer.mBaseline == 247) {
+					System.out.println("break");
+				}
 				compileMacroExpansion(macroData, token);
-				System.out.println("debug");
+			
 			} else {
 				CC8Label label = mLabels.get(token.literal);
 				if (label != null) {
@@ -1200,6 +1217,7 @@ public class CChip8Assembler {
 
 	private void compileMacroExpansion(CMacroData macroData, CToken token) {
 
+		if (!mOptAnnotateAllLines) 	writeSourceLine();
 		System.out.println("------------ Macro expansion at line "+token.line);
 		CTokenizer tempTokenizer = new CTokenizer();
 		tempTokenizer.mBaseline = mTokenizer.mLine;
@@ -1217,14 +1235,17 @@ public class CChip8Assembler {
 		mTokenizer = tempTokenizer;
 		mTokenizer.mMapAlias = saveTokenizer.mMapAlias;
 		mTokenizer.start(macroData.macro);
-		if (macroData.name.compareTo("spriteAnimation1") == 0) {
-			System.out.println("stop");
-		}
 		
 		mTokenizer = tempTokenizer;
+		mLevel++;
+		String prevContext = mContext;
+		mContext = macroData.name;
+
 		while (mTokenizer.hasData()) {
 			assembleLine();
 		}
+		mContext = prevContext;
+		mLevel--;
 		mTokenizer = saveTokenizer;
 		mMapMacros = saveMapMacros;
 		mLabels = saveLabels;
@@ -1708,6 +1729,7 @@ public class CChip8Assembler {
 
 	private void expr(CToken token) {
 		if (mTokenizer.getToken(token)) {
+		
 			token.register = regNr(token.token);
 
 			if (token.register != -1) {
@@ -1787,6 +1809,7 @@ public class CChip8Assembler {
 		factor(stack, token);
 		int a, b;
 		while (true) {
+			assert(token.token != null);
 			switch (token.token) {
 			case mult:
 				match(token, token.token);
@@ -1885,7 +1908,7 @@ public class CChip8Assembler {
 		code1 = (code << 4) + iliteral / 256;
 		mCode[pc] = (byte) (code1 & 0xff);
 		mCode[pc + 1] = (byte) (iliteral & 0xff);
-		writeSourceLine();
+		//writeSourceLine();
 		pc += 2;
 
 	}
@@ -1894,11 +1917,17 @@ public class CChip8Assembler {
 	//	System.out.println(String.format("write code %04x %02x %02x",pc,
 	//		(int)(mCode[pc] & 0xff), (int)(mCode[pc+1] & 0xff)));
 		if (mPass == 2) {
-			String disassLine = mEmitter.disassLine(mCode, pc);
-			String line = String.format("%-60s | %s", disassLine, mTokenizer.getCurrentLine());
-			mDebugSource.addSourceLine(pc, line);
+			String line = levelSpace()+mTokenizer.getCurrentLine().trim();
+			mDebugSource.addSourceLine(pc+2, line);
 		}
 
+	}
+
+	private String levelSpace() {
+		String result="";// TODO Auto-generated method stub
+		if (mOptIncludeSourceLine ) result = String.format("%-4d", mTokenizer.mLine+mTokenizer.mBaseline); 
+		for (int i=0;i<mLevel;i++) result += "│ ";
+		return result;
 	}
 
 	private void writeCode(int hihi, int hilow, int bit8) {
@@ -1908,7 +1937,7 @@ public class CChip8Assembler {
 		mCode[pc] = (byte) (code1 & 0xff);
 		mCode[pc + 1] = (byte) (bit8 & 0xff);
 		
-		writeSourceLine();
+		//writeSourceLine();
 		pc += 2;
 
 	}
@@ -1920,7 +1949,7 @@ public class CChip8Assembler {
 		code2 = (lowhi << 4) + lowlo;
 		mCode[pc] = (byte) (code1 & 0xff);
 		mCode[pc + 1] = (byte) (code2 & 0xff);
-		writeSourceLine();
+		//writeSourceLine();
 		pc += 2;
 
 	}
@@ -2005,10 +2034,10 @@ public class CChip8Assembler {
 
 	private void error(String string) {
 		if (mPass == 2) {
-			System.out.println(String.format("Error %d/%d:%s", mTokenizer.mLine, mTokenizer.mPosInLine, string));
+			System.out.println(String.format("Error %d/%d:%s %s", mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
 			System.out.println(mTokenizer.toString());
 			if (mSBErrors != null) {
-				mSBErrors.append(String.format("Error %d/%d:%s\n", mTokenizer.mLine, mTokenizer.mPosInLine, string));
+				mSBErrors.append(String.format("Error %d/%d:%s %s\n", mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
 				mSBErrors.append(mTokenizer.toString() + "\n");
 
 			}

@@ -24,6 +24,8 @@ import org.eclipse.wb.swt.SWTResourceManager;
 import assembler.CChip8Assembler;
 import assembler.CToken;
 import assembler.CTokenizer;
+import assembler.CTokens;
+import assembler.CWordParser;
 import assembler.Token;
 import disass.CC8Label;
 import disass.Tools;
@@ -510,6 +512,7 @@ public class CDialogIDE extends Dialog {
 		}).add("&Options", new CCallback() {
 					@Override
 					public void callback() {
+						OnOptions();
 
 					}
 				}).add("&Exit", new CCallback() {
@@ -519,21 +522,37 @@ public class CDialogIDE extends Dialog {
 					}
 				});
 
-		mMainMenus.addMenu("&Edit").add("&Undo Ctrl-Z", SWT.MOD1+'Z', new CCallback() {
+		mMainMenus.addMenu("&Edit")
+		.add("&Undo Ctrl-Z", SWT.MOD1+'Z', new CCallback() {
 			@Override
 			public void callback() {
 				onUndo();
-
-			}
-		}).add("&Find CtrlF", SWT.MOD1+'F', new CCallback() {
-			
-
+			}})
+		.add("&Redo Ctrl-Y", SWT.MOD1+'Y', new CCallback() {
+			@Override
+			public void callback() {
+				onRedo();
+			}})
+		.add("&Select All Ctrl-A", SWT.MOD1+'A', new CCallback() {
+			@Override
+			public void callback() {
+				onSelectAll();
+			}})
+		
+		.add("&Autoformat", 0, new CCallback() {
+			@Override
+			public void callback() {
+				onAutoformat();
+			}})
+		
+		.add("&Find CtrlF", SWT.MOD1+'F', new CCallback() {
 			@Override
 			public void callback() {
 				onFind();
-
-			}
-		});
+			}})
+		
+		
+		;
 
 		mMainMenus.addMenu("&Debugger").add("&Compile", new CCallback() {
 			@Override
@@ -567,6 +586,102 @@ public class CDialogIDE extends Dialog {
 
 	}
 	
+	protected void OnOptions() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	protected void onAutoformat() {
+		String[] lines = mTextSource.getText().split("\n");
+		int level=0;
+		CTokens tokens = new CTokens();
+		StringBuilder sb = new StringBuilder();
+		CWordParser wordParser = new CWordParser();
+		int iline=0;
+		int caret = mTextSource.getCaretOffset();
+		for (String line: lines) {
+			iline++;
+
+				
+			if (line.trim().length() == 0) {
+				sb.append("\n");
+				continue;
+			}
+			line = line.trim().replaceAll("\t", " ");
+			if (line.charAt(0) == ';' || line.charAt(0) == '#') {
+				sb.append(line+"\n");
+				continue;
+			}
+			
+			int lineLevel = level;
+			wordParser.start(line);
+			String word = wordParser.getWord();
+			if (word.startsWith(":") || word.endsWith(":")) lineLevel = -1;
+			int commentPos = -1;
+			while (true) {
+				word = word.toLowerCase();
+				Token token = tokens.parse(word);
+				if (word.startsWith(";") || word.startsWith("#")) {
+					commentPos=wordParser.prevpos;
+					break;
+				}
+				System.out.println("'"+word+"'");
+					
+				if (token != null) {
+					switch(token) {
+					case octobegin:
+					case loop:
+					case curlybracketopen:
+						level++;
+						break;
+					case octoend:
+					case again:
+					case curlybracketclose:
+						level--;
+						lineLevel--;
+						break;
+					case octoelse:
+						lineLevel--;
+						break;
+					}
+				} 
+				if (!wordParser.hasData()) break;
+				word = wordParser.getWord();
+			}
+			
+			String comment="";
+			if (commentPos != -1) {
+				comment = line.substring(commentPos).trim();
+				line = line.substring(0,commentPos).trim();
+			}
+			if (lineLevel >= 0) 
+				line = " ".repeat(12+2*lineLevel)+line;
+			if (commentPos != -1) {
+				if (line.length() < 70) 
+					line = String.format("%-70s%s", line, comment);
+				else
+					line = String.format("%s\n%-70s%s", line,"",comment);
+			}
+			
+			
+			sb.append(line+"\n");
+		}
+		mTextSource.setText(sb.toString());
+		mTextSource.setSelection(caret, caret);
+		
+		
+	}
+
+	protected void onSelectAll() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	protected void onRedo() {
+		// TODO Auto-generated method stub
+		
+	}
+
 	private void saveUndo() {
 		if (!mUndoing) {
 			String text = String.valueOf(mTextSource.getText());
