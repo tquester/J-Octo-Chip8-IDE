@@ -187,7 +187,24 @@ public class CTokens {
 	        {"@", Token.atsym },
 	        {"pow", Token.pow },
 	        {"min", Token.min },
-	        {"max", Token.max }
+	        {"max", Token.max },
+	        
+	        {"for", Token.octofor},
+	        {"to", Token.octoto},
+	        {"step", Token.octostep},
+	        
+	        {":if", Token.dotif},
+	        {":else", Token.dotelse},
+	        {":end", Token.dotend},
+	        {":dump-options", Token.dodumpoptions},
+	        {":const", Token.dotconst},
+	        {":include", Token.dotinclude},
+	        {":segment", Token.dotsegment},
+	        {"data", Token.data},
+	        {"code", Token.code},
+	        {":log", Token.dotlog },
+	        
+	        
 	        
 	};
 

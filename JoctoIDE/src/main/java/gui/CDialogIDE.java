@@ -51,7 +51,9 @@ import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.ModifyEvent;
 
 public class CDialogIDE extends Dialog {
@@ -71,7 +73,10 @@ public class CDialogIDE extends Dialog {
 	private List mListCompletion;
 	private int mWordBegin;
 	private int mWordEnd;
-
+	Composite mBarFiles;
+	Composite mBarErrors;
+	Composite mBarLeftRight;
+	List mListFiles;
 	static final int key_back = 0x1000003;
 	static final int state_mask_back = 0x10000;
 
@@ -86,6 +91,8 @@ public class CDialogIDE extends Dialog {
 
 	Stack<Integer> mLineNumberStack = new Stack<>();
 	private Stack<String> mStackUndo = new Stack<>();
+	protected boolean mResizing=false;
+	protected int mResizeBase;
 
 	/**
 	 * Create the dialog.
@@ -110,13 +117,6 @@ public class CDialogIDE extends Dialog {
 		shlJoctoIde.layout();
 		createMenu();
 
-		mTextErrors = new Text(shlJoctoIde, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
-		mTextErrors.setBounds(175, 400, 740, 117);
-
-		mLblStatus = new Label(shlJoctoIde, SWT.NONE);
-		mLblStatus.setBackground(SWTResourceManager.getColor(SWT.COLOR_WIDGET_NORMAL_SHADOW));
-		mLblStatus.setBounds(179, 523, 533, 20);
-		mLblStatus.setText("status");
 		mFilename = "test.o8";
 		modifyTitle();
 		autoload();
@@ -140,9 +140,20 @@ public class CDialogIDE extends Dialog {
 	 */
 	private void createContents() {
 		shlJoctoIde = new Shell(getParent(), getStyle());
+		//shlJoctoIde = getParent();
 		shlJoctoIde.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlResized(ControlEvent e) {
+				if (mSplitError != 0) {
+					if (mBarErrors != null) {
+						Rectangle rect = shlJoctoIde.getBounds();
+						Rectangle rectSplit = mBarErrors.getBounds();
+						double v = rect.height;
+						v *= mSplitError;
+						mBarErrors.setBounds(rectSplit.x,(int) v, rectSplit.width, rectSplit.height);
+					}
+					
+				}
 				onResize();
 			}
 		});
@@ -233,7 +244,7 @@ public class CDialogIDE extends Dialog {
 				onModifyText(e);
 			}
 		});
-	
+
 		mTextSource.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyReleased(KeyEvent e) {
@@ -248,7 +259,7 @@ public class CDialogIDE extends Dialog {
 			}
 		});
 		mTextSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mTextSource.setBounds(175, 57, 740, 337);
+		mTextSource.setBounds(185, 57, 730, 337);
 
 		mListLabels = new List(shlJoctoIde, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		mListLabels.addSelectionListener(new SelectionAdapter() {
@@ -257,7 +268,109 @@ public class CDialogIDE extends Dialog {
 				onListLabelSelected(e);
 			}
 		});
-		mListLabels.setBounds(10, 57, 159, 495);
+		mListLabels.setBounds(10, 229, 159, 323);
+
+		mTextErrors = new Text(shlJoctoIde, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
+		mTextErrors.setBounds(185, 414, 740, 103);
+
+		mLblStatus = new Label(shlJoctoIde, SWT.NONE);
+		mLblStatus.setBackground(SWTResourceManager.getColor(SWT.COLOR_WIDGET_NORMAL_SHADOW));
+		mLblStatus.setBounds(179, 523, 533, 20);
+		mLblStatus.setText("status");
+
+		mListFiles = new List(shlJoctoIde, SWT.BORDER);
+		mListFiles.setBounds(10, 57, 159, 152);
+
+		mBarFiles = new Composite(shlJoctoIde, SWT.NONE);
+		mBarFiles.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
+		mBarFiles.setBounds(10, 215, 159, 8);
+		
+		mBarFiles.addMouseMoveListener(new MouseMoveListener() {
+
+			public void mouseMove(MouseEvent e) {
+				if (mResizing) {
+					System.out.println(String.format("x=%d", e.x));
+					Rectangle rect = mBarFiles.getBounds();
+					mBarFiles.setBounds(rect.x, mResizeBase + e.y, rect.width, rect.height);
+					onResize();
+				}
+			}
+		});
+		mBarFiles.addMouseListener(new MouseAdapter() {
+			
+			@Override
+			public void mouseDown(MouseEvent e) {
+				Rectangle rect = mBarFiles.getBounds();
+				mResizeBase = rect.y;
+				mResizing=true;
+			}
+			@Override
+			public void mouseUp(MouseEvent e) {
+				mResizing=false;
+			}
+		});
+		
+		
+		
+
+		mBarErrors = new Composite(shlJoctoIde, SWT.NONE);
+		mBarErrors.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
+		mBarErrors.setBounds(175, 400, 707, 8);
+		
+		mBarErrors.addMouseMoveListener(new MouseMoveListener() {
+
+			public void mouseMove(MouseEvent e) {
+				if (mResizing) {
+					System.out.println(String.format("x=%d", e.x));
+					Rectangle rect = mBarErrors.getBounds();
+					mBarErrors.setBounds(rect.x, mResizeBase + e.y, rect.width, rect.height);
+					onResize();
+				}
+			}
+		});
+		mBarErrors.addMouseListener(new MouseAdapter() {
+			
+			@Override
+			public void mouseDown(MouseEvent e) {
+				Rectangle rect = mBarErrors.getBounds();
+				mResizeBase = rect.y;
+				mResizing=true;
+			}
+			@Override
+			public void mouseUp(MouseEvent e) {
+				mResizing=false;
+			}
+		});
+		
+
+		mBarLeftRight = new Composite(shlJoctoIde, SWT.NONE);
+		mBarLeftRight.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
+		mBarLeftRight.setBounds(175, 57, 5, 495);
+		
+		mBarLeftRight.addMouseMoveListener(new MouseMoveListener() {
+
+			public void mouseMove(MouseEvent e) {
+				if (mResizing) {
+					System.out.println(String.format("x=%d", e.x));
+					Rectangle rect = mBarLeftRight.getBounds();
+					mBarLeftRight.setBounds(mResizeBase + e.x, rect.y, rect.width, rect.height);
+					onResize();
+				}
+			}
+		});
+		mBarLeftRight.addMouseListener(new MouseAdapter() {
+			
+			@Override
+			public void mouseDown(MouseEvent e) {
+				Rectangle rect = mBarLeftRight.getBounds();
+				mResizeBase = rect.x;
+				mResizing=true;
+			}
+			@Override
+			public void mouseUp(MouseEvent e) {
+				mResizing=false;
+			}
+		});		
 
 	}
 
@@ -478,7 +591,8 @@ public class CDialogIDE extends Dialog {
 	};
 	private CSearchReplace mSerachReplace;
 	private boolean mTextDirty;
-	private boolean mUndoing=false;
+	private boolean mUndoing = false;
+	private double mSplitError=0;
 
 	protected void onEmulator() {
 		CDialogEmulator dlg = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
@@ -510,48 +624,49 @@ public class CDialogIDE extends Dialog {
 
 			}
 		}).add("&Options", new CCallback() {
-					@Override
-					public void callback() {
-						OnOptions();
+			@Override
+			public void callback() {
+				OnOptions();
 
-					}
-				}).add("&Exit", new CCallback() {
-					@Override
-					public void callback() {
+			}
+		}).add("&Exit", new CCallback() {
+			@Override
+			public void callback() {
 
-					}
-				});
+			}
+		});
 
-		mMainMenus.addMenu("&Edit")
-		.add("&Undo Ctrl-Z", SWT.MOD1+'Z', new CCallback() {
+		mMainMenus.addMenu("&Edit").add("&Undo Ctrl-Z", SWT.MOD1 + 'Z', new CCallback() {
 			@Override
 			public void callback() {
 				onUndo();
-			}})
-		.add("&Redo Ctrl-Y", SWT.MOD1+'Y', new CCallback() {
+			}
+		}).add("&Redo Ctrl-Y", SWT.MOD1 + 'Y', new CCallback() {
 			@Override
 			public void callback() {
 				onRedo();
-			}})
-		.add("&Select All Ctrl-A", SWT.MOD1+'A', new CCallback() {
+			}
+		}).add("&Select All Ctrl-A", SWT.MOD1 + 'A', new CCallback() {
 			@Override
 			public void callback() {
 				onSelectAll();
-			}})
-		
-		.add("&Autoformat", 0, new CCallback() {
-			@Override
-			public void callback() {
-				onAutoformat();
-			}})
-		
-		.add("&Find CtrlF", SWT.MOD1+'F', new CCallback() {
-			@Override
-			public void callback() {
-				onFind();
-			}})
-		
-		
+			}
+		})
+
+				.add("&Autoformat", 0, new CCallback() {
+					@Override
+					public void callback() {
+						onAutoformat();
+					}
+				})
+
+				.add("&Find CtrlF", SWT.MOD1 + 'F', new CCallback() {
+					@Override
+					public void callback() {
+						onFind();
+					}
+				})
+
 		;
 
 		mMainMenus.addMenu("&Debugger").add("&Compile", new CCallback() {
@@ -585,50 +700,50 @@ public class CDialogIDE extends Dialog {
 		});
 
 	}
-	
+
 	protected void OnOptions() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	protected void onAutoformat() {
 		String[] lines = mTextSource.getText().split("\n");
-		int level=0;
+		int level = 0;
 		CTokens tokens = new CTokens();
 		StringBuilder sb = new StringBuilder();
 		CWordParser wordParser = new CWordParser();
-		int iline=0;
+		int iline = 0;
 		int caret = mTextSource.getCaretOffset();
-		for (String line: lines) {
+		for (String line : lines) {
 			iline++;
 
-				
 			if (line.trim().length() == 0) {
 				sb.append("\n");
 				continue;
 			}
 			line = line.trim().replaceAll("\t", " ");
 			if (line.charAt(0) == ';' || line.charAt(0) == '#') {
-				sb.append(line+"\n");
+				sb.append(line + "\n");
 				continue;
 			}
-			
+
 			int lineLevel = level;
 			wordParser.start(line);
 			String word = wordParser.getWord();
-			if (word.startsWith(":") || word.endsWith(":")) lineLevel = -1;
+			if (word.startsWith(":") || word.endsWith(":"))
+				lineLevel = -1;
 			int commentPos = -1;
 			while (true) {
 				word = word.toLowerCase();
 				Token token = tokens.parse(word);
 				if (word.startsWith(";") || word.startsWith("#")) {
-					commentPos=wordParser.prevpos;
+					commentPos = wordParser.prevpos;
 					break;
 				}
-				System.out.println("'"+word+"'");
-					
+				System.out.println("'" + word + "'");
+
 				if (token != null) {
-					switch(token) {
+					switch (token) {
 					case octobegin:
 					case loop:
 					case curlybracketopen:
@@ -644,42 +759,41 @@ public class CDialogIDE extends Dialog {
 						lineLevel--;
 						break;
 					}
-				} 
-				if (!wordParser.hasData()) break;
+				}
+				if (!wordParser.hasData())
+					break;
 				word = wordParser.getWord();
 			}
-			
-			String comment="";
+
+			String comment = "";
 			if (commentPos != -1) {
 				comment = line.substring(commentPos).trim();
-				line = line.substring(0,commentPos).trim();
+				line = line.substring(0, commentPos).trim();
 			}
-			if (lineLevel >= 0) 
-				line = " ".repeat(12+2*lineLevel)+line;
+			if (lineLevel >= 0)
+				line = " ".repeat(12 + 2 * lineLevel) + line;
 			if (commentPos != -1) {
-				if (line.length() < 70) 
+				if (line.length() < 70)
 					line = String.format("%-70s%s", line, comment);
 				else
-					line = String.format("%s\n%-70s%s", line,"",comment);
+					line = String.format("%s\n%-70s%s", line, "", comment);
 			}
-			
-			
-			sb.append(line+"\n");
+
+			sb.append(line + "\n");
 		}
 		mTextSource.setText(sb.toString());
 		mTextSource.setSelection(caret, caret);
-		
-		
+
 	}
 
 	protected void onSelectAll() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	protected void onRedo() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	private void saveUndo() {
@@ -687,19 +801,18 @@ public class CDialogIDE extends Dialog {
 			String text = String.valueOf(mTextSource.getText());
 			mStackUndo.push(text);
 		}
-		
-	}
 
+	}
 
 	protected void onUndo() {
 		if (mStackUndo != null) {
 			if (!mStackUndo.isEmpty()) {
-			String text = mStackUndo.pop();
-			mUndoing=true;
-			mTextSource.setText(text);
-			mUndoing=false;
-			mTextDirty = true;
-		}
+				String text = mStackUndo.pop();
+				mUndoing = true;
+				mTextSource.setText(text);
+				mUndoing = false;
+				mTextDirty = true;
+			}
 		}
 	}
 
@@ -737,10 +850,11 @@ public class CDialogIDE extends Dialog {
 		autosave();
 		CChip8Assembler assembler = new CChip8Assembler();
 		assembler.assemble(mTextSource.getText(), mFilename);
-		
+
 		String errors = assembler.getErrors();
 		boolean ok = errors.trim().length() == 0;
-		errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(), 4096-0x200-assembler.getCodeSize());
+		errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(),
+				4096 - 0x200 - assembler.getCodeSize());
 		mTextErrors.setText(errors);
 		if (ok) {
 			CDialogEmulator dlgEmu = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
@@ -756,7 +870,7 @@ public class CDialogIDE extends Dialog {
 	private void autosave() {
 		String text = mTextSource.getText();
 		Tools.writeTextFile("autosave.8o", text);
-		
+
 	}
 
 	protected void onListLabelSelected(SelectionEvent e) {
@@ -786,15 +900,73 @@ public class CDialogIDE extends Dialog {
 		Rectangle rectText = mTextSource.getBounds();
 		Rectangle rectErrors = mTextErrors.getBounds();
 		Rectangle rectStatus = mLblStatus.getBounds();
+		Rectangle rectBarLeftRight = mBarLeftRight.getBounds();
+		Rectangle rectBarFiles = mBarFiles.getBounds();
+		Rectangle rectBarErrors = mBarErrors.getBounds();
+		Rectangle RectListFiles = mListFiles.getBounds();
 
-		composite.setBounds(rectComposite.x, rectComposite.y, rect.width - 40, rectComposite.height);
-		mListLabels.setBounds(rectList.x, rectList.y, rectList.width, rect.height - 40 - rectList.y);
-		mLblStatus.setBounds(rectStatus.x, rect.height - rectStatus.height - 60, rect.width - rectStatus.x - 10,
+		int left = rectBarLeftRight.x+5;
+		int right = rectBarLeftRight.x + rectBarLeftRight.width+5;
+		int leftYSplit = rectBarFiles.y;
+		int rightYSplit = rectBarErrors.y;
+
+		composite.setBounds(//
+				rectComposite.x, //
+				rectComposite.y, //
+				rect.width - 40, //
+				rectComposite.height);
+
+		mListFiles.setBounds(//
+				RectListFiles.x, //
+				RectListFiles.y, //
+				left - RectListFiles.x - 10, //
+				leftYSplit - RectListFiles.y - 10);
+
+		mListLabels.setBounds(//
+				rectList.x, //
+				leftYSplit + 10, //
+				left - rectList.x - 10, //
+				rect.height - leftYSplit - 80);
+
+		mLblStatus.setBounds(//
+				rectStatus.x, //
+				rect.height - rectStatus.height - 55, //
+				rect.width - rectStatus.x - 10, //
 				rectStatus.height);
-		mTextErrors.setBounds(rectErrors.x, rect.height - rectErrors.height - 90, rect.width - rectErrors.x - 20,
-				rectErrors.height);
-		mTextSource.setBounds(rectText.x, rectText.y, rect.width - rectText.x - 20,
-				rect.height - rectErrors.height - 100 - rectText.y);
+
+		mTextSource.setBounds(//
+				right, //
+				rectText.y, //
+				rect.width - right - 30, //
+				rightYSplit - rectText.y);
+
+		mTextErrors.setBounds( //
+				right, //
+				rightYSplit + 10, //
+				rect.width - right - 30, //
+				rect.height - rightYSplit - 100);
+		
+		mBarLeftRight.setBounds(//
+				rectBarLeftRight.x, //
+				rectBarLeftRight.y, //
+				rectBarLeftRight.width, //
+				rect.height-rectBarLeftRight.y);
+		
+		mBarFiles.setBounds(//
+				rectBarFiles.x, //
+				rectBarFiles.y, //
+				left-rectBarFiles.x, //
+				rectBarFiles.height);
+		
+		mBarErrors.setBounds(//
+				right, //
+				rectBarErrors.y, //
+				rect.width-right, //
+				rectBarErrors.height);
+		
+		double h = rect.height;
+		double s = rectBarErrors.y;
+		mSplitError = h/s;
 
 	}
 
@@ -909,9 +1081,6 @@ public class CDialogIDE extends Dialog {
 		parseFile();
 
 	}
-	
-	
-
 
 	private void parseFile() {
 		String text = mTextSource.getText();

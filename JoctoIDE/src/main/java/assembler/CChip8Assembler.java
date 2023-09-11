@@ -14,7 +14,7 @@ import emulator.C8DebugSource;
 public class CChip8Assembler {
 	public C8DebugSource mDebugSource = new C8DebugSource();
 	C8DisassEmitter mEmitter = new C8DisassEmitter();
-	int mLevel=0;
+	int mLevel = 0;
 
 	StringBuilder mSBErrors = null;
 
@@ -38,6 +38,11 @@ public class CChip8Assembler {
 	class CBeginEndData {
 		public int patchAdr;
 		public int pc;
+		public int forRegister = -1;
+		public int forStepNr;
+		public int forStepReg = -1;
+		public int forTargetNr;
+		public int forTargetReg = -1;
 	}
 
 	class CMacroData {
@@ -306,11 +311,12 @@ public class CChip8Assembler {
 	CToken token = new CToken();
 	CTokenizer mTokenizer = new CTokenizer();
 	private int mPass;
-	private boolean modeOcto=true;
+	private boolean modeOcto = true;
 	private boolean mOptAnnotateAllLines = true;
 	private boolean mOptIncludeSourceLine = true;
-	String mContext="";
-
+	String mContext = "";
+	private boolean mbCodegen = true;
+	
 	void initData() {
 		mStackLoopData.clear();
 		mBeginEndStack.clear();
@@ -334,7 +340,7 @@ public class CChip8Assembler {
 			while (mTokenizer.hasData()) {
 				try {
 					assembleLine();
-				} catch(Exception e) {
+				} catch (Exception e) {
 					error(e.getLocalizedMessage());
 					e.printStackTrace();
 					break;
@@ -344,26 +350,26 @@ public class CChip8Assembler {
 			pc = 0x200;
 			mPass = 2;
 			mSBErrors = new StringBuilder();
-		//	mTokenizer.deleteAllAlias();
+			// mTokenizer.deleteAllAlias();
 			System.out.println("Pass 1");
 			while (mTokenizer.hasData()) {
 				try {
 					assembleLine();
-				} catch(Exception e) {
+				} catch (Exception e) {
 					error(e.getLocalizedMessage());
 					e.printStackTrace();
 					break;
 				}
 			}
-			System.out.println(String.format("Length =%d", pc-0x200));
+			System.out.println(String.format("Length =%d", pc - 0x200));
 			if (filename != null) {
-				
+
 				int p = filename.lastIndexOf('.');
 				if (p != -1)
 					filename = filename.substring(0, p);
 				filename += ".ch8";
 				File file = new File(filename);
-				System.out.println("Writing "+file.getAbsolutePath());
+				System.out.println("Writing " + file.getAbsolutePath());
 				byte[] code2 = new byte[pc - 0x200 + 1];
 				int src = 0x200;
 				int tar = 0;
@@ -380,632 +386,13 @@ public class CChip8Assembler {
 	}
 
 	private void assembleLine() {
-		Token token1, token2, token3;
-		CC8Label label;
-		int reg1;
-		int reg2;
-		int nr;
-		String astr;
-		CBeginEndData beginEndData;
 		try {
 			while (mTokenizer.getToken(token)) {
 				if (token.token == null)
 					continue;
 //				 System.out.println(mTokenizer.toString());
 //				 printToken(token);
-				if (mOptAnnotateAllLines ) {
-					if (token.token != Token.comment && token.token != Token.alias && token.token != Token.macro) 
-						writeSourceLine();
-				}
-				switch (token.token) {
-				case label:
-					label = mLabels.get(token.literal);
-					if (label == null) {
-						label = new CC8Label();
-						label.mName = token.literal;
-						label.mTarget = pc;
-						System.out.println(String.format("Label %s = %04x", token.literal, pc));
-						mLabels.put(token.literal, label);
-					}
-					break;
-				case org:
-					expr(token);
-					if (token.token == Token.number) {
-						pc = token.iliteral;
-					} else
-						error("Expected: Number");
-					break;
-				case ld:
-					mTokenizer.getToken(token);
-					token1 = token.token;
-					reg1 = regNr(token1);
-					expect(Token.comma);
-					// mTokenizer.getToken(token);
-					expr(token);
-					token2 = token.token;
-					reg2 = regNr(token2);
-					if (reg1 != -1 && reg2 != -1) { // 8xy0 LD Vx, Vx
-						writeCode(0x08, reg1, reg2, 0x00);
-					} else if (reg1 != -1 && token2 == Token.number) { // 6xkk LD Vx, number
-						writeCode(0x06, reg1, token.iliteral);
-					} else if (reg1 != -1 && token2 == Token.key) { // Fx0A - LD Vx, K
-						writeCode(0x0f, reg1, 0x0a);
-					} else if (reg1 != -1 && token2 == Token.delay) { // Fx07 - LD Vx, DT
-						writeCode(0x0f, reg1, 0x07);
-					} else if (token1 == Token.i && token2 == Token.number) { // Annn ld I, number
-						writeCode(0x0a, token.iliteral / 256, token.iliteral & 255);
-					} else if (token1 == Token.buzz && reg2 != -1) { // Fx18 ld ST, Vx
-						writeCode(0x0f, reg2, 0x18);
-					} else if (token1 == Token.delay && reg2 != -1) { // Fx15 ld DT, Vx
-						writeCode(0x0f, reg2, 0x15);
-					} else if (reg1 != -1 && token2 == Token.delay) { // Fx07 LD Vx, DT
-						writeCode(0x0f, reg1, 0x07);
-					} else if (token1 == Token.iindirect && reg2 != -1) { // Fx55 LD [i], Vx
-						writeCode(0x0f, reg2, 0x55);
-					} else if (reg1 != -1 && token2 == Token.iindirect) { // Fx65 LD Vx, [i]
-						writeCode(0x0f, reg1, 0x65);
-					} else if (token1 == Token.i && token2 == Token.number) {
-						writeCode(0x0a, token.iliteral);
-					} else if (token1 == Token.i && token2 == Token.literal) {
-						writeCode(0x0a, labelTarget(token.literal));
-					} else
-						error("Unknown ld statement");
-					break;
-				case rts: // 00EE RET
-					writeCode(0x00, 0, 0xEE);
-					break;
-				// 00Cn - SCD nibble
-				// 00FB - SCR
-				// 00FC - SCL
-				// 00FD - EXIT
-				// 00FE - LOW
-				// 00FF - HIGH
-				// 00E0 - CLS
-				// 00EE - RET
-				case exit:
-					writeCode(0x00, 0, 0xFD);
-					break;
-
-				case scl:
-					writeCode(0x00, 0, 0xFC);
-					break;
-				case scr:
-					writeCode(0x00, 0, 0xFB);
-					break;
-				case scd:
-					// mTokenizer.getToken(token);
-					expr(token);
-					if (token.token != Token.number) {
-						error("Expected number");
-						break;
-					}
-					writeCode(0x00, 0, 0xc0 + token.iliteral);
-					break;
-
-				case hires:
-					writeCode(0x00, 0, 0xFF);
-					break;
-				case lowres:
-					writeCode(0x00, 0, 0xFE);
-					break;
-
-				case cls: // 00E0 CLS
-					writeCode(0x00, 0, 0xE0);
-					break;
-				case jp:
-					expr(token);
-					if (token.token == Token.number) {
-						writeCode(0x01, token.iliteral); // 1nnn JP
-					} else if (token.token == Token.literal) {
-						writeCode(0x01, labelTarget(token.literal)); // 1nnn JP
-					} else if (token.token == Token.v0) {
-						expect(Token.comma);
-						mTokenizer.getToken(token);
-						if (token.token == Token.literal) {
-							writeCode(0x0b, labelTarget(token.literal)); // bnnn JP nnn+V0
-						} else if (token.token == Token.number) {
-							writeCode(0x0b, token.iliteral); // bnnn JP nnn+V0
-						}
-					} else
-						error("Expected label or number");
-					break;
-				case jump0:
-					expr(token);
-					if (token.token == Token.number) {
-						writeCode(0x0b, token.iliteral); // 1nnn JP
-					} else if (token.token == Token.literal) {
-						writeCode(0x0b, labelTarget(token.literal)); // 1nnn JP
-					} else
-						error("Expected label or number");
-					break;
-					
-				case call:
-					expr(token);
-					if (token.token == Token.number) {
-						writeCode(0x02, token.iliteral); // 2nnn CALL
-					} else if (token.token == Token.literal) {
-						writeCode(0x02, labelTarget(token.literal)); // 2nnn CALL
-					} else
-						error("Expected label or number");
-					break;
-				case se:
-//	            3xkk - SE Vx, byte
-// 	            5xy0 - SE Vx, Vy
-
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (reg1 == -1) {
-							error("Expected Register");
-							break;
-						}
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-							if (token.token == Token.number) {
-								writeCode(0x03, reg1, token.iliteral); // 3xkk SE Vx, kk
-							} else {
-								reg2 = regNr(token.token);
-								if (reg2 == -1) {
-									error("Expected Register");
-									break;
-								}
-								writeCode(0x05, reg1, reg2, 0); // 5xy0 SE Vx, Vy
-							}
-						}
-						break;
-
-					} else
-						error("Expected Register");
-					break;
-				case sne:
-//	            4xkk - SNE Vx, byte
-//	            9xy0 - SNE Vx, Vy
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (reg1 == -1) {
-							error("Expected Register");
-							break;
-						}
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-
-							if (token.token == Token.number) {
-								writeCode(0x04, reg1, token.iliteral); // 9xkk SNE Vx, kk
-							} else {
-								reg2 = regNr(token.token);
-								if (reg2 == -1) {
-									error("Expected Register");
-									break;
-								}
-								writeCode(0x09, reg1, reg2, 0); // 4xy0 SNE Vx, Vy
-							}
-						}
-
-					} else
-						error("Expected Register");
-					break;
-				case add:
-					// 8xy4 - ADD Vx, Vy
-					// 7xkk - ADD Vx, byte
-					// Fx1E - ADD I, Vx
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (!expect(Token.comma))
-							break;
-						if (token.token == Token.i) {
-							mTokenizer.getToken(token);
-							reg1 = regNr(token.token);
-							if (reg1 == -1) {
-								error("Expected expression");
-								break;
-							}
-							// Fx1E - ADD I, Vx
-
-							writeCode(0xF, reg1, 0x1e);
-
-						} else {
-							if (mTokenizer.getToken(token)) {
-								if (token.token == Token.number) {
-									writeCode(0x07, reg1, token.iliteral); // 7xkk ADD Vx,kk
-								} else {
-									reg2 = regNr(token.token);
-									if (reg2 != -1) {
-										writeCode(0x08, reg1, reg2, 0x04); // 8xy4 ADD Vx, Vy
-									} else {
-										error("Expected Number or Register");
-										break;
-									}
-								}
-							} else {
-								error("Expected Register");
-								break;
-							}
-							break;
-						}
-
-					}
-					break;
-				case and:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-							reg2 = regNr(token.token);
-							writeCode(0x08, reg1, reg2, 2); // 8xy2 AND Vx, Vy
-						} else {
-							error("Expected register");
-							break;
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case or:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-							reg2 = regNr(token.token);
-							writeCode(0x08, reg1, reg2, 2); // 8xy1 OR Vx, Vy
-						} else {
-							error("Expected register");
-							break;
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case xor:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-							reg2 = regNr(token.token);
-							writeCode(0x08, reg1, reg2, 2); // 8xy3 XOR Vx, Vy
-						} else {
-							error("Expected register");
-							break;
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case sub:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-							reg2 = regNr(token.token);
-							writeCode(0x08, reg1, reg2, 5); // 8xy5 SUB Vx, Vy
-						} else {
-							error("Expected register");
-							break;
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case subn:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						if (!expect(Token.comma))
-							break;
-						if (mTokenizer.getToken(token)) {
-							reg2 = regNr(token.token);
-							writeCode(0x08, reg1, reg2, 7); // 8xy7 SUBN Vx, Vy
-						} else {
-							error("Expected register");
-							break;
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case shl:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						reg2 = reg1;
-						if (mTokenizer.getToken(token)) {
-							if (token.token == Token.comma) {
-								if (mTokenizer.getToken(token)) {
-
-									reg2 = regNr(token.token);
-								}
-							}
-						}
-						if (reg1 != -1 && reg2 != -1) {
-							writeCode(0x08, reg1, reg2, 0x0e); // 8xyE SHL Vx{, Vy}
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case shr:
-					if (mTokenizer.getToken(token)) {
-						reg1 = regNr(token.token);
-						reg2 = reg1;
-						if (mTokenizer.getToken(token)) {
-							if (token.token == Token.comma) {
-								if (mTokenizer.getToken(token)) {
-
-									reg2 = regNr(token.token);
-								}
-							}
-						}
-						if (reg1 != -1 && reg2 != -1) {
-							writeCode(0x08, reg1, reg2, 0x06); // 8xy6 SHL Vx{, Vy}
-						}
-					} else {
-						error("Expected register");
-						break;
-					}
-					break;
-				case sprite:
-					reg1 = nextRegister(token, true);
-					reg2 = nextRegister(token, true);
-					nr = nextNumber(token);
-					writeCode(0x0d, reg1, reg2, nr); // Dxyk Draw Vx, Vy, k
-					break;
-				case skp:
-					reg1 = nextRegister(token, true);
-					writeCode(0x0e, reg1, 0x9E);
-					break;
-				case sknp:
-					reg1 = nextRegister(token, true);
-					writeCode(0x0e, reg1, 0xA1);
-					break;
-				case db:
-					while (mTokenizer.getToken(token)) {
-						if (token.token != Token.number) {
-							mTokenizer.ungetToken(token);
-							break;
-						}
-						mCode[pc++] = (byte) (token.iliteral & 0xff);
-						mTokenizer.getToken(token);
-						if (token.token != Token.comma) {
-							mTokenizer.ungetToken(token);
-							break;
-						}
-
-					}
-					break;
-				case number:
-					mCode[pc++] = (byte) (token.iliteral & 0xff);
-					break;
-
-				case i:
-					compileI(token);
-					break;
-				case v0:
-				case v1:
-				case v2:
-				case v3:
-				case v4:
-				case v5:
-				case v6:
-				case v7:
-				case v8:
-				case v9:
-				case va:
-				case vb:
-				case vc:
-				case vd:
-				case ve:
-				case vf:
-					compileVx(token);
-					break;
-				case delay: // Fx07 - LD Vx, DT
-					expect(Token.assign);
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					writeCode(0xf, reg1, 0x15);
-					break;
-				case buzz: // Fx07 - LD Vx, DT
-					expect(Token.assign);
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					writeCode(0xf, reg1, 0x18);
-					break;
-					
-				case bcd:
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					writeCode(0xf, reg1, 0x33);
-					break;
-				case load:
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					writeCode(0xf, reg1, 0x65);
-					break;
-
-				case save:
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					writeCode(0xf, reg1, 0x55);
-					break;
-
-				case octoend: {
-					mLevel--;
-					//writeSourceLine();
-					beginEndData = mBeginEndStack.pop();
-					patch(beginEndData.patchAdr, pc);
-					break;
-				}
-
-				case octoelse: {
-					if (!mOptAnnotateAllLines) 	writeSourceLine();
-					beginEndData = mBeginEndStack.pop();
-					int pc2 = pc;
-					writeCode(0x1, 0);
-					patch(beginEndData.patchAdr, pc);
-					beginEndData.patchAdr = pc2;
-					mBeginEndStack.push(beginEndData);
-					break;
-				}
-				
-
-				case rnd: // Cxkk - RND Vx, byte
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					expect(Token.comma);
-					expr(token);
-					if (token.token != Token.number) {
-						error("Expected expression");
-					} else {
-						writeCode(0xC, reg1, token.iliteral);
-					}
-					break;
-
-				// if vx operator vy then
-				// if vx operator byte then
-				// if vx operator vx begin ... end
-				// if vx operator byte begin ... end
-				case octoif: {
-					if (!mOptAnnotateAllLines) 	writeSourceLine();
-					CToken tokenb = new CToken();
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					if (reg1 == -1) {
-						error("Expected register");
-						break;
-					}
-					mTokenizer.getToken(token);
-					Token compareToken = token.token;
-					if (token.token == Token.key) { 
-						compareToken = Token.key;
-					} else if (token.token == Token.minus) {
-						expect(Token.key);
-						compareToken = Token.notkey;
-						token.token = Token.notkey;
-					} else {
-						expr(token);
-					}
-					mTokenizer.getToken(tokenb);
-					
-					beginEndData = null;
-					switch (tokenb.token) {
-					case octobegin:
-						mLevel++;
-						beginEndData = new CBeginEndData();
-						mBeginEndStack.push(beginEndData);
-						break;
-					case octothen:
-						break;
-					default:
-						error("Expcted begin or then");
-
-					}
-					compileCompare(reg1, token, compareToken, beginEndData);
-
-				}
-					break;
-				case macro:
-					compileMacro();
-					break;
-
-				case comment:
-					break;
-				case calc:
-					compileCalc(token);
-					break;
-				case octobyte:
-					compileByte(token);
-					break;
-				case literal:
-					compileLiteral(token);
-					break;
-				case loop: {
-					mLevel++;
-					CLoopData loopData = new CLoopData(pc);
-					mStackLoopData.push(loopData);
-				}
-					break;
-				case again: {
-					mLevel--;
-					CLoopData loopData = mStackLoopData.pop();
-					writeCode(0x01, loopData.mLoopAdr); // 1nnn JP
-					for (Integer addr : loopData.patchAddresses) {
-						patch(addr.intValue(), pc);
-					}
-				}
-					break;
-				case octoconst: {
-					mTokenizer.getToken(token);
-					if (!check(token, Token.literal, "Name"))
-						break;
-					astr = token.literal;
-					expr(token);
-					if (!check(token, Token.number, "Value (Number)"))
-						break;
-					CC8Label newlabel = new CC8Label();
-					newlabel.mName = astr;
-					newlabel.mTarget = token.iliteral;
-					mLabels.put(astr, newlabel);
-				}
-					break;
-
-				case octowhile: {
-					CToken tokenb = new CToken();
-					mTokenizer.getToken(token);
-					reg1 = regNr(token.token);
-					if (reg1 == -1) {
-						error("Expected register");
-						break;
-					}
-					mTokenizer.getToken(token);
-					Token compareToken = token.token;
-					expr(token);
-					compileWhile(reg1, token, compareToken);
-					CLoopData loopData = mStackLoopData.peek();
-					loopData.patchAddresses.add(pc);
-
-					writeCode(1, 0);
-
-				}
-					break;
-				case alias: {
-					String strA;
-					if (mPass == 2) 
-						System.out.println("break");
-
-					mTokenizer.getToken(token, false);
-					if (!check(token, Token.literal, "literal"))
-						break;
-					strA = token.literal;
-					mTokenizer.getToken(token, false);
-					mTokenizer.setAlias(strA, token.literal);
-//					mTokenizer.addAlias(strA, token.literal);
-				}
-					break;
-				case stringmode:
-					compileStringmode();
-					break;
-				case octo:
-					modeOcto = true;
-					mTokenizer.modeOcto = true;
-					break;
-				case chipper: 
-					modeOcto = false;
-					mTokenizer.modeOcto = true;
-				case newline:
-				case none:
-					break;
-					
-
-				default:
-					error("Undef token " + token.toString());
-				}
+				assembleStatement(token);
 
 			}
 		} catch (Exception e) {
@@ -1014,6 +401,676 @@ public class CChip8Assembler {
 			System.out.println(mTokenizer.toString());
 			throw e;
 		}
+	}
+
+	private void assembleStatement(CToken token) {
+
+		Token token1, token2, token3;
+		CC8Label label;
+		int reg1;
+		int reg2;
+		int nr;
+
+		String astr;
+		CBeginEndData beginEndData;
+
+		if (mOptAnnotateAllLines) {
+			if (token.token != Token.comment && token.token != Token.alias && token.token != Token.macro)
+				writeSourceLine();
+		}
+		switch (token.token) {
+		case label:
+			label = mLabels.get(token.literal);
+			if (label == null) {
+				label = new CC8Label();
+				label.mName = token.literal;
+				label.mTarget = pc;
+				System.out.println(String.format("Label %s = %04x", token.literal, pc));
+				mLabels.put(token.literal, label);
+			}
+			break;
+		case org:
+			expr(token);
+			if (token.token == Token.number) {
+				pc = token.iliteral;
+			} else
+				error("Expected: Number");
+			break;
+		case ld:
+			mTokenizer.getToken(token);
+			token1 = token.token;
+			reg1 = regNr(token1);
+			expect(Token.comma);
+			// mTokenizer.getToken(token);
+			expr(token);
+			token2 = token.token;
+			reg2 = regNr(token2);
+			if (reg1 != -1 && reg2 != -1) { // 8xy0 LD Vx, Vx
+				writeCode(0x08, reg1, reg2, 0x00);
+			} else if (reg1 != -1 && token2 == Token.number) { // 6xkk LD Vx, number
+				writeCode(0x06, reg1, token.iliteral);
+			} else if (reg1 != -1 && token2 == Token.key) { // Fx0A - LD Vx, K
+				writeCode(0x0f, reg1, 0x0a);
+			} else if (reg1 != -1 && token2 == Token.delay) { // Fx07 - LD Vx, DT
+				writeCode(0x0f, reg1, 0x07);
+			} else if (token1 == Token.i && token2 == Token.number) { // Annn ld I, number
+				writeCode(0x0a, token.iliteral / 256, token.iliteral & 255);
+			} else if (token1 == Token.buzz && reg2 != -1) { // Fx18 ld ST, Vx
+				writeCode(0x0f, reg2, 0x18);
+			} else if (token1 == Token.delay && reg2 != -1) { // Fx15 ld DT, Vx
+				writeCode(0x0f, reg2, 0x15);
+			} else if (reg1 != -1 && token2 == Token.delay) { // Fx07 LD Vx, DT
+				writeCode(0x0f, reg1, 0x07);
+			} else if (token1 == Token.iindirect && reg2 != -1) { // Fx55 LD [i], Vx
+				writeCode(0x0f, reg2, 0x55);
+			} else if (reg1 != -1 && token2 == Token.iindirect) { // Fx65 LD Vx, [i]
+				writeCode(0x0f, reg1, 0x65);
+			} else if (token1 == Token.i && token2 == Token.number) {
+				writeCode(0x0a, token.iliteral);
+			} else if (token1 == Token.i && token2 == Token.literal) {
+				writeCode(0x0a, labelTarget(token.literal));
+			} else
+				error("Unknown ld statement");
+			break;
+		case rts: // 00EE RET
+			writeCode(0x00, 0, 0xEE);
+			break;
+		// 00Cn - SCD nibble
+		// 00FB - SCR
+		// 00FC - SCL
+		// 00FD - EXIT
+		// 00FE - LOW
+		// 00FF - HIGH
+		// 00E0 - CLS
+		// 00EE - RET
+		case exit:
+			writeCode(0x00, 0, 0xFD);
+			break;
+
+		case scl:
+			writeCode(0x00, 0, 0xFC);
+			break;
+		case scr:
+			writeCode(0x00, 0, 0xFB);
+			break;
+		case scd:
+			// mTokenizer.getToken(token);
+			expr(token);
+			if (token.token != Token.number) {
+				error("Expected number");
+				break;
+			}
+			writeCode(0x00, 0, 0xc0 + token.iliteral);
+			break;
+
+		case hires:
+			writeCode(0x00, 0, 0xFF);
+			break;
+		case lowres:
+			writeCode(0x00, 0, 0xFE);
+			break;
+
+		case cls: // 00E0 CLS
+			writeCode(0x00, 0, 0xE0);
+			break;
+		case jp:
+			expr(token);
+			if (token.token == Token.number) {
+				writeCode(0x01, token.iliteral); // 1nnn JP
+			} else if (token.token == Token.literal) {
+				writeCode(0x01, labelTarget(token.literal)); // 1nnn JP
+			} else if (token.token == Token.v0) {
+				expect(Token.comma);
+				mTokenizer.getToken(token);
+				if (token.token == Token.literal) {
+					writeCode(0x0b, labelTarget(token.literal)); // bnnn JP nnn+V0
+				} else if (token.token == Token.number) {
+					writeCode(0x0b, token.iliteral); // bnnn JP nnn+V0
+				}
+			} else
+				error("Expected label or number");
+			break;
+		case jump0:
+			expr(token);
+			if (token.token == Token.number) {
+				writeCode(0x0b, token.iliteral); // 1nnn JP
+			} else if (token.token == Token.literal) {
+				writeCode(0x0b, labelTarget(token.literal)); // 1nnn JP
+			} else
+				error("Expected label or number");
+			break;
+
+		case call:
+			expr(token);
+			if (token.token == Token.number) {
+				writeCode(0x02, token.iliteral); // 2nnn CALL
+			} else if (token.token == Token.literal) {
+				writeCode(0x02, labelTarget(token.literal)); // 2nnn CALL
+			} else
+				error("Expected label or number");
+			break;
+		case se:
+//    3xkk - SE Vx, byte
+//     5xy0 - SE Vx, Vy
+
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (reg1 == -1) {
+					error("Expected Register");
+					break;
+				}
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+					if (token.token == Token.number) {
+						writeCode(0x03, reg1, token.iliteral); // 3xkk SE Vx, kk
+					} else {
+						reg2 = regNr(token.token);
+						if (reg2 == -1) {
+							error("Expected Register");
+							break;
+						}
+						writeCode(0x05, reg1, reg2, 0); // 5xy0 SE Vx, Vy
+					}
+				}
+				break;
+
+			} else
+				error("Expected Register");
+			break;
+		case sne:
+//    4xkk - SNE Vx, byte
+//    9xy0 - SNE Vx, Vy
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (reg1 == -1) {
+					error("Expected Register");
+					break;
+				}
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+
+					if (token.token == Token.number) {
+						writeCode(0x04, reg1, token.iliteral); // 9xkk SNE Vx, kk
+					} else {
+						reg2 = regNr(token.token);
+						if (reg2 == -1) {
+							error("Expected Register");
+							break;
+						}
+						writeCode(0x09, reg1, reg2, 0); // 4xy0 SNE Vx, Vy
+					}
+				}
+
+			} else
+				error("Expected Register");
+			break;
+		case add:
+			// 8xy4 - ADD Vx, Vy
+			// 7xkk - ADD Vx, byte
+			// Fx1E - ADD I, Vx
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (!expect(Token.comma))
+					break;
+				if (token.token == Token.i) {
+					mTokenizer.getToken(token);
+					reg1 = regNr(token.token);
+					if (reg1 == -1) {
+						error("Expected expression");
+						break;
+					}
+					// Fx1E - ADD I, Vx
+
+					writeCode(0xF, reg1, 0x1e);
+
+				} else {
+					if (mTokenizer.getToken(token)) {
+						if (token.token == Token.number) {
+							writeCode(0x07, reg1, token.iliteral); // 7xkk ADD Vx,kk
+						} else {
+							reg2 = regNr(token.token);
+							if (reg2 != -1) {
+								writeCode(0x08, reg1, reg2, 0x04); // 8xy4 ADD Vx, Vy
+							} else {
+								error("Expected Number or Register");
+								break;
+							}
+						}
+					} else {
+						error("Expected Register");
+						break;
+					}
+					break;
+				}
+
+			}
+			break;
+		case and:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+					reg2 = regNr(token.token);
+					writeCode(0x08, reg1, reg2, 2); // 8xy2 AND Vx, Vy
+				} else {
+					error("Expected register");
+					break;
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case or:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+					reg2 = regNr(token.token);
+					writeCode(0x08, reg1, reg2, 2); // 8xy1 OR Vx, Vy
+				} else {
+					error("Expected register");
+					break;
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case xor:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+					reg2 = regNr(token.token);
+					writeCode(0x08, reg1, reg2, 2); // 8xy3 XOR Vx, Vy
+				} else {
+					error("Expected register");
+					break;
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case sub:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+					reg2 = regNr(token.token);
+					writeCode(0x08, reg1, reg2, 5); // 8xy5 SUB Vx, Vy
+				} else {
+					error("Expected register");
+					break;
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case subn:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				if (!expect(Token.comma))
+					break;
+				if (mTokenizer.getToken(token)) {
+					reg2 = regNr(token.token);
+					writeCode(0x08, reg1, reg2, 7); // 8xy7 SUBN Vx, Vy
+				} else {
+					error("Expected register");
+					break;
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case shl:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				reg2 = reg1;
+				if (mTokenizer.getToken(token)) {
+					if (token.token == Token.comma) {
+						if (mTokenizer.getToken(token)) {
+
+							reg2 = regNr(token.token);
+						}
+					}
+				}
+				if (reg1 != -1 && reg2 != -1) {
+					writeCode(0x08, reg1, reg2, 0x0e); // 8xyE SHL Vx{, Vy}
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case shr:
+			if (mTokenizer.getToken(token)) {
+				reg1 = regNr(token.token);
+				reg2 = reg1;
+				if (mTokenizer.getToken(token)) {
+					if (token.token == Token.comma) {
+						if (mTokenizer.getToken(token)) {
+
+							reg2 = regNr(token.token);
+						}
+					}
+				}
+				if (reg1 != -1 && reg2 != -1) {
+					writeCode(0x08, reg1, reg2, 0x06); // 8xy6 SHL Vx{, Vy}
+				}
+			} else {
+				error("Expected register");
+				break;
+			}
+			break;
+		case sprite:
+			reg1 = nextRegister(token, true);
+			reg2 = nextRegister(token, true);
+			nr = nextNumber(token);
+			writeCode(0x0d, reg1, reg2, nr); // Dxyk Draw Vx, Vy, k
+			break;
+		case skp:
+			reg1 = nextRegister(token, true);
+			writeCode(0x0e, reg1, 0x9E);
+			break;
+		case sknp:
+			reg1 = nextRegister(token, true);
+			writeCode(0x0e, reg1, 0xA1);
+			break;
+		case db:
+			while (mTokenizer.getToken(token)) {
+				if (token.token != Token.number) {
+					mTokenizer.ungetToken(token);
+					break;
+				}
+				mCode[pc++] = (byte) (token.iliteral & 0xff);
+				mTokenizer.getToken(token);
+				if (token.token != Token.comma) {
+					mTokenizer.ungetToken(token);
+					break;
+				}
+
+			}
+			break;
+		case number:
+			mCode[pc++] = (byte) (token.iliteral & 0xff);
+			break;
+
+		case i:
+			compileI(token);
+			break;
+		case v0:
+		case v1:
+		case v2:
+		case v3:
+		case v4:
+		case v5:
+		case v6:
+		case v7:
+		case v8:
+		case v9:
+		case va:
+		case vb:
+		case vc:
+		case vd:
+		case ve:
+		case vf:
+			compileVx(token);
+			break;
+		case delay: // Fx07 - LD Vx, DT
+			expect(Token.assign);
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			writeCode(0xf, reg1, 0x15);
+			break;
+		case buzz: // Fx07 - LD Vx, DT
+			expect(Token.assign);
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			writeCode(0xf, reg1, 0x18);
+			break;
+
+		case bcd:
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			writeCode(0xf, reg1, 0x33);
+			break;
+		case load:
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			writeCode(0xf, reg1, 0x65);
+			break;
+
+		case save:
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			writeCode(0xf, reg1, 0x55);
+			break;
+
+		case octoend: {
+			mLevel--;
+			// writeSourceLine();
+			beginEndData = mBeginEndStack.pop();
+			if (beginEndData.forRegister != -1)
+				compileForEnd(beginEndData);
+			else
+				patch(beginEndData.patchAdr, pc);
+			break;
+		}
+
+		case octoelse: {
+			if (!mOptAnnotateAllLines)
+				writeSourceLine();
+			beginEndData = mBeginEndStack.pop();
+			int pc2 = pc;
+			writeCode(0x1, 0);
+			patch(beginEndData.patchAdr, pc);
+			beginEndData.patchAdr = pc2;
+			mBeginEndStack.push(beginEndData);
+			break;
+		}
+
+		case rnd: // Cxkk - RND Vx, byte
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			expect(Token.comma);
+			expr(token);
+			if (token.token != Token.number) {
+				error("Expected expression");
+			} else {
+				writeCode(0xC, reg1, token.iliteral);
+			}
+			break;
+
+		// if vx operator vy then
+		// if vx operator byte then
+		// if vx operator vx begin ... end
+		// if vx operator byte begin ... end
+		case octoif: {
+			if (!mOptAnnotateAllLines)
+				writeSourceLine();
+			CToken tokenb = new CToken();
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			if (reg1 == -1) {
+				error("Expected register");
+				break;
+			}
+			mTokenizer.getToken(token);
+			Token compareToken = token.token;
+			if (token.token == Token.key) {
+				compareToken = Token.key;
+			} else if (token.token == Token.minus) {
+				expect(Token.key);
+				compareToken = Token.notkey;
+				token.token = Token.notkey;
+			} else {
+				expr(token);
+			}
+			mTokenizer.getToken(tokenb);
+
+			beginEndData = null;
+			switch (tokenb.token) {
+			case octobegin:
+				mLevel++;
+				beginEndData = new CBeginEndData();
+				mBeginEndStack.push(beginEndData);
+				break;
+			case octothen:
+				break;
+			default:
+				error("Expcted begin or then");
+
+			}
+			compileCompare(reg1, token, compareToken, beginEndData);
+
+		}
+			break;
+		case macro:
+			compileMacro();
+			break;
+
+		case comment:
+			break;
+		case calc:
+			compileCalc(token);
+			break;
+		case octobyte:
+			compileByte(token);
+			break;
+		case literal:
+			compileLiteral(token);
+			break;
+		case loop: {
+			mLevel++;
+			CLoopData loopData = new CLoopData(pc);
+			mStackLoopData.push(loopData);
+		}
+			break;
+		case again: {
+			mLevel--;
+			CLoopData loopData = mStackLoopData.pop();
+			writeCode(0x01, loopData.mLoopAdr); // 1nnn JP
+			for (Integer addr : loopData.patchAddresses) {
+				patch(addr.intValue(), pc);
+			}
+		}
+			break;
+		case octoconst: {
+			mTokenizer.getToken(token);
+			if (!check(token, Token.literal, "Name"))
+				break;
+			astr = token.literal;
+			expr(token);
+			if (!check(token, Token.number, "Value (Number)"))
+				break;
+			CC8Label newlabel = new CC8Label();
+			newlabel.mName = astr;
+			newlabel.mTarget = token.iliteral;
+			mLabels.put(astr, newlabel);
+		}
+			break;
+
+		case octowhile: {
+			CToken tokenb = new CToken();
+			mTokenizer.getToken(token);
+			reg1 = regNr(token.token);
+			if (reg1 == -1) {
+				error("Expected register");
+				break;
+			}
+			mTokenizer.getToken(token);
+			Token compareToken = token.token;
+			expr(token);
+			compileWhile(reg1, token, compareToken);
+			CLoopData loopData = mStackLoopData.peek();
+			loopData.patchAddresses.add(pc);
+
+			writeCode(1, 0);
+
+		}
+			break;
+		case alias: {
+			String strA;
+			if (mPass == 2)
+				System.out.println("break");
+
+			mTokenizer.getToken(token, false);
+			if (!check(token, Token.literal, "literal"))
+				break;
+			strA = token.literal;
+			mTokenizer.getToken(token, false);
+			mTokenizer.setAlias(strA, token.literal);
+//		mTokenizer.addAlias(strA, token.literal);
+		}
+			break;
+		case stringmode:
+			compileStringmode();
+			break;
+		case octo:
+			modeOcto = true;
+			mTokenizer.modeOcto = true;
+			break;
+		case chipper:
+			modeOcto = false;
+			mTokenizer.modeOcto = true;
+		case octofor:
+			compileFor(token);
+			break;
+		case dotconst:
+			mTokenizer.getToken(token);
+			if (token.token != Token.literal) {
+				error("Expected name");
+				break;
+			}
+			astr = token.literal;
+			expr(token);
+			if (token.token != Token.number) {
+				error("Expected number");
+				break;
+			}
+			label = mLabels.get(astr);
+			if (label == null) {
+				label = new CC8Label();
+				mLabels.put(astr, label);
+			}
+			label.mName = astr;
+			label.mTarget = token.iliteral;
+			break;
+		case dotif:
+			expr(token);
+			if (token.token != Token.number) {
+				error("Expected constant");
+				break;
+			}
+			mbCodegen = token.iliteral != 0;
+			break;
+			
+		case dotelse:
+			mbCodegen = !mbCodegen;
+			break;
+		case dotend:
+			mbCodegen = true;
+			break;
+			
+
+		case newline:
+		case none:
+			break;
+
+		default:
+			error("Undef token " + token.toString());
+		}
+			
 	}
 
 	private boolean check(CToken token, Token expected, String text) {
@@ -1170,7 +1227,7 @@ public class CChip8Assembler {
 					System.out.println("break");
 				}
 				compileMacroExpansion(macroData, token);
-			
+
 			} else {
 				CC8Label label = mLabels.get(token.literal);
 				if (label != null) {
@@ -1183,7 +1240,7 @@ public class CChip8Assembler {
 					writeCode(0x2, 0);
 				}
 			}
-		} catch(Exception e) {
+		} catch (Exception e) {
 			error(e.getLocalizedMessage());
 		}
 
@@ -1217,16 +1274,18 @@ public class CChip8Assembler {
 
 	private void compileMacroExpansion(CMacroData macroData, CToken token) {
 
-		if (!mOptAnnotateAllLines) 	writeSourceLine();
-		System.out.println("------------ Macro expansion at line "+token.line);
+		if (!mOptAnnotateAllLines)
+			writeSourceLine();
+		System.out.println("------------ Macro expansion at line " + token.line);
 		CTokenizer tempTokenizer = new CTokenizer();
 		tempTokenizer.mBaseline = mTokenizer.mLine;
 		for (int i = 0; i < macroData.parameters.size(); i++) {
-			//mTokenizer.getToken(token);
+			// mTokenizer.getToken(token);
 			mTokenizer.getToken(token);
-			//expr(token);
+			// expr(token);
 			tempTokenizer.replace(macroData.parameters.get(i), token.literal);
-			System.out.println(String.format("Param %d = %s at %d",  i, token.literal, mTokenizer.mLine+mTokenizer.mBaseline));
+			System.out.println(
+					String.format("Param %d = %s at %d", i, token.literal, mTokenizer.mLine + mTokenizer.mBaseline));
 		}
 
 		TreeMap<String, CMacroData> saveMapMacros = (TreeMap<String, CMacroData>) mMapMacros.clone();
@@ -1235,7 +1294,7 @@ public class CChip8Assembler {
 		mTokenizer = tempTokenizer;
 		mTokenizer.mMapAlias = saveTokenizer.mMapAlias;
 		mTokenizer.start(macroData.macro);
-		
+
 		mTokenizer = tempTokenizer;
 		mLevel++;
 		String prevContext = mContext;
@@ -1465,9 +1524,7 @@ public class CChip8Assembler {
 				}
 				break;
 			}
-		} else if (token.token == Token.number || 
-				   token.token == Token.key || 
-				   token.token == Token.notkey) {
+		} else if (token.token == Token.number || token.token == Token.key || token.token == Token.notkey) {
 			switch (compareToken) {
 			case key:
 				if (beginEndData == null)
@@ -1676,6 +1733,85 @@ public class CChip8Assembler {
 
 	}
 
+	private void compileFor(CToken token) {
+		CBeginEndData forData = new CBeginEndData();
+		mTokenizer.getToken(token);
+		int regnr = regNr(token.token);
+		if (regnr == -1) {
+			error("Expected register");
+		}
+		forData.forRegister = regnr;
+		expect(Token.assign);
+		// mTokenizer.getToken(token);
+		expr(token);
+		// for v0 := 1 to ... or
+		// for v0 := v1 to ... or
+		if (token.token == Token.number) {
+			writeCode(0x6, regnr, token.iliteral); // vx = nn
+		} else {
+			int reg2 = regNr(token.token);
+			if (regnr == -1) {
+				error("Expected number or register");
+				return;
+			}
+			writeCode(0x08, regnr, reg2, 0); // vx = vy
+		}
+		expect(Token.octoto);
+		expr(token);
+		if (token.token == Token.number) {
+			forData.forTargetNr = token.iliteral;
+			forData.forTargetReg = -1;
+		} else {
+			forData.forTargetReg = regNr(token.token);
+			if (forData.forTargetNr == -1) {
+				error("Expected number or register");
+				return;
+			}
+		}
+		mTokenizer.getToken(token);
+		if (token.token == Token.octostep) {
+			mTokenizer.getToken(token);
+			if (token.token == Token.number) {
+				forData.forStepNr = token.iliteral;
+				forData.forStepReg = -1;
+			} else {
+				forData.forStepReg = regNr(token.token);
+				if (forData.forStepReg == -1) {
+					error("Expected number or register");
+					return;
+				}
+			}
+		} else {
+			mTokenizer.ungetToken(token);
+			forData.forStepReg = -1;
+			forData.forStepNr = 1;
+		}
+		forData.pc = pc;
+		mTokenizer.getToken(token);
+		if (token.token == Token.octobegin) {
+			mBeginEndStack.push(forData);
+		} else {
+			
+			assembleStatement(token);
+			compileForEnd(forData);
+		}
+
+	}
+
+	private void compileForEnd(CBeginEndData forData) {
+		if (forData.forStepReg != -1) {
+			writeCode(0x8, forData.forRegister, forData.forStepReg, 4); // 8xy4 - ADD Vx, Vy
+		} else {
+			writeCode(0x7, forData.forRegister, forData.forStepNr); // 7xkk - ADD Vx, byte
+		}
+		if (forData.forTargetReg >= 0) {
+			writeCode(0x5, forData.forRegister, forData.forTargetReg, 0); // 5xy0 - SE Vx, Vy
+		} else {
+			writeCode(0x3, forData.forRegister, forData.forTargetNr); // 3xkk - SE Vx, byte
+		}
+		writeCode(0x1, forData.pc);
+	}
+
 	// Annn - LD I, addr
 	// Fx1E - ADD I, Vx
 	// i := hex vx
@@ -1729,7 +1865,7 @@ public class CChip8Assembler {
 
 	private void expr(CToken token) {
 		if (mTokenizer.getToken(token)) {
-		
+
 			token.register = regNr(token.token);
 
 			if (token.register != -1) {
@@ -1809,7 +1945,7 @@ public class CChip8Assembler {
 		factor(stack, token);
 		int a, b;
 		while (true) {
-			assert(token.token != null);
+			assert (token.token != null);
 			switch (token.token) {
 			case mult:
 				match(token, token.token);
@@ -1859,7 +1995,8 @@ public class CChip8Assembler {
 			break;
 		case literal:
 			label = mLabels.get(token.literal);
-			if (mPass == 2 && label == null) error("Label "+token.literal+" not found");
+			if (mPass == 2 && label == null)
+				error("Label " + token.literal + " not found");
 			stack.push(label == null ? 0 : label.mTarget);
 			match(token, Token.literal);
 			break;
@@ -1904,53 +2041,58 @@ public class CChip8Assembler {
 
 	private void writeCode(int code, int iliteral) {
 		int code1;
-
-		code1 = (code << 4) + iliteral / 256;
-		mCode[pc] = (byte) (code1 & 0xff);
-		mCode[pc + 1] = (byte) (iliteral & 0xff);
-		//writeSourceLine();
-		pc += 2;
+		if (mbCodegen) {
+			code1 = (code << 4) + iliteral / 256;
+			mCode[pc] = (byte) (code1 & 0xff);
+			mCode[pc + 1] = (byte) (iliteral & 0xff);
+			// writeSourceLine();
+			pc += 2;
+		}
 
 	}
 
 	private void writeSourceLine() {
-	//	System.out.println(String.format("write code %04x %02x %02x",pc,
-	//		(int)(mCode[pc] & 0xff), (int)(mCode[pc+1] & 0xff)));
+		// System.out.println(String.format("write code %04x %02x %02x",pc,
+		// (int)(mCode[pc] & 0xff), (int)(mCode[pc+1] & 0xff)));
 		if (mPass == 2) {
-			String line = levelSpace()+mTokenizer.getCurrentLine().trim();
-			mDebugSource.addSourceLine(pc+2, line);
+			String line = levelSpace() + mTokenizer.getCurrentLine().trim();
+			mDebugSource.addSourceLine(pc + 2, line);
 		}
 
 	}
 
 	private String levelSpace() {
-		String result="";// TODO Auto-generated method stub
-		if (mOptIncludeSourceLine ) result = String.format("%-4d", mTokenizer.mLine+mTokenizer.mBaseline); 
-		for (int i=0;i<mLevel;i++) result += "│ ";
+		String result = "";// TODO Auto-generated method stub
+		if (mOptIncludeSourceLine)
+			result = String.format("%-4d", mTokenizer.mLine + mTokenizer.mBaseline);
+		for (int i = 0; i < mLevel; i++)
+			result += "│ ";
 		return result;
 	}
 
 	private void writeCode(int hihi, int hilow, int bit8) {
 		int code1;
-
-		code1 = (hihi << 4) + hilow;
-		mCode[pc] = (byte) (code1 & 0xff);
-		mCode[pc + 1] = (byte) (bit8 & 0xff);
-		
-		//writeSourceLine();
-		pc += 2;
+		if (mbCodegen) {
+			code1 = (hihi << 4) + hilow;
+			mCode[pc] = (byte) (code1 & 0xff);
+			mCode[pc + 1] = (byte) (bit8 & 0xff);
+			// writeSourceLine();
+			pc += 2;
+		}
 
 	}
 
 	private void writeCode(int hihi, int hilow, int lowhi, int lowlo) {
 		int code1, code2;
 
-		code1 = (hihi << 4) + hilow;
-		code2 = (lowhi << 4) + lowlo;
-		mCode[pc] = (byte) (code1 & 0xff);
-		mCode[pc + 1] = (byte) (code2 & 0xff);
-		//writeSourceLine();
-		pc += 2;
+		if (mbCodegen) {
+			code1 = (hihi << 4) + hilow;
+			code2 = (lowhi << 4) + lowlo;
+			mCode[pc] = (byte) (code1 & 0xff);
+			mCode[pc + 1] = (byte) (code2 & 0xff);
+			// writeSourceLine();
+			pc += 2;
+		}
 
 	}
 
@@ -2034,10 +2176,12 @@ public class CChip8Assembler {
 
 	private void error(String string) {
 		if (mPass == 2) {
-			System.out.println(String.format("Error %d/%d:%s %s", mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
+			System.out.println(
+					String.format("Error %d/%d:%s %s", mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
 			System.out.println(mTokenizer.toString());
 			if (mSBErrors != null) {
-				mSBErrors.append(String.format("Error %d/%d:%s %s\n", mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
+				mSBErrors.append(String.format("Error %d/%d:%s %s\n", mTokenizer.mLine, mTokenizer.mPosInLine, string,
+						mContext));
 				mSBErrors.append(mTokenizer.toString() + "\n");
 
 			}
@@ -2069,7 +2213,7 @@ public class CChip8Assembler {
 			else
 				line = String.format("Token: %s", token.token.toString());
 		}
-		line = String.format("%d:%d %s", mTokenizer.mLine+mTokenizer.mBaseline, mTokenizer.mPosInLine, line);
+		line = String.format("%d:%d %s", mTokenizer.mLine + mTokenizer.mBaseline, mTokenizer.mPosInLine, line);
 		System.out.println(line);
 
 	}

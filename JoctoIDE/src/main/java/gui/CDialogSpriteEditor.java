@@ -196,7 +196,7 @@ public class CDialogSpriteEditor extends Dialog {
 	}
 
 	private void fillCombo() {
-		for (int i=1;i<13;i++) {
+		for (int i=1;i<16;i++) {
 			mComboRows.add(String.format("%d", i));
 		}
 		
@@ -613,7 +613,7 @@ public class CDialogSpriteEditor extends Dialog {
 		int x = 0;
 		int y = 0;
 	    int width = spriteHeight == 0 ? 16 : 8;
-	    int height = spriteHeight == 0 ? 16 : 12;
+	    int height = spriteHeight == 0 ? 16 : 15;
 		int dx = bounds.width / width;
 		int dy = bounds.height / height;
 		int w = dx * 16;
@@ -885,7 +885,7 @@ public class CDialogSpriteEditor extends Dialog {
 	    Color red = display.getSystemColor(SWT.COLOR_RED);
 		
 	    int width = spriteHeight == 0 ? 16 : 8;
-	    int height = spriteHeight == 0 ? 16 : 12;
+	    int height = spriteHeight == 0 ? 16 : 15;
 		int x = 0;
 		int y = 0;
 		int dx = bounds.width / width;
