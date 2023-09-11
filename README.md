@@ -10,9 +10,11 @@ Ctrl-Space opens the auto completion window
 
 ![image](https://github.com/tquester/j-octo/assets/5380723/311d6add-7310-43a3-a20d-10326bdc4c55)
 
-The debugger/emulator displays the disassembled code. If the game has been started from the editor, it will contain all symbols, except for the symbols the compiler inserted for if/begin/end/loop/again and while. The data view always shows the data pointed by the I register and decodes binary data into visible sprites
+The debugger/emulator displays the disassembled code and the source code. You can see which macro is executed, hidden code (loop, again, while, if,..) and even dead code.
+If the game has been started from the editor, it will contain all symbols, except for the symbols the compiler inserted for if/begin/end/loop/again and while. The data view always shows the data pointed by the I register and decodes binary data into visible sprites
 
-![image](https://github.com/tquester/j-octo/assets/5380723/e48b23f7-8df4-4779-8ef0-dfb46b1e5661)
+![image](https://github.com/tquester/J-Octo-Chip8-IDE/assets/5380723/c9fdc705-ab8d-4585-828a-5d49003f4293)
+
 
 The disassembler separates code from data and lets you rename the labels and change the type, for example to visualize sprites or 16x16 sprites
 
