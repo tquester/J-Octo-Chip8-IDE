@@ -28,7 +28,26 @@
       <version>4.12</version>
       <scope>test</scope>
     </dependency>
+    		<dependency>
+		    <groupId>org.json</groupId>
+		    <artifactId>json</artifactId>
+		    <version>20230618</version>
+		</dependency>
+
         <!-- select prefered one, or move the preferred on to the top: -->
+
+        <dependency>
+            <groupId>org.eclipse.swt</groupId>
+            <artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>
+            <version>${swt.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.swt</groupId>
+            <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
+            <version>${swt.version}</version>
+        </dependency>
+
+
         <dependency>
             <groupId>org.eclipse.swt</groupId>
             <artifactId>org.eclipse.swt.cocoa.macosx.x86_64</artifactId>
@@ -48,22 +67,7 @@
             <!-- To use the debug jar, add this -->
             <classifier>debug</classifier>
         </dependency>       
-		<dependency>
-		    <groupId>org.json</groupId>
-		    <artifactId>json</artifactId>
-		    <version>20230618</version>
-		</dependency>
         
-        <dependency>
-            <groupId>org.eclipse.swt</groupId>
-            <artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>
-            <version>${swt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.swt</groupId>
-            <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
-            <version>${swt.version}</version>
-        </dependency>
 
 
 		<dependency>

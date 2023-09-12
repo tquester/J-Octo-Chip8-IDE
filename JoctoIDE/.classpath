@@ -36,14 +36,5 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/Admin/.m2/repository/org/eclipse/rap/org.eclipse.rap.nebula.widgets.richtext/3.11.0/org.eclipse.rap.nebula.widgets.richtext-3.11.0.jar" sourcepath="C:/Users/Admin/.m2/repository/org/eclipse/rap/org.eclipse.rap.nebula.widgets.richtext/3.11.0/org.eclipse.rap.nebula.widgets.richtext-3.11.0-sources.jar">
-		<attributes>
-			<attribute name="maven.pomderived" value="true"/>
-			<attribute name="maven.groupId" value="org.eclipse.rap"/>
-			<attribute name="maven.artifactId" value="org.eclipse.rap.nebula.widgets.richtext"/>
-			<attribute name="maven.version" value="3.11.0"/>
-			<attribute name="maven.scope" value="compile"/>
-		</attributes>
-	</classpathentry>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
