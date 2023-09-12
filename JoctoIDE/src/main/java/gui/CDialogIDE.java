@@ -660,6 +660,7 @@ public class CDialogIDE extends Dialog {
 		}).add("Save &As", new CCallback() {
 			@Override
 			public void callback() {
+				onSaveAs();
 
 			}
 		}).add("&Options", new CCallback() {
@@ -740,6 +741,7 @@ public class CDialogIDE extends Dialog {
 
 	}
 
+	
 	protected void OnOptions() {
 		// TODO Auto-generated method stub
 
@@ -898,6 +900,7 @@ public class CDialogIDE extends Dialog {
 		if (ok) {
 			CDialogEmulator dlgEmu = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
 			dlgEmu.copyMemory(0x200, assembler.getCode(), assembler.getCodeSize());
+			dlgEmu.mCPU.mDebugEntries = assembler.mDebugEntries;
 			dlgEmu.startRunning = false;
 			dlgEmu.mLabels = assembler.mLabels;
 			dlgEmu.setDebugSource(assembler.mDebugSource);
@@ -1019,6 +1022,20 @@ public class CDialogIDE extends Dialog {
 
 	}
 
+	protected void onSaveAs() {
+		String[] filterExt = { "*.8o" };
+		FileDialog fd = new FileDialog(shlJoctoIde, SWT.SAVE);
+		fd.setText("Save chip8 program");
+		fd.setFilterExtensions(filterExt);
+		mFilename = fd.open();
+		if (mFilename == null)
+			return;
+		Tools.saveTextFile(mTextSource.getText(), mFilename);
+		shlJoctoIde.setText("J-Octo IDE "+mFilename);
+		setAutoload(mFilename);
+		
+	}
+
 	protected void onSaveFile() {
 		if (mFilename == null) {
 			String[] filterExt = { "*.8o" };
@@ -1125,7 +1142,10 @@ public class CDialogIDE extends Dialog {
 		mTextSource.setText(Tools.loadTextFile(mFilename));
 		styleText(mTextSource.getText());
 		mStackUndo.removeAllElements();
+		shlJoctoIde.setText("J-Octo IDE "+mFilename);
 		saveUndo();
+		Tools.saveTextFile(mTextSource.getText(), mFilename);
+
 
 		parseFile();
 

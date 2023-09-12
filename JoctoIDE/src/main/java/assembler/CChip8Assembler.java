@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Stack;
 import java.util.TreeMap;
 
+import assembler.CDebugEntry.CDebugElem;
 import disass.C8DisassEmitter;
 import disass.C8LabelType;
 import disass.CC8Label;
@@ -14,6 +15,7 @@ import emulator.C8DebugSource;
 public class CChip8Assembler {
 	public C8DebugSource mDebugSource = new C8DebugSource();
 	C8DisassEmitter mEmitter = new C8DisassEmitter();
+	public CDebugEntries mDebugEntries = new CDebugEntries();
 	int mLevel = 0;
 
 	StringBuilder mSBErrors = null;
@@ -1061,6 +1063,43 @@ public class CChip8Assembler {
 		case dotend:
 			mbCodegen = true;
 			break;
+			
+			
+		case breakpoint: {
+			CDebugEntry entry = new CDebugEntry();
+			entry.mPc = pc;
+			entry.mIsBreakpoint = true;
+			mDebugEntries.put(pc, entry);
+			}
+			break;
+		case dotlog:
+		{
+			CDebugElem elem;
+			CDebugEntry entry = new CDebugEntry();
+			entry.mPc = pc;
+			entry.mIsBreakpoint = false;
+			if (mbCodegen) {
+				mDebugEntries.put(pc, entry);
+			}
+			while (mTokenizer.hasData()) {
+				mTokenizer.getToken(token);
+				if (token.token == Token.newline) break;
+				if (token.token == Token.semikolon) break;
+				int regnr = regNr(token.token);
+				if (regnr != -1) {
+					elem = new CDebugElem();
+					elem.register = regnr;
+					entry.addElem(elem);
+				} else {
+					elem = new CDebugElem();
+					elem.text = token.literal;
+					entry.addElem(elem);					
+				}
+			}
+			
+			break;
+		}
+			
 			
 
 		case newline:

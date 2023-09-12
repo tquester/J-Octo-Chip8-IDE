@@ -6,4 +6,6 @@ public interface IEmulator {
 
 	void notifyStop();
 
+	void log(String text);
+
 }

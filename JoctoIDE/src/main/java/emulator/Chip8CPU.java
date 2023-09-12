@@ -1,10 +1,17 @@
 package emulator;
 
+import java.security.spec.MGF1ParameterSpec;
 import java.util.Stack;
 import java.util.TreeSet;
 
+import assembler.CDebugEntries;
+import assembler.CDebugEntry;
+import assembler.CDebugEntry.CDebugElem;
+
 public class Chip8CPU {
 	public byte memory[] = new byte[65536];
+	public CDebugEntries mDebugEntries = null;
+	public IEmulatorCallback mEmulatorCallback;
 	public int pc = 0x200;
 	public int vx[] = new int[16];
 	public int regI;
@@ -15,7 +22,7 @@ public class Chip8CPU {
 	 TreeSet<Integer> mBreakpoints = new TreeSet();
 	public Chip8GPU gpu = new Chip8GPU();
 	public Chip8Debugger debugger = new Chip8Debugger();
-	private boolean mStop;
+	private boolean mStop=false;
 	public boolean mRunning;
 	private boolean mNewShift = true;
 	private boolean mNewLoad = false;
@@ -123,6 +130,27 @@ public class Chip8CPU {
 						mStop = true;
 						break;
 					}
+					
+					if (mDebugEntries != null) {
+					   CDebugEntry entry = mDebugEntries.get(pc);
+					   if (entry != null) {
+						   if (entry.mIsBreakpoint) 
+							   mStop = true;
+						   if (entry.mLog != null) {
+							   String log = "";
+							   for (CDebugElem elem: entry.mLog) {
+								   if (elem.register != -1) {
+									   log += String.format("%02x (%d)",vx[elem.register], vx[elem.register]);
+								   }
+								   if (elem.text != null)
+									   log += elem.text;
+							   }
+							   if (gpu.mIEmulator != null)
+								   gpu.mIEmulator.log(log);
+						   }
+					   }
+					}
+					
 					cpuTick();
 				}
 				try {

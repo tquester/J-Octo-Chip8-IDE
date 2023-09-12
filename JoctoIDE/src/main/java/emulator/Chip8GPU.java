@@ -169,8 +169,8 @@ public class Chip8GPU {
 			int screenLineBytes = width / 8;
 			int screenX = x / 8;
 			int screenAddr = y * screenLineBytes + screenX;
-			GC gc = new GC(mImage);
 			waitSemaphore();
+			GC gc = new GC(mImage);
 			setSemaphore(true);
 			if (height != 0) {
 				if (y + height > this.height) height = this.height-y;

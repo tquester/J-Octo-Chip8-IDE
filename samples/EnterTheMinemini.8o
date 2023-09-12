@@ -5,7 +5,7 @@
 :stringmode tinytext8 "#/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.!?,'- " {
 :byte { 1 * VALUE }
             }
-:const DEBUG 0
+:const DEBUG 1
 
 : tinytext
 : enterTheMine  tinytext8 "Enter the mine#"
@@ -230,6 +230,7 @@
 : Scene1
             decompress1
 : Scene1Loop
+			# :log "Scene 1 starts" ;
             clear
             drawTitleScene3
             Tinytext 0 0 enterTheMineOfs
@@ -373,7 +374,7 @@
             initspritei scene3sprite1 spriteData1
             initspritei scene3sprite2 spriteData2
             v1 := 1
-            v2 := 17
+            v2 := 16
             minerInitDraw
            :if DEBUG
             printTileAddress
@@ -383,6 +384,7 @@
               processKeysMiner
               vd := 1
               if vf == 1  begin
+                :log "Miner hit"
                 i := minerTilePos
                 load v2
                 if v1 == 14 then jump scene3KeyHit
@@ -409,6 +411,7 @@
             again
 
 : minerCheckFalling
+
             getCurrentMinerTile
             va := 0
             v3 := v0
@@ -418,7 +421,10 @@
               if v3 == 0 then minerFalling
             else
               if v0 == -2 begin # if jumping
-                if v2 > 7 then va := 1
+                if v2 > 7 begin
+                     va := 1
+					:log "miner fall too deep v2 = " v2
+                end
                 if v3 != 0 then minerStopFalling
               end
             end
@@ -472,6 +478,7 @@
               if vf == 1  begin
                 i := minerTilePos
                 load v2
+				# :log "Tile pos v1=" v1 " v2=" v2 " v3= " v3 ;
                 if v1 <= 5 then jump scene4cont
                 jump Scene4
                 i := minerDataStatus
@@ -487,6 +494,9 @@
               redraw
             again
 
+# Returns v0 = the tile under the miner in v0
+#         v2 = miner y
+#         v1 = miner x
 : getCurrentMinerTile
             i := minerTilePos
             load v2
@@ -506,6 +516,7 @@
             spriteDraw toilette
 
 : minerFalling
+            :log "Miner falling"
             printTileAddress
             v0 := -2
             i := minerDataStatus
@@ -513,6 +524,7 @@
             return
 
 : minerStopFalling
+            :log "Miner stop falling"
             printTileAddress
             i := minerDataStatus
             load v0
@@ -805,6 +817,7 @@
 # returns v1 = x tile
 #         v2 = y tile
 : minerTileAddress
+            return
             i := minerdata
             load v2
             x += 4
@@ -818,55 +831,18 @@
             save v2
             return
 
-	:if DEBUG
-: bcdbuf 0x00 0x00 0x00
 
 : printsave
-            0x00 0x00 0x00 0x00  0x00 0x00 0x00 0x00  0x00 0x00 0x00 0x00  0x00 0x00 0x00 0x00
-
-: printdez1
-            i := bcdbuf
-            i += v5
-            v5 += 1
-            load v0
-            i := hex v0
-            sprite v3 v4 5
-            v3 += 6
-            return
-
-: printdez
-            i := bcdbuf
-            bcd v0
-            v5 := 0
-            printdez1
-            printdez1
-            printdez1
-            return
+   0x00 0x00 0x00 0x00  0x00 0x00 0x00 0x00  0x00 0x00 0x00 0x00  0x00 0x00 0x00 0x00 
+	 
 : printTileAddress
-            i := printsave
-            save vf
-            minerTileAddress
-
-            v0 := x
-            v3 := 0
-            v4 := 0
-
-            printdez
-
-            v3 += 8
-            minerTileAddress
-
-            v0 := y
-            printdez
-
-            getCurrentMinerTile
-            v3 += 8
-            printdez
-
-            i := printsave
-            load vf
-            return
-	:end
+   i := printsave
+   save vf
+   minerTileAddress
+   :log "Tile Address x=" x " y= " y
+   i := printsave
+   load vf
+   return
 
 : moveMiner
 # -1 backward 1 forward
@@ -961,14 +937,15 @@
 #        v2 = y
 # output v0 = tile
 
+
 : getSceneTile
-            v0 := v2                                                  # temp v0
+            v0 := v2                                                  # v2 = y
             v0x8
-            v0 += v0                                                  # * 16
-            v0 += v1                                                  # add x
+            v0 += v0                                                  # v0 = y * 16
+            v0 += v1                                                  # v0 = y * 16 + x
             i := scene3tiles
             i += v0
-            load v0
+            load v0													  # v0 = tile under x/y
             return
 
 

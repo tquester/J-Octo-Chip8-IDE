@@ -92,6 +92,13 @@ public class CTokenizer {
 		token.posinline = mPosInLine;
 		while (mPos < mEnd) {
 			c = nextChar();
+			
+			if (c == '\n') {
+				token.token = Token.newline;
+				myassert(token.token != null);
+				return true;				
+			}
+			
 			if (!Character.isSpace(c))
 				break;
 		}
@@ -209,6 +216,8 @@ public class CTokenizer {
 				sb.append(c);
 
 			}
+			if (c == '\n') 
+				mPos--;
 			token.literal = replace(sb.toString().trim());
 			if (replaceTokens) {
 				String strAlias = mMapAlias.get(token.literal);

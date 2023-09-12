@@ -25,6 +25,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.wb.swt.SWTResourceManager;
 
+import assembler.CDebugEntries;
 import disass.C8DisassEmitter;
 import disass.CC8Decoder;
 import disass.CC8Label;
@@ -32,6 +33,7 @@ import emulator.C8DebugSource;
 import emulator.C8DebugSourceLine;
 import emulator.Chip8CPU;
 import emulator.IEmulator;
+import emulator.IEmulatorCallback;
 
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
@@ -47,6 +49,9 @@ import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.ShellAdapter;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.TabFolder;
+import org.eclipse.swt.widgets.TabItem;
+import org.eclipse.swt.widgets.Text;
 
 public class CDialogEmulator extends Dialog implements IEmulator {
 
@@ -66,14 +71,17 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	Label mLblDisass;
 	Label mLblData;
 	List mListSource;
+	TabFolder mTabFolder;
 	Combo mComboSpeed;
 	public boolean startRunning = false;
+	
 	private String mChip8Filename;
 	private Color colors[];
 	int bytesRead;
 	Display display;
 	CC8Decoder mDisassembler = new CC8Decoder();
 	C8DisassEmitter mDisassEmitter = new C8DisassEmitter();
+	
 
 	private Listener mKeyUpFilter;
 
@@ -112,7 +120,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 			@Override
 			public void handleEvent(Event event) {
-				onKeyDown(event.character, event.keyCode);
+				onKeyUp(event.character, event.keyCode);
 
 			}
 		}; 
@@ -122,14 +130,15 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			@Override
 			public void handleEvent(Event event) {
 				System.out.println(String.format("event: %d", event.type));
-				onKeyUp(event.character, event.keyCode);
+				onKeyDown(event.character, event.keyCode);
+				
 
 			}
 		};
 		
 		
-		display.addFilter(SWT.KeyDown, mKeyUpFilter);
-		display.addFilter(SWT.KeyUp, mKeyDownFIlter);
+		display.addFilter(SWT.KeyUp, mKeyUpFilter);
+		display.addFilter(SWT.KeyDown, mKeyDownFIlter);
 
 		colors = new Color[4];
 		colors[0] = display.getSystemColor(SWT.COLOR_YELLOW);
@@ -166,7 +175,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			onRun();
 		// System.out.println(String.format("%x - %d", keyCode,(int) character));
 		mCPU.addRemoveKey(character);
-		displayDebug();
+		//displayDebug();
 
 	}
 
@@ -212,6 +221,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 //	public TreeMap<String, Integer> mMapLabels = null;
 
 	public TreeMap<String, CC8Label> mLabels;
+	private Text mTextLog;
 
 	void createTimer() {
 		mTimerStop = false;
@@ -397,14 +407,26 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		mLblDisass.setText("200 00 00 NOP");
 		mLblDisass.setBounds(10, 353, 576, 15);
 
-		mListSource = new List(shlChipsuperChipxoChip, SWT.BORDER | SWT.V_SCROLL);
-		mListSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mListSource.setBounds(10, 374, 719, 92);
-
 		mLblData = new Label(shlChipsuperChipxoChip, SWT.BORDER | SWT.WRAP);
 		mLblData.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
 		mLblData.setBounds(594, 10, 137, 339);
 		mLblData.setText("0000 00 ");
+		
+		mTabFolder = new TabFolder(shlChipsuperChipxoChip, SWT.NONE);
+		mTabFolder.setBounds(10, 374, 721, 101);
+		
+		TabItem tbtmDisassembler = new TabItem(mTabFolder, SWT.NONE);
+		tbtmDisassembler.setText("Disassembler");
+		
+				mListSource = new List(mTabFolder, SWT.BORDER | SWT.V_SCROLL);
+				tbtmDisassembler.setControl(mListSource);
+				mListSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
+				
+				TabItem tbtmLog = new TabItem(mTabFolder, SWT.NONE);
+				tbtmLog.setText("Log");
+				
+				mTextLog = new Text(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
+				tbtmLog.setControl(mTextLog);
 
 	}
 
@@ -465,12 +487,12 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		if (mLblData == null)
 			return;
 		Rectangle rect = shlChipsuperChipxoChip.getBounds();
-		Rectangle rectList = mListSource.getBounds();
+		Rectangle rectList = mTabFolder.getBounds();
 		Rectangle rectData = mLblData.getBounds();
 		Rectangle rectRegisters = mCompositeRegister.getBounds();
 		mCompositeRegister.setBounds(rect.width - rectRegisters.width - 10, rectRegisters.y, rectRegisters.width,
 				rect.height - rectRegisters.y - 40);
-		mListSource.setBounds(rectList.x, rectList.y, rect.width - rectRegisters.width - rectList.x - 20,
+		mTabFolder.setBounds(rectList.x, rectList.y, rect.width - rectRegisters.width - rectList.x - 20,
 				rect.height - rectList.y - 60);
 		mLblData.setBounds(rectData.x, rectData.y, rect.width - rectRegisters.width - 20, rectData.height);
 
@@ -689,5 +711,18 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	public void setDebugSource(C8DebugSource debugSource) {
 		mDebugSource = debugSource;
 
+	}
+
+	@Override
+	public void log(String text) {
+		shlChipsuperChipxoChip.getDisplay().asyncExec(new Runnable() {
+			public void run() {
+				String edit = mTextLog.getText();
+				edit += text+"\r\n";
+				mTextLog.setText(edit);
+				mTextLog.setSelection(edit.length()-1);
+			}
+		});
+		
 	}
 }
