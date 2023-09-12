@@ -21,8 +21,8 @@ public class MainClass {
 	        shell.setImage(SWTResourceManager.getImage(MainClass.class,"disass.gif"));
 	        shell.setLayout(new FillLayout(SWT.VERTICAL));
 	        shell.setBounds(0,0,10,10);
-	        shell.open();
-	        CDialogIDE mainDialog = new CDialogIDE(shell, SWT.TITLE + SWT.MAX + SWT.RESIZE + SWT.CLOSE);
+	        //shell.open();
+	        CDialogIDE mainDialog = new CDialogIDE( shell, SWT.TITLE + SWT.MAX + SWT.RESIZE + SWT.CLOSE);
 	        mainDialog.open();
 	        
 	        /*

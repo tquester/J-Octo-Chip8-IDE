@@ -170,17 +170,7 @@
 
 
 : start
-	:const val1 10
-	:const val2 20
-			i := miner1
-			v1 := val1
-			v2 := val2
-			for v0 := 1 to 100 begin
-               sprite v1 v2 15
-			   v1 += 1
-            end
-
-                
+              
             initfast
             fast
 : restart

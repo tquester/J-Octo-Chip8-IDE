@@ -2,6 +2,7 @@ package gui;
 
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Composite;
@@ -9,6 +10,7 @@ import org.eclipse.swt.widgets.Composite;
 import java.io.File;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Stack;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -19,6 +21,7 @@ import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.List;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.wb.swt.SWTResourceManager;
 
 import assembler.CChip8Assembler;
@@ -77,6 +80,7 @@ public class CDialogIDE extends Dialog {
 	Composite mBarErrors;
 	Composite mBarLeftRight;
 	List mListFiles;
+	static final int constErrorSpaceBottom = 80;
 	static final int key_back = 0x1000003;
 	static final int state_mask_back = 0x10000;
 
@@ -139,7 +143,10 @@ public class CDialogIDE extends Dialog {
 	 * Create contents of the dialog.
 	 */
 	private void createContents() {
-		shlJoctoIde = new Shell(getParent(), getStyle());
+	      Display display = getParent().getDisplay();
+	     shlJoctoIde = new Shell(display);
+
+		//shlJoctoIde = new Shell(getParent(), getStyle());
 		//shlJoctoIde = getParent();
 		shlJoctoIde.addControlListener(new ControlAdapter() {
 			@Override
@@ -150,13 +157,22 @@ public class CDialogIDE extends Dialog {
 						Rectangle rectSplit = mBarErrors.getBounds();
 						double v = rect.height;
 						v *= mSplitError;
-						mBarErrors.setBounds(rectSplit.x,(int) v, rectSplit.width, rectSplit.height);
+						//mBarErrors.setBounds(rectSplit.x,(int) v, rectSplit.width, rectSplit.height);
 					}
 					
 				}
 				onResize();
 			}
 		});
+		
+		shlJoctoIde.addListener(SWT.Traverse, new Listener() {
+	          public void handleEvent(Event e) {
+	            if (e.detail == SWT.TRAVERSE_ESCAPE) {
+	              e.doit = false;
+	            }
+	          }
+	        });
+//		shlJoctoIde = getParent();
 		shlJoctoIde.setSize(931, 597);
 		shlJoctoIde.setText("J-octo IDE");
 
@@ -322,9 +338,32 @@ public class CDialogIDE extends Dialog {
 			public void mouseMove(MouseEvent e) {
 				if (mResizing) {
 					System.out.println(String.format("x=%d", e.x));
-					Rectangle rect = mBarErrors.getBounds();
-					mBarErrors.setBounds(rect.x, mResizeBase + e.y, rect.width, rect.height);
-					onResize();
+					Rectangle rectErrors = mTextErrors.getBounds();
+					Rectangle rectText = mTextSource.getBounds();
+					Rectangle rectBarErrors = mBarErrors.getBounds();
+					Rectangle rect = shlJoctoIde.getBounds();
+					int top = mResizeBase + e.y; 
+					mTextErrors.setBounds( //
+							rectErrors.x, //
+							top,
+							rect.width - rectErrors.x - 30, //
+							rect.height-top-constErrorSpaceBottom);
+					
+					top -= 12;
+					mBarErrors.setBounds(//
+							rectErrors.x, //
+							top, //
+							rect.width-rectErrors.x, //
+							rectBarErrors.height);
+
+					top -= 8;
+					mTextSource.setBounds(//
+							rectErrors.x, //
+							rectText.y, //
+							rect.width - rectErrors.x - 30, //
+							top-rectText.y);					
+					
+					//onResize();
 				}
 			}
 		});
@@ -934,17 +973,32 @@ public class CDialogIDE extends Dialog {
 				rect.width - rectStatus.x - 10, //
 				rectStatus.height);
 
+		int top = rect.height - rectErrors.height-constErrorSpaceBottom;
+		mTextErrors.setBounds( //
+				right, //
+				top,
+				rect.width - right - 30, //
+				rectErrors.height);
+
+		top -= 12;
+		mBarErrors.setBounds(//
+				right, //
+				top, //
+				rect.width-right, //
+				rectBarErrors.height);
+
+		top -= 8;
 		mTextSource.setBounds(//
 				right, //
 				rectText.y, //
 				rect.width - right - 30, //
-				rightYSplit - rectText.y);
+				top-rectText.y);
 
 		mTextErrors.setBounds( //
 				right, //
-				rightYSplit + 10, //
+				rect.height - rectErrors.height-constErrorSpaceBottom,
 				rect.width - right - 30, //
-				rect.height - rightYSplit - 100);
+				rectErrors.height);
 		
 		mBarLeftRight.setBounds(//
 				rectBarLeftRight.x, //
@@ -958,11 +1012,6 @@ public class CDialogIDE extends Dialog {
 				left-rectBarFiles.x, //
 				rectBarFiles.height);
 		
-		mBarErrors.setBounds(//
-				right, //
-				rectBarErrors.y, //
-				rect.width-right, //
-				rectBarErrors.height);
 		
 		double h = rect.height;
 		double s = rectBarErrors.y;
@@ -1125,6 +1174,13 @@ public class CDialogIDE extends Dialog {
 				}
 			}
 		}
+		list.sort(new Comparator<String>() {
+
+			@Override
+			public int compare(String o1, String o2) {
+				return o1.toLowerCase().compareTo(o2.toLowerCase());
+			}
+		});
 		String labels = sbLabels.toString();
 		if (labels.compareTo(mStrLabels) != 0) {
 			mStrLabels = labels;

@@ -2054,9 +2054,11 @@ public class CChip8Assembler {
 	private void writeSourceLine() {
 		// System.out.println(String.format("write code %04x %02x %02x",pc,
 		// (int)(mCode[pc] & 0xff), (int)(mCode[pc+1] & 0xff)));
-		if (mPass == 2) {
-			String line = levelSpace() + mTokenizer.getCurrentLine().trim();
-			mDebugSource.addSourceLine(pc + 2, line);
+		if (mbCodegen) {
+			if (mPass == 2) {
+				String line = levelSpace() + mTokenizer.getCurrentLine().trim();
+				mDebugSource.addSourceLine(pc + 2, line);
+			}
 		}
 
 	}
