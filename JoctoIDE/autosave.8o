@@ -80,8 +80,13 @@
               if Enemy.y == Enemy.maxy then enemyReverseY             # and end
             end
             Enemy.frame += Enemy.dframe                               # go to next/prev frame
-            if Enemy.frame < 0 then enemyReverseFrame                 # if it was the first frame count forward
-            if Enemy.frame >= Enemy.maxframe then enemyReverseFrame
+            if Enemy.frame < 0 begin
+                     enemyReverseFrame                 # if it was the first frame count forward
+              Enemy.frame += Enemy.dframe
+			end
+            if Enemy.frame >= Enemy.maxframe begin
+              enemyReverseFrame
+            end
 # if it was the last frame, count backwards
             return
 
@@ -118,7 +123,7 @@
 
             drawInitEnemy enemydata1 drawPackman                      # draw initital
             drawInitEnemy enemydata2 drawPackman                      # draw initial
-            drawInitEnemy enemydata3 drawBird                      # draw initial
+            drawInitEnemy enemydata3 drawBird                         # draw initial
 
             loop                                                      # forwever
               i := savedata                                           # save registers
