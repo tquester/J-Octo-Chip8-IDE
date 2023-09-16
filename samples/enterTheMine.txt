@@ -1,0 +1,19 @@
+The goal was to make a game which feels like Manic Miner, Mario and similar jump and rum games from the past. 
+The miner changes his sprite on each movement, so that he moves arms and legs while walking. He also jumps in time lapse and can change the movement while jumping. 
+
+In order to complete the game, you must find out where and when to jump. Sometimes there are only a few pixels between you and the enemy.
+
+Chip8 has some restrictions, most of all, there is no easy way to tell where the miner has been hit. It would be possible to find out if I device the miner into many sprites and see if the head or the feet are hit. I took the lazy way and there is only one danger on each x coordinate. Also enemies only hurt if the miner is moving.
+
+Currently the game only compiles with the j-octo IDE, it uses for..next and expressions but with some small modifications it may compile on any octo compiler.
+
+In order to run flicker free on my Chip8 Emulator on the ZX Spectrum, there are three private opcodes, they are activated if the first two bytes in the memory are Z and X. The opcodes are 
+ F0E0	- fast
+ F0E1	- slow
+ F0E2	- redraw
+
+Fast stops all screen updates, the screen freezes even if sprites are drawn. Slow returns to normal operation and redraw updates the screen. In the game loop, the game removes and re-draws all sprites then calls the redraw opcode. Now the emulator draws all changed lines. Even without a vsync you never will see a flicker because the new screen displays the restored background and the new sprite position at the same time.
+
+On all other emulators, the opcodes are not executed.
+
+For the ZX Spectrum there is also a version which runs nativly in Z80 Machine code. One of j-octos disasseblers produce Z80 Assembly instead of octo code, this code can run on all systems which provide a small backend (Sprite drawing, keyboard etc.) The native game runs about 10 times faster than on the emulator

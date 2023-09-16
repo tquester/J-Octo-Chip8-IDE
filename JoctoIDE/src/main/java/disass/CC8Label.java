@@ -1,5 +1,6 @@
 package disass;
 
+import java.util.ArrayList;
 
 public class CC8Label {
 	static int labelNr=0;
@@ -12,6 +13,28 @@ public class CC8Label {
 	public int				mEnd=0;
 	public int 				mItemsPerRow=1;
 	public String			mMacro=null;
+	public ArrayList<String>		mVariables=null;
+	
+	public void addVar(String var) {
+		if (mVariables == null) mVariables = new ArrayList<>();
+		if (regFromVar(var) == -1) {
+			mVariables.add(var);
+		}
+			
+	}
+	
+	public int regFromVar(String var) {
+		if (mVariables == null) return -1;
+		int r = -1;
+		for (int i=0;i<mVariables.size();i++) {
+			if (mVariables.get(i).compareTo(var) == 0) {
+				r = i;
+				break;
+			}
+		}
+		return r;
+			
+	}
 	
 	public CC8Label() {
 		mNr = labelNr++;

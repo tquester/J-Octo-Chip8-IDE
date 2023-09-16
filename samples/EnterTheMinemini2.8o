@@ -7,6 +7,18 @@
             }
 :const DEBUG 1
 
+:struct MinerData {
+		xdir				# Direction 1 = right, -1 = left
+		x					# Miners x 
+		y					# Miners y 
+		jumping				# Jump status
+		iminer				# miner Frame
+		diminer				# Frame direction
+}
+
+
+
+
 : tinytext
 : enterTheMine  tinytext8 "Enter the mine#"
 : mariowashere2 tinytext8 "Mario was here!#"
@@ -71,11 +83,27 @@
 :alias frameDirection vb
 :alias input ve
 
+
 ####################################################################################
 ## Init a spite structure for an enemy. The Enemy is made up of a couple of sprites
 ## which are moved by dx/dy and each step and is using maxframe sprites. At the end
 ## of the frames, the direction is reversed
 ####################################################################################
+
+:struct EnemyData {
+		x			# x coordinate
+		y			# y coordinate
+		miny		# left bounce
+		maxy		# top bounce
+		dx			# movement x
+		dy			# movement y
+		first		# first sprite = 1, existing sprite = 0
+		frame		# current frame
+		maxframe 	# max frame
+		minx		# right bounds
+		maxx		# bottom bounds
+		frameDir	# Frame direction
+}
 
 :macro initsprite _adr _x _y _miny _maxy _dx _dy _first _frame _maxframe _minx _maxx {
               v0 := _x
@@ -135,21 +163,21 @@
             }
 
 : spriteAnimateCoordinates
-            y += directionY
-            x += directionX
-            if directionY != 0 begin
-              if y > maxy then directionY := -1
-              if y < miny then directionY := 1
+            EnemyData.y += EnemyData.dy
+            EnemyData.x += EnemyData.dx
+            if EnemyData.dy != 0 begin
+              if EnemyData.y > EnemyData.maxy then EnemyData.dy := -1
+              if EnemyData.y < EnemyData.miny then EnemyData.dy := 1
             end
-            if directionX != 0 begin
-              if x < minx then directionX := 1
-              if x > maxx then directionX := -1
+            if EnemyData.dx != 0 begin
+              if EnemyData.x < EnemyData.minx then EnemyData.dx := 1
+              if EnemyData.x > EnemyData.maxx then EnemyData.dx := -1
             end
 # go to next sprite
-            spriteindex += frameDirection
-            if spriteindex == 255 then reverseFrameDirection
-            if spriteindex > maxSpriteindex then reverseFrameDirection
-            v6 := 1
+            EnemyData.frame += frameDirection
+            if EnemyData.frame == 255 then reverseFrameDirection
+            if EnemyData.frame > maxSpriteindex then reverseFrameDirection
+            EnemyData.first := 1
             return
 : reverseFrameDirection
             vf := frameDirection
@@ -164,7 +192,7 @@
               i := spriteadr
               load vb                                                 # v0..v7 now contain amoebetrons data
 # clear amoebetron only if not the first one
-              if v6 == 1 then drawfn
+              if EnemyData.first == 1 then drawfn
 # move and reverse direction
               spriteAnimateCoordinates
               drawfn
@@ -205,20 +233,7 @@
 ## Draw Scene 1
 #####################################################################################################
 
-:struct EnemyData {
-		x			# x coordinate
-		y			# y coordinate
-		minx		# left bounce
-		miny		# top bounce
-		dx			# movement x
-		dy			# movement y
-		start		# start frame
-		frame		# current frame
-		maxframe 	# max frame
-		maxx		# right bounds
-		maxy		# bottom bounds
-		frameDir	# Frame direction
-}
+
 
 : scene1sprite1
             50                                                        # x
@@ -1201,6 +1216,8 @@
 
 : dot
             0x01
+
+
 
 
 

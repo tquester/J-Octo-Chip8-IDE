@@ -10,6 +10,8 @@ public enum C8LabelType {
 	ASCII,				// Ascii characters
 	LETTERS,
 	HEX,
-	STRINGMODE;
+	STRINGMODE,
+	STRUCT
+	;
 };
 

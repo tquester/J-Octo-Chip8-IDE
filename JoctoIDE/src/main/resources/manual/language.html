@@ -2,11 +2,193 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-<meta content="text/html; charset=utf-8" http-equiv="Content-Type" x-undefined="" />
+<meta content="de" http-equiv="Content-Language" />
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
 <title>Ohne_Titel_1</title>
+<style type="text/css">
+.auto-style1 {
+	margin-left: 40px;
+}
+.CodeFont {
+	font-family: "Courier New", Courier, monospace;
+}
+.Code {
+	border-style: solid;
+	border-width: 1px;
+	background-color: #C0C0C0;
+}
+</style>
 </head>
 
 <body>
+
+<h1>Registers</h1>
+<p>There are 16 registers, v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, va, vb, vc, 
+vd, ve, vf. vf is a special register, it is automatically set by addition, 
+subtraction and shift operations.</p>
+<h2>Assigments</h2>
+<p>v1 and v2 stand for any register v0, v1, v2, ... vf<br />
+1 stands for any number between 0 and 255 or -127 to 127<br />
+123 stands for any number between 0 and 4095</p>
+<table style="width: 100%">
+	<tr>
+		<td>Octo</td>
+		<td>Chipper</td>
+	</tr>
+	<tr>
+		<td>v1 := 1</td>
+		<td>ld v1, 1</td>
+	</tr>
+	<tr>
+		<td>v1 := v2</td>
+		<td>ld v1, v2</td>
+	</tr>
+	<tr>
+		<td>i := 123</td>
+		<td>ld i, 123</td>
+	</tr>
+</table>
+<h2>Math</h2>
+<table style="width: 100%">
+	<tr>
+		<td>v1 += 1</td>
+		<td>add v1, 1</td>
+		<td>v1 = v1 + 1</td>
+	</tr>
+	<tr>
+		<td>v1 += v2</td>
+		<td>add v1, v2</td>
+		<td>v1 = v1 + v2, vf = overflow</td>
+	</tr>
+	<tr>
+		<td>v1 -= 1</td>
+		<td>sub v1, 1</td>
+		<td>v1 = v1 - 1</td>
+	</tr>
+	<tr>
+		<td>v1 -= v2</td>
+		<td>sub v1, v2</td>
+		<td>v1 = v1-v2, vf = overflow</td>
+	</tr>
+	<tr>
+		<td>v1 =- v2</td>
+		<td>sbn v1, v2</td>
+		<td>v1 = v2-v1, vf = overflow</td>
+	</tr>
+	<tr>
+		<td>v1 &amp;= v2</td>
+		<td>and v1, v2</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>v1 |= v2</td>
+		<td>or v1, v2</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>v1 ^= v2</td>
+		<td>xor v1, v2</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>v1 &gt;&gt;= v2</td>
+		<td>shr v1, v2</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>v1 &lt;&lt;= v2</td>
+		<td>shl v1, v2</td>
+		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td>i += v1</td>
+		<td>add i, v1</td>
+		<td>add register to i</td>
+	</tr>
+</table>
+<p>Loading and saving registers to memory</p>
+<h1>Alias</h1>
+<p>It is not easy to understand a code if you are working with v0..vf the 
+compatible way to replace registers with names is :alias</p>
+<table class="Code" style="width: 100%">
+	<tr>
+		<td><span class="CodeFont">:alias x v0 <br>
+		:alias y v1 <br>
+		sprite x y</span></td>
+	</tr>
+</table>
+<p>Alias in j-octo is simply a token replace, you also can write</p>
+<table class="Code" style="width: 100%">
+	<tr>
+		<td><span class="CodeFont">:alias goto jump<br>
+		goto main </span></td>
+	</tr>
+</table>
+<p>However this will be incompatible with other octo compilers</p>
+<h1>Structs (j-octo)</h1>
+<p>j-octo supports structs</p>
+<table class="Code" style="width: 100%">
+	<tr>
+		<td><span class="CodeFont">:struct Coordinates {<br />
+&nbsp;&nbsp; x # v0<br />
+&nbsp;&nbsp; y # v1<br />
+		}<br />
+		<br />
+		.... <br />
+		<br />
+&nbsp;&nbsp; sprite Coordinates.x Coordinates.y 8</span></td>
+	</tr>
+</table>
+<p>A struct does not by itself represent a memory block where data is stored, 
+because the chip8 assembly language does not support this, instead it is an 
+allias for the registers, you can define up to 15 variables in a struct and use 
+them like local variables. If you want to save and load the data, use .bytes, 
+save and load</p>
+<table class="Code" style="width: 100%">
+	<tr>
+		<td><span class="CodeFont">:struct Coordinates {<br />
+&nbsp;&nbsp; x # v0<br />
+&nbsp;&nbsp; y # v1<br />
+		}<br />
+		<br />
+		: saveData<br />
+&nbsp;&nbsp;&nbsp; Coordinates.byte<br />
+		: sprite1 <br />
+&nbsp;&nbsp;&nbsp; Coordinates.byte<br />
+		<br />
+		....<br />
+		<br />
+		: foo<br />
+&nbsp; i := saveData<br />
+&nbsp; save Coordinates&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; # save 
+		registers we modfy in sub routine<br />
+&nbsp; ...<br />
+&nbsp; i := sprite1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+		# do something with our data<br />
+&nbsp; load Coordinates<br />
+&nbsp; sprite Coordinates.x Coordinates.y 8<br />
+&nbsp; ...<br />
+&nbsp; i := saveData&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+		# restore registers we destroyed<br />
+&nbsp; load Coordinates<br />
+&nbsp; return<br />
+		<br />
+		</span></td>
+	</tr>
+</table>
+<p>Coordinates.bytes is the same as writing 0x00 0x00, e.g. two zeros</p>
+<p>The struct itself compiles into the last register, in this case "load 
+Coordinates" is the same as "load v1". If you later need new variables in your 
+structure, simply add it to the struct. The data allocation, save and load will 
+automaticylly modify</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p class="auto-style1">&nbsp;</p>
+<p class="auto-style1">&nbsp;</p>
+<p class="auto-style1">&nbsp;</p>
+<p class="auto-style1">&nbsp;</p>
+<p class="auto-style1">&nbsp;</p>
+<p>&nbsp;</p>
 
 </body>
 

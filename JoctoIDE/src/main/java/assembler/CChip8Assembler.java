@@ -330,6 +330,59 @@ public class CChip8Assembler {
 	public String getErrors() {
 		return mSBErrors == null ? "" : mSBErrors.toString();
 	}
+	
+	boolean nextToken(CToken token) {
+		boolean r = mTokenizer.getToken(token);
+		if (token.token == Token.literal) {
+			CC8Label label = mLabels.get(token.literal);
+			if (label != null) {
+				if (label.mLabelType == C8LabelType.STRUCT) {
+					r = mTokenizer.getToken(token);
+					if (token.token != Token.dot) {
+						mTokenizer.ungetToken(token);
+						if (label.mVariables != null)
+							token.token = regFromNr(label.mVariables.size());
+					} else {
+						r = mTokenizer.getToken(token, false);
+						int regnr = label.regFromVar(token.literal);
+						if (regnr == -1) {
+							if (token.token == Token.octobyte && label.mVariables != null) {
+								token.token = Token.internaldefs;
+								token.iliteral = label.mVariables.size();
+								
+							} else
+								error("Undefined "+token.literal+" in struct "+label.mName);
+						} else {
+							token.token = regFromNr(regnr);
+						}
+					}
+				}
+			}
+		}
+		return r;
+	}
+
+	private Token regFromNr(int regnr) {
+		switch(regnr) {
+		case 0: return Token.v0;
+		case 1: return Token.v1; 	
+		case 2: return Token.v2; 	
+		case 3: return Token.v3; 	
+		case 4: return Token.v4; 	
+		case 5: return Token.v5; 	
+		case 6: return Token.v6; 	
+		case 7: return Token.v7; 	
+		case 8: return Token.v8; 	
+		case 9: return Token.v9; 	
+		case 10: return Token.va; 	
+		case 11: return Token.vb; 	
+		case 12: return Token.vc; 	
+		case 13: return Token.vd; 	
+		case 14: return Token.ve; 	
+		case 15: return Token.vf; 	
+	}
+	return Token.none;
+	}
 
 	public void Assemble(String code, String filename) {
 		try {
@@ -389,7 +442,7 @@ public class CChip8Assembler {
 
 	private void assembleLine() {
 		try {
-			while (mTokenizer.getToken(token)) {
+			while (nextToken(token)) {
 				if (token.token == null)
 					continue;
 //				 System.out.println(mTokenizer.toString());
@@ -417,7 +470,7 @@ public class CChip8Assembler {
 		CBeginEndData beginEndData;
 
 		if (mOptAnnotateAllLines) {
-			if (token.token != Token.comment && token.token != Token.alias && token.token != Token.macro)
+			if (token.token != Token.comment && token.token != Token.alias && token.token != Token.macro && token.token != Token.newline)
 				writeSourceLine();
 		}
 		switch (token.token) {
@@ -439,11 +492,11 @@ public class CChip8Assembler {
 				error("Expected: Number");
 			break;
 		case ld:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			token1 = token.token;
 			reg1 = regNr(token1);
 			expect(Token.comma);
-			// mTokenizer.getToken(token);
+			// nextToken(token);
 			expr(token);
 			token2 = token.token;
 			reg2 = regNr(token2);
@@ -496,7 +549,7 @@ public class CChip8Assembler {
 			writeCode(0x00, 0, 0xFB);
 			break;
 		case scd:
-			// mTokenizer.getToken(token);
+			// nextToken(token);
 			expr(token);
 			if (token.token != Token.number) {
 				error("Expected number");
@@ -523,7 +576,7 @@ public class CChip8Assembler {
 				writeCode(0x01, labelTarget(token.literal)); // 1nnn JP
 			} else if (token.token == Token.v0) {
 				expect(Token.comma);
-				mTokenizer.getToken(token);
+				nextToken(token);
 				if (token.token == Token.literal) {
 					writeCode(0x0b, labelTarget(token.literal)); // bnnn JP nnn+V0
 				} else if (token.token == Token.number) {
@@ -555,7 +608,7 @@ public class CChip8Assembler {
 //    3xkk - SE Vx, byte
 //     5xy0 - SE Vx, Vy
 
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (reg1 == -1) {
 					error("Expected Register");
@@ -563,7 +616,7 @@ public class CChip8Assembler {
 				}
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					if (token.token == Token.number) {
 						writeCode(0x03, reg1, token.iliteral); // 3xkk SE Vx, kk
 					} else {
@@ -583,7 +636,7 @@ public class CChip8Assembler {
 		case sne:
 //    4xkk - SNE Vx, byte
 //    9xy0 - SNE Vx, Vy
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (reg1 == -1) {
 					error("Expected Register");
@@ -591,7 +644,7 @@ public class CChip8Assembler {
 				}
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 
 					if (token.token == Token.number) {
 						writeCode(0x04, reg1, token.iliteral); // 9xkk SNE Vx, kk
@@ -612,12 +665,12 @@ public class CChip8Assembler {
 			// 8xy4 - ADD Vx, Vy
 			// 7xkk - ADD Vx, byte
 			// Fx1E - ADD I, Vx
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (!expect(Token.comma))
 					break;
 				if (token.token == Token.i) {
-					mTokenizer.getToken(token);
+					nextToken(token);
 					reg1 = regNr(token.token);
 					if (reg1 == -1) {
 						error("Expected expression");
@@ -628,7 +681,7 @@ public class CChip8Assembler {
 					writeCode(0xF, reg1, 0x1e);
 
 				} else {
-					if (mTokenizer.getToken(token)) {
+					if (nextToken(token)) {
 						if (token.token == Token.number) {
 							writeCode(0x07, reg1, token.iliteral); // 7xkk ADD Vx,kk
 						} else {
@@ -650,11 +703,11 @@ public class CChip8Assembler {
 			}
 			break;
 		case and:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					reg2 = regNr(token.token);
 					writeCode(0x08, reg1, reg2, 2); // 8xy2 AND Vx, Vy
 				} else {
@@ -667,11 +720,11 @@ public class CChip8Assembler {
 			}
 			break;
 		case or:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					reg2 = regNr(token.token);
 					writeCode(0x08, reg1, reg2, 2); // 8xy1 OR Vx, Vy
 				} else {
@@ -684,11 +737,11 @@ public class CChip8Assembler {
 			}
 			break;
 		case xor:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					reg2 = regNr(token.token);
 					writeCode(0x08, reg1, reg2, 2); // 8xy3 XOR Vx, Vy
 				} else {
@@ -701,11 +754,11 @@ public class CChip8Assembler {
 			}
 			break;
 		case sub:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					reg2 = regNr(token.token);
 					writeCode(0x08, reg1, reg2, 5); // 8xy5 SUB Vx, Vy
 				} else {
@@ -718,11 +771,11 @@ public class CChip8Assembler {
 			}
 			break;
 		case subn:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				if (!expect(Token.comma))
 					break;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					reg2 = regNr(token.token);
 					writeCode(0x08, reg1, reg2, 7); // 8xy7 SUBN Vx, Vy
 				} else {
@@ -735,12 +788,12 @@ public class CChip8Assembler {
 			}
 			break;
 		case shl:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				reg2 = reg1;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					if (token.token == Token.comma) {
-						if (mTokenizer.getToken(token)) {
+						if (nextToken(token)) {
 
 							reg2 = regNr(token.token);
 						}
@@ -755,12 +808,12 @@ public class CChip8Assembler {
 			}
 			break;
 		case shr:
-			if (mTokenizer.getToken(token)) {
+			if (nextToken(token)) {
 				reg1 = regNr(token.token);
 				reg2 = reg1;
-				if (mTokenizer.getToken(token)) {
+				if (nextToken(token)) {
 					if (token.token == Token.comma) {
-						if (mTokenizer.getToken(token)) {
+						if (nextToken(token)) {
 
 							reg2 = regNr(token.token);
 						}
@@ -789,13 +842,13 @@ public class CChip8Assembler {
 			writeCode(0x0e, reg1, 0xA1);
 			break;
 		case db:
-			while (mTokenizer.getToken(token)) {
+			while (nextToken(token)) {
 				if (token.token != Token.number) {
 					mTokenizer.ungetToken(token);
 					break;
 				}
 				mCode[pc++] = (byte) (token.iliteral & 0xff);
-				mTokenizer.getToken(token);
+				nextToken(token);
 				if (token.token != Token.comma) {
 					mTokenizer.ungetToken(token);
 					break;
@@ -830,30 +883,30 @@ public class CChip8Assembler {
 			break;
 		case delay: // Fx07 - LD Vx, DT
 			expect(Token.assign);
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			writeCode(0xf, reg1, 0x15);
 			break;
 		case buzz: // Fx07 - LD Vx, DT
 			expect(Token.assign);
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			writeCode(0xf, reg1, 0x18);
 			break;
 
 		case bcd:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			writeCode(0xf, reg1, 0x33);
 			break;
 		case load:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			writeCode(0xf, reg1, 0x65);
 			break;
 
 		case save:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			writeCode(0xf, reg1, 0x55);
 			break;
@@ -882,7 +935,7 @@ public class CChip8Assembler {
 		}
 
 		case rnd: // Cxkk - RND Vx, byte
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			expect(Token.comma);
 			expr(token);
@@ -901,13 +954,13 @@ public class CChip8Assembler {
 			if (!mOptAnnotateAllLines)
 				writeSourceLine();
 			CToken tokenb = new CToken();
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			if (reg1 == -1) {
 				error("Expected register");
 				break;
 			}
-			mTokenizer.getToken(token);
+			nextToken(token);
 			Token compareToken = token.token;
 			if (token.token == Token.key) {
 				compareToken = Token.key;
@@ -918,7 +971,7 @@ public class CChip8Assembler {
 			} else {
 				expr(token);
 			}
-			mTokenizer.getToken(tokenb);
+			nextToken(tokenb);
 
 			beginEndData = null;
 			switch (tokenb.token) {
@@ -949,6 +1002,12 @@ public class CChip8Assembler {
 		case octobyte:
 			compileByte(token);
 			break;
+		case internaldefs:
+		{
+			for (int i=0;i<token.iliteral;i++) {
+				mCode[pc++] = 0;
+			}
+		}
 		case literal:
 			compileLiteral(token);
 			break;
@@ -968,7 +1027,7 @@ public class CChip8Assembler {
 		}
 			break;
 		case octoconst: {
-			mTokenizer.getToken(token);
+			nextToken(token);
 			if (!check(token, Token.literal, "Name"))
 				break;
 			astr = token.literal;
@@ -984,13 +1043,13 @@ public class CChip8Assembler {
 
 		case octowhile: {
 			CToken tokenb = new CToken();
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg1 = regNr(token.token);
 			if (reg1 == -1) {
 				error("Expected register");
 				break;
 			}
-			mTokenizer.getToken(token);
+			nextToken(token);
 			Token compareToken = token.token;
 			expr(token);
 			compileWhile(reg1, token, compareToken);
@@ -1029,7 +1088,7 @@ public class CChip8Assembler {
 			compileFor(token);
 			break;
 		case dotconst:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			if (token.token != Token.literal) {
 				error("Expected name");
 				break;
@@ -1082,7 +1141,7 @@ public class CChip8Assembler {
 				mDebugEntries.put(pc, entry);
 			}
 			while (mTokenizer.hasData()) {
-				mTokenizer.getToken(token);
+				nextToken(token);
 				if (token.token == Token.newline) break;
 				if (token.token == Token.semikolon) break;
 				int regnr = regNr(token.token);
@@ -1099,6 +1158,9 @@ public class CChip8Assembler {
 			
 			break;
 		}
+		case dotStruct:
+			compileStruct(token);
+			break;
 			
 			
 
@@ -1110,6 +1172,37 @@ public class CChip8Assembler {
 			error("Undef token " + token.toString());
 		}
 			
+	}
+
+	private void compileStruct(CToken token) {
+		mTokenizer.getToken(token);
+		if (token.token != Token.literal) {
+			error("Expected name");
+			return;
+		}
+		expect(Token.curlybracketopen);
+		CC8Label label = mLabels.get(token.literal);
+		if (label == null) {
+			label = new CC8Label();
+			label.mName = token.literal;
+			label.mLabelType = C8LabelType.STRUCT;
+			mLabels.put(token.literal, label);
+		}
+		
+		
+		
+		while (mTokenizer.hasData()) {
+			mTokenizer.getToken(token, false);
+			if (token.token == Token.curlybracketclose) break;
+			if (token.token == Token.literal) {
+				label.addVar(token.literal);
+			} else 	if (!(token.token == Token.comment || token.token == Token.newline))
+			{
+				error("Expected name");
+				return;
+			}
+		}
+ 		
 	}
 
 	private boolean check(CToken token, Token expected, String text) {
@@ -1130,11 +1223,11 @@ public class CChip8Assembler {
 		String varname;
 		String alphabet;
 		String macro;
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (!check(token, Token.literal, "Label name"))
 			return;
 		varname = token.literal;
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (!check(token, Token.string, "Alphabet"))
 			return;
 		;
@@ -1191,9 +1284,9 @@ public class CChip8Assembler {
 		case number:
 			return token.iliteral;
 		case bracketopen:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			result = parseCalc(token);
-			mTokenizer.getToken(token);
+			nextToken(token);
 			if (token.token != Token.bracketclose) {
 				error("Expected )");
 			}
@@ -1209,14 +1302,14 @@ public class CChip8Assembler {
 		BinaryFunction binaryFunction;
 		unaryFunction = mMapUnaryFunctions.get(token.token);
 		if (unaryFunction != null) {
-			mTokenizer.getToken(token);
+			nextToken(token);
 			return unaryFunction.calc(compileCalcTerminal(token));
 		}
 		double t = compileCalcTerminal(token);
-		mTokenizer.getToken(token);
+		nextToken(token);
 		binaryFunction = mMapBinaryFunctions.get(token.token);
 		if (binaryFunction != null) {
-			mTokenizer.getToken(token);
+			nextToken(token);
 			t = binaryFunction.calc(t, parseCalc(token));
 		} else
 			mTokenizer.ungetToken(token);
@@ -1230,7 +1323,7 @@ public class CChip8Assembler {
 
 	private void compileCalc(CToken token) {
 
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (token.token != Token.literal) {
 			error("Expected name");
 			return;
@@ -1239,7 +1332,7 @@ public class CChip8Assembler {
 		label.mName = token.literal;
 		mLabels.put(token.literal, label);
 		expect(Token.curlybracketopen);
-		mTokenizer.getToken(token);
+		nextToken(token);
 
 		double result = parseCalc(token);
 		label.mTarget = (int) result;
@@ -1251,7 +1344,7 @@ public class CChip8Assembler {
 
 	private void compileByte(CToken token2) {
 		expect(Token.curlybracketopen);
-		mTokenizer.getToken(token);
+		nextToken(token);
 		double result = parseCalc(token);
 		mCode[pc++] = (byte) result;
 		expect(Token.curlybracketclose);
@@ -1286,7 +1379,7 @@ public class CChip8Assembler {
 	}
 
 	private void compileString(CC8Label label) {
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (!check(token, Token.string, "Text"))
 			return;
 		CTokenizer saveTokenizer = mTokenizer;
@@ -1319,8 +1412,8 @@ public class CChip8Assembler {
 		CTokenizer tempTokenizer = new CTokenizer();
 		tempTokenizer.mBaseline = mTokenizer.mLine;
 		for (int i = 0; i < macroData.parameters.size(); i++) {
-			// mTokenizer.getToken(token);
-			mTokenizer.getToken(token);
+			// nextToken(token);
+			nextToken(token);
 			// expr(token);
 			tempTokenizer.replace(macroData.parameters.get(i), token.literal);
 			System.out.println(
@@ -1352,14 +1445,14 @@ public class CChip8Assembler {
 
 	private void compileMacro() {
 		CMacroData macroData = new CMacroData();
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (token.token != Token.literal) {
 			error("Expcted macro name");
 			return;
 		}
 		macroData.name = token.literal;
 		while (mTokenizer.hasData()) {
-			mTokenizer.getToken(token);
+			nextToken(token);
 			if (token.token == Token.curlybracketopen) {
 				StringBuilder sb = new StringBuilder();
 				int level = 0;
@@ -1670,7 +1763,7 @@ public class CChip8Assembler {
 	private void compileVx(CToken token) {
 		int reg1 = regNr(token.token);
 		int reg2;
-		mTokenizer.getToken(token);
+		nextToken(token);
 		switch (token.token) {
 		case assign:
 			expr(token);
@@ -1717,7 +1810,7 @@ public class CChip8Assembler {
 				writeCode(0x7, reg1, (-token.iliteral) & 0xff); // 7xkk - SUB Vx, Vy (add but negative value)
 			break;
 		case assignminus:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg2 = regNr(token.token);
 			if (reg2 != -1)
 				writeCode(0x8, reg1, reg2, 7); // 8xy7 - SUBN Vx, Vy
@@ -1725,7 +1818,7 @@ public class CChip8Assembler {
 				error("Ecxpected Register v0..vf");
 			break;
 		case andassign:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg2 = regNr(token.token);
 			if (reg2 != -1)
 				writeCode(0x8, reg1, reg2, 2); // 8xy2 - AND Vx, Vy
@@ -1733,7 +1826,7 @@ public class CChip8Assembler {
 				error("Ecxpected Register v0..vf");
 			break;
 		case orassign:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg2 = regNr(token.token);
 			if (reg2 != -1)
 				writeCode(0x8, reg1, reg2, 1); // 8xy1 - OR Vx, Vy
@@ -1742,7 +1835,7 @@ public class CChip8Assembler {
 			break;
 
 		case xorassign:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg2 = regNr(token.token);
 			if (reg2 != -1)
 				writeCode(0x8, reg1, reg2, 3); // 8xy3 - XOR Vx, Vy
@@ -1751,7 +1844,7 @@ public class CChip8Assembler {
 			break;
 
 		case shrassign:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg2 = regNr(token.token);
 			if (reg2 != -1)
 				writeCode(0x8, reg1, reg2, 6); // 8xy6 - SHR Vx {, Vy}
@@ -1760,7 +1853,7 @@ public class CChip8Assembler {
 			break;
 
 		case shlassign:
-			mTokenizer.getToken(token);
+			nextToken(token);
 			reg2 = regNr(token.token);
 			if (reg2 != -1)
 				writeCode(0x8, reg1, reg2, 0xE); // 8xyE - SHL Vx {, Vy}
@@ -1774,14 +1867,14 @@ public class CChip8Assembler {
 
 	private void compileFor(CToken token) {
 		CBeginEndData forData = new CBeginEndData();
-		mTokenizer.getToken(token);
+		nextToken(token);
 		int regnr = regNr(token.token);
 		if (regnr == -1) {
 			error("Expected register");
 		}
 		forData.forRegister = regnr;
 		expect(Token.assign);
-		// mTokenizer.getToken(token);
+		// nextToken(token);
 		expr(token);
 		// for v0 := 1 to ... or
 		// for v0 := v1 to ... or
@@ -1807,9 +1900,9 @@ public class CChip8Assembler {
 				return;
 			}
 		}
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (token.token == Token.octostep) {
-			mTokenizer.getToken(token);
+			nextToken(token);
 			if (token.token == Token.number) {
 				forData.forStepNr = token.iliteral;
 				forData.forStepReg = -1;
@@ -1826,7 +1919,7 @@ public class CChip8Assembler {
 			forData.forStepNr = 1;
 		}
 		forData.pc = pc;
-		mTokenizer.getToken(token);
+		nextToken(token);
 		if (token.token == Token.octobegin) {
 			mBeginEndStack.push(forData);
 		} else {
@@ -1857,7 +1950,7 @@ public class CChip8Assembler {
 	// i := bighex vx
 	private void compileI(CToken token) {
 		int reg1;
-		mTokenizer.getToken(token);
+		nextToken(token);
 		switch (token.token) {
 		case assign: // Annn - LD I, addr
 			expr(token);
@@ -1866,12 +1959,12 @@ public class CChip8Assembler {
 				writeCode(0xA, token.iliteral);
 				break;
 			case hex:
-				mTokenizer.getToken(token);
+				nextToken(token);
 				reg1 = regNr(token.token);
 				writeCode(0xf, reg1, 0x29);
 				break;
 			case bighex:
-				mTokenizer.getToken(token);
+				nextToken(token);
 				reg1 = regNr(token.token);
 				writeCode(0xf, reg1, 0x30);
 				break;
@@ -1881,7 +1974,7 @@ public class CChip8Assembler {
 			}
 			break;
 		case plusassign: // Fx1E - ADD I, Vx
-			mTokenizer.getToken(token);
+			nextToken(token);
 			int ireg = regNr(token.token);
 			if (ireg == -1) {
 				error("Expected register");
@@ -1903,7 +1996,7 @@ public class CChip8Assembler {
 	 */
 
 	private void expr(CToken token) {
-		if (mTokenizer.getToken(token)) {
+		if (nextToken(token)) {
 
 			token.register = regNr(token.token);
 
@@ -2044,7 +2137,7 @@ public class CChip8Assembler {
 
 	private void match(CToken token, Token matchtoken) {
 		if (token.token == matchtoken) {
-			mTokenizer.getToken(token);
+			nextToken(token);
 		} else {
 			error("Expected " + matchtoken.toString());
 		}
@@ -2061,7 +2154,7 @@ public class CChip8Assembler {
 
 	private int nextRegister(CToken token, boolean force) {
 		int r = -1;
-		if (mTokenizer.getToken(token)) {
+		if (nextToken(token)) {
 			r = regNr(token.token);
 		}
 		if (r == -1 && force) {
@@ -2138,7 +2231,7 @@ public class CChip8Assembler {
 	}
 
 	private boolean expect(Token expected, CToken token) {
-		if (mTokenizer.getToken(token)) {
+		if (nextToken(token)) {
 			if (token.token != expected) {
 				error("Erwarte " + expected.toString());
 				return false;
@@ -2150,7 +2243,7 @@ public class CChip8Assembler {
 
 	private boolean expect(Token expected) {
 		CToken token = new CToken();
-		if (mTokenizer.getToken(token)) {
+		if (nextToken(token)) {
 			if (token.token != expected) {
 				error("Erwarte " + expected.toString());
 				return false;

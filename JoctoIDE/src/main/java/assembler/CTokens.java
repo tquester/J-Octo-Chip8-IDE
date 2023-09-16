@@ -164,6 +164,7 @@ public class CTokens {
 	        {":macro", Token.macro},
 	        {":calc", Token.calc},
 	        {":byte", Token.octobyte},
+	        {"byte", Token.octobyte},
 	        {":call", Token.call},
 	        {":stringmode", Token.stringmode},
 	        {":assert", Token.octoassert},
@@ -203,6 +204,7 @@ public class CTokens {
 	        {"data", Token.data},
 	        {"code", Token.code},
 	        {":log", Token.dotlog },
+	        {":struct", Token.dotStruct },
 	        
 	        
 	        

@@ -660,7 +660,12 @@ public class CDialogSpriteEditor extends Dialog {
 	}
 
 	int getSpriteByte(int pos) {
-		return pos < mSpriteData.length ? mSpriteData[pos] : 0;
+		try {
+			return pos < mSpriteData.length ? mSpriteData[pos] : 0;
+		} catch(Exception ex) {
+			ex.printStackTrace();
+			return 0;
+		}
 	}
 	
 	int getSpriteWord(int pos) {

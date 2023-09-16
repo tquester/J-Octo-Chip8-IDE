@@ -108,6 +108,9 @@ public class CTokenizer {
 			token.token = Token.newline;
 			myassert(token.token != null);
 			return true;
+		case '.':
+			token.token = Token.dot;
+			return true;
 		case '#':
 			token.literal = skipToEndOfLine();
 			token.token = Token.comment;
@@ -209,7 +212,7 @@ public class CTokenizer {
 					mPos--;
 					break;
 				}
-				if (c == '#' || c == ';' || c == ',') {
+				if (c == '#' || c == ';' || c == ',' || c == '.') {
 					mPos--;
 					break;
 				}

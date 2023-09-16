@@ -95,8 +95,9 @@ public class CDialogIDE extends Dialog {
 
 	Stack<Integer> mLineNumberStack = new Stack<>();
 	private Stack<String> mStackUndo = new Stack<>();
-	protected boolean mResizing=false;
+	protected boolean mResizing = false;
 	protected int mResizeBase;
+	private boolean mEditorDirty = true;
 
 	/**
 	 * Create the dialog.
@@ -143,11 +144,11 @@ public class CDialogIDE extends Dialog {
 	 * Create contents of the dialog.
 	 */
 	private void createContents() {
-	      Display display = getParent().getDisplay();
-	     shlJoctoIde = new Shell(display);
+		Display display = getParent().getDisplay();
+		shlJoctoIde = new Shell(display);
 
-		//shlJoctoIde = new Shell(getParent(), getStyle());
-		//shlJoctoIde = getParent();
+		// shlJoctoIde = new Shell(getParent(), getStyle());
+		// shlJoctoIde = getParent();
 		shlJoctoIde.addControlListener(new ControlAdapter() {
 			@Override
 			public void controlResized(ControlEvent e) {
@@ -157,21 +158,21 @@ public class CDialogIDE extends Dialog {
 						Rectangle rectSplit = mBarErrors.getBounds();
 						double v = rect.height;
 						v *= mSplitError;
-						//mBarErrors.setBounds(rectSplit.x,(int) v, rectSplit.width, rectSplit.height);
+						// mBarErrors.setBounds(rectSplit.x,(int) v, rectSplit.width, rectSplit.height);
 					}
-					
+
 				}
 				onResize();
 			}
 		});
-		
+
 		shlJoctoIde.addListener(SWT.Traverse, new Listener() {
-	          public void handleEvent(Event e) {
-	            if (e.detail == SWT.TRAVERSE_ESCAPE) {
-	              e.doit = false;
-	            }
-	          }
-	        });
+			public void handleEvent(Event e) {
+				if (e.detail == SWT.TRAVERSE_ESCAPE) {
+					e.doit = false;
+				}
+			}
+		});
 //		shlJoctoIde = getParent();
 		shlJoctoIde.setSize(931, 597);
 		shlJoctoIde.setText("J-octo IDE");
@@ -190,6 +191,12 @@ public class CDialogIDE extends Dialog {
 		btnNewButton.setText("Sprite Editor");
 
 		Button btnNewButton_1 = new Button(composite, SWT.NONE);
+		btnNewButton_1.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onTileEditor();
+			}
+		});
 		btnNewButton_1.setBounds(733, 10, 75, 25);
 		btnNewButton_1.setText("Tile Editor");
 
@@ -300,7 +307,7 @@ public class CDialogIDE extends Dialog {
 		mBarFiles = new Composite(shlJoctoIde, SWT.NONE);
 		mBarFiles.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
 		mBarFiles.setBounds(10, 215, 159, 8);
-		
+
 		mBarFiles.addMouseMoveListener(new MouseMoveListener() {
 
 			public void mouseMove(MouseEvent e) {
@@ -313,26 +320,24 @@ public class CDialogIDE extends Dialog {
 			}
 		});
 		mBarFiles.addMouseListener(new MouseAdapter() {
-			
+
 			@Override
 			public void mouseDown(MouseEvent e) {
 				Rectangle rect = mBarFiles.getBounds();
 				mResizeBase = rect.y;
-				mResizing=true;
+				mResizing = true;
 			}
+
 			@Override
 			public void mouseUp(MouseEvent e) {
-				mResizing=false;
+				mResizing = false;
 			}
 		});
-		
-		
-		
 
 		mBarErrors = new Composite(shlJoctoIde, SWT.NONE);
 		mBarErrors.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
 		mBarErrors.setBounds(175, 400, 707, 8);
-		
+
 		mBarErrors.addMouseMoveListener(new MouseMoveListener() {
 
 			public void mouseMove(MouseEvent e) {
@@ -342,18 +347,17 @@ public class CDialogIDE extends Dialog {
 					Rectangle rectText = mTextSource.getBounds();
 					Rectangle rectBarErrors = mBarErrors.getBounds();
 					Rectangle rect = shlJoctoIde.getBounds();
-					int top = mResizeBase + e.y; 
+					int top = mResizeBase + e.y;
 					mTextErrors.setBounds( //
 							rectErrors.x, //
-							top,
-							rect.width - rectErrors.x - 30, //
-							rect.height-top-constErrorSpaceBottom);
-					
+							top, rect.width - rectErrors.x - 30, //
+							rect.height - top - constErrorSpaceBottom);
+
 					top -= 12;
 					mBarErrors.setBounds(//
 							rectErrors.x, //
 							top, //
-							rect.width-rectErrors.x, //
+							rect.width - rectErrors.x, //
 							rectBarErrors.height);
 
 					top -= 8;
@@ -361,31 +365,31 @@ public class CDialogIDE extends Dialog {
 							rectErrors.x, //
 							rectText.y, //
 							rect.width - rectErrors.x - 30, //
-							top-rectText.y);					
-					
-					//onResize();
+							top - rectText.y);
+
+					// onResize();
 				}
 			}
 		});
 		mBarErrors.addMouseListener(new MouseAdapter() {
-			
+
 			@Override
 			public void mouseDown(MouseEvent e) {
 				Rectangle rect = mBarErrors.getBounds();
 				mResizeBase = rect.y;
-				mResizing=true;
+				mResizing = true;
 			}
+
 			@Override
 			public void mouseUp(MouseEvent e) {
-				mResizing=false;
+				mResizing = false;
 			}
 		});
-		
 
 		mBarLeftRight = new Composite(shlJoctoIde, SWT.NONE);
 		mBarLeftRight.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
 		mBarLeftRight.setBounds(175, 57, 5, 495);
-		
+
 		mBarLeftRight.addMouseMoveListener(new MouseMoveListener() {
 
 			public void mouseMove(MouseEvent e) {
@@ -398,22 +402,24 @@ public class CDialogIDE extends Dialog {
 			}
 		});
 		mBarLeftRight.addMouseListener(new MouseAdapter() {
-			
+
 			@Override
 			public void mouseDown(MouseEvent e) {
 				Rectangle rect = mBarLeftRight.getBounds();
 				mResizeBase = rect.x;
-				mResizing=true;
+				mResizing = true;
 			}
+
 			@Override
 			public void mouseUp(MouseEvent e) {
-				mResizing=false;
+				mResizing = false;
 			}
-		});		
+		});
 
 	}
 
 	protected void onModifyText(ModifyEvent e) {
+		mEditorDirty = true;
 		String text = mTextSource.getText();
 		saveUndo();
 		if (mStackUndo.size() > 30)
@@ -621,8 +627,11 @@ public class CDialogIDE extends Dialog {
 			}
 
 			mLblStatus.setText(String.format("%d/%d", line, pos));
-			styleText(mTextSource.getText());
-			parseFile();
+			if (mEditorDirty) {
+				styleText(mTextSource.getText());
+				parseFile();
+				mEditorDirty = false;
+			}
 			display.timerExec(time, this);
 
 		}
@@ -631,7 +640,7 @@ public class CDialogIDE extends Dialog {
 	private CSearchReplace mSerachReplace;
 	private boolean mTextDirty;
 	private boolean mUndoing = false;
-	private double mSplitError=0;
+	private double mSplitError = 0;
 
 	protected void onEmulator() {
 		CDialogEmulator dlg = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
@@ -741,7 +750,6 @@ public class CDialogIDE extends Dialog {
 
 	}
 
-	
 	protected void OnOptions() {
 		// TODO Auto-generated method stub
 
@@ -874,6 +882,13 @@ public class CDialogIDE extends Dialog {
 
 	}
 
+	protected void onTileEditor() {
+		CDialogTileEditor dlg = new CDialogTileEditor(shlJoctoIde, getStyle());
+		dlg.readSourcefile(mTextSource.getText());
+		dlg.open();
+
+	}
+
 	protected void onSpriteEditor() {
 		CDialogSpriteEditor dlg = new CDialogSpriteEditor(shlJoctoIde, getStyle());
 		dlg.readSourcefile(mTextSource.getText());
@@ -947,8 +962,8 @@ public class CDialogIDE extends Dialog {
 		Rectangle rectBarErrors = mBarErrors.getBounds();
 		Rectangle RectListFiles = mListFiles.getBounds();
 
-		int left = rectBarLeftRight.x+5;
-		int right = rectBarLeftRight.x + rectBarLeftRight.width+5;
+		int left = rectBarLeftRight.x + 5;
+		int right = rectBarLeftRight.x + rectBarLeftRight.width + 5;
 		int leftYSplit = rectBarFiles.y;
 		int rightYSplit = rectBarErrors.y;
 
@@ -976,18 +991,17 @@ public class CDialogIDE extends Dialog {
 				rect.width - rectStatus.x - 10, //
 				rectStatus.height);
 
-		int top = rect.height - rectErrors.height-constErrorSpaceBottom;
+		int top = rect.height - rectErrors.height - constErrorSpaceBottom;
 		mTextErrors.setBounds( //
 				right, //
-				top,
-				rect.width - right - 30, //
+				top, rect.width - right - 30, //
 				rectErrors.height);
 
 		top -= 12;
 		mBarErrors.setBounds(//
 				right, //
 				top, //
-				rect.width-right, //
+				rect.width - right, //
 				rectBarErrors.height);
 
 		top -= 8;
@@ -995,30 +1009,28 @@ public class CDialogIDE extends Dialog {
 				right, //
 				rectText.y, //
 				rect.width - right - 30, //
-				top-rectText.y);
+				top - rectText.y);
 
 		mTextErrors.setBounds( //
 				right, //
-				rect.height - rectErrors.height-constErrorSpaceBottom,
-				rect.width - right - 30, //
+				rect.height - rectErrors.height - constErrorSpaceBottom, rect.width - right - 30, //
 				rectErrors.height);
-		
+
 		mBarLeftRight.setBounds(//
 				rectBarLeftRight.x, //
 				rectBarLeftRight.y, //
 				rectBarLeftRight.width, //
-				rect.height-rectBarLeftRight.y);
-		
+				rect.height - rectBarLeftRight.y);
+
 		mBarFiles.setBounds(//
 				rectBarFiles.x, //
 				rectBarFiles.y, //
-				left-rectBarFiles.x, //
+				left - rectBarFiles.x, //
 				rectBarFiles.height);
-		
-		
+
 		double h = rect.height;
 		double s = rectBarErrors.y;
-		mSplitError = h/s;
+		mSplitError = h / s;
 
 	}
 
@@ -1031,9 +1043,9 @@ public class CDialogIDE extends Dialog {
 		if (mFilename == null)
 			return;
 		Tools.saveTextFile(mTextSource.getText(), mFilename);
-		shlJoctoIde.setText("J-Octo IDE "+mFilename);
+		shlJoctoIde.setText("J-Octo IDE " + mFilename);
 		setAutoload(mFilename);
-		
+
 	}
 
 	protected void onSaveFile() {
@@ -1071,6 +1083,7 @@ public class CDialogIDE extends Dialog {
 			if (text != null) {
 				mTextSource.setText(text);
 				styleText(text);
+				mEditorDirty = false;
 				modifyTitle();
 				mStackUndo.removeAllElements();
 				saveUndo();
@@ -1079,55 +1092,108 @@ public class CDialogIDE extends Dialog {
 	}
 
 	private void styleText(String text) {
+		mEditorDirty = false;
 		ArrayList<StyleRange> styleRanges = new ArrayList<>();
-		CTokenizer tokenizer = new CTokenizer();
-		Color lime = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_RED);
-		Color blue = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_BLUE);
-		Color green = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN);
-		tokenizer.start(text);
-		CToken token = new CToken();
-		StyleRange range;
-		while (tokenizer.hasData()) {
-			tokenizer.getToken(token);
-			if (token.token == null)
-				continue;
-			switch (token.token) {
-			case newline:
-			case literal:
-			case label:
-				break;
-			case comment:
-				range = new StyleRange();
-				range.start = token.pos - 1;
-				range.length = token.literal.length();
-				range.fontStyle = SWT.BOLD;
-				range.foreground = green;
-				styleRanges.add(range);
-				break;
+		try {
+			CTokenizer tokenizer = new CTokenizer();
+			Color lime = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_RED);
+			Color white = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_WHITE);
+			Color blue = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_BLUE);
+			Color green = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN);
+			tokenizer.start(text);
+			int totallen = text.length();
+			int len;
+			int start;
+			CToken token = new CToken();
+			StyleRange range;
+			while (tokenizer.hasData()) {
+				tokenizer.getToken(token);
+				if (token.token == null)
+					continue;
+				switch (token.token) {
+				case newline:
+				case literal:
+				case label:
+					break;
+				case comment:
 
-			case number:
-			case string:
-				range = new StyleRange();
-				range.start = token.pos - 1;
-				range.length = token.literal.length();
-				range.fontStyle = SWT.BOLD;
-				range.foreground = blue;
-				styleRanges.add(range);
-				break;
-			default:
-				range = new StyleRange();
-				range.start = token.pos - 1;
-				range.length = token.literal.length();
-				range.fontStyle = SWT.BOLD;
-				range.foreground = lime;
-				styleRanges.add(range);
-				break;
+					start = token.pos - 1;
+					len = token.literal.length();
+					if (len > 2 && start > 0 && start + len < totallen) {
+						range = new StyleRange(start, len, green, white);
+						// styleRanges.add(range);
+						setStyleRange(range);
+					}
+
+					break;
+
+				case number:
+				case string:
+
+					start = token.pos - 1;
+					len = token.literal.length();
+					if (len > 0 && start > 0 && start + len < totallen) {
+						range = new StyleRange(start, len, blue, white);
+						setStyleRange(range);
+						// styleRanges.add(range);
+					}
+
+					break;
+				default:
+					start = token.pos - 1;
+					len = token.literal.length();
+					if (len > 2 && start > 0 && start + len < totallen) {
+						range = new StyleRange(start, len, lime, white);
+						// styleRanges.add(range);
+						setStyleRange(range);
+					}
+					break;
+				}
+
 			}
 		}
-		StyleRange ranges[] = new StyleRange[styleRanges.size()];
-		for (int i = 0; i < styleRanges.size(); i++)
-			ranges[i] = styleRanges.get(i);
-		mTextSource.setStyleRanges(ranges);
+
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+
+		/*
+		 * StyleRange ranges[] = new StyleRange[styleRanges.size()]; for (int i = 0; i <
+		 * styleRanges.size(); i++) ranges[i] = styleRanges.get(i);
+		 * mTextSource.setStyleRanges(ranges); mEditorDirty = false;
+		 * 
+		 * } catch(Exception ex) { mTextSource.style ex.printStackTrace(); int count=1;
+		 * while (styleRanges.size() > 0) { try { StyleRange last =
+		 * styleRanges.get(styleRanges.size()-1);
+		 * styleRanges.remove(styleRanges.size()-1); StyleRange ranges[] = new
+		 * StyleRange[styleRanges.size()]; for (int i = 0; i < styleRanges.size(); i++)
+		 * ranges[i] = styleRanges.get(i); mTextSource.setStyleRanges(ranges);
+		 * mEditorDirty = false;
+		 * 
+		 * System.out.println("worked after removing "+Integer.toString(count)+" "+last.
+		 * toString()); break; } catch(Exception ex2) { count++; } }
+		 * 
+		 * 
+		 * 
+		 * 
+		 * // ex.printStackTrace(); }
+		 */
+
+	}
+
+	private void setStyleRange(StyleRange range) {
+
+		try {
+			StyleRange oldRange = mTextSource.getStyleRangeAtOffset(range.start);
+			if (oldRange != null) {
+				oldRange.length = range.length;
+				oldRange.foreground = range.foreground;
+			} else {
+				mTextSource.setStyleRange(range);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 
 	}
 
@@ -1140,14 +1206,15 @@ public class CDialogIDE extends Dialog {
 		if (mFilename == null)
 			return;
 		mTextSource.setText(Tools.loadTextFile(mFilename));
-		styleText(mTextSource.getText());
+		if (mEditorDirty) {
+			styleText(mTextSource.getText());
+			mEditorDirty = false;
+			parseFile();
+		}
 		mStackUndo.removeAllElements();
-		shlJoctoIde.setText("J-Octo IDE "+mFilename);
+		shlJoctoIde.setText("J-Octo IDE " + mFilename);
 		saveUndo();
 		Tools.saveTextFile(mTextSource.getText(), mFilename);
-
-
-		parseFile();
 
 	}
 

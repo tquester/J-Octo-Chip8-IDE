@@ -222,6 +222,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	public TreeMap<String, CC8Label> mLabels;
 	private Text mTextLog;
+	private String mLastLogLine="";
 
 	void createTimer() {
 		mTimerStop = false;
@@ -456,6 +457,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	}
 
 	protected void setClearBreakpoint() {
+		try {
 		int line = mListSource.getSelectionIndex();
 		int pc = mDebugSource.getPCForLine(line);
 		if (pc != -1) {
@@ -465,6 +467,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			String text = mListSource.getItem(line);
 			text = (breakpoint ? "*" : " ") + text.substring(1);
 			mListSource.setItem(line, text);
+		}
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
 		}
 
 	}
@@ -715,6 +721,8 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	@Override
 	public void log(String text) {
+		if (text.compareTo(mLastLogLine) == 0) return;
+		mLastLogLine = text;
 		shlChipsuperChipxoChip.getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				String edit = mTextLog.getText();
