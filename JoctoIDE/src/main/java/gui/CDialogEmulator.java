@@ -34,6 +34,8 @@ import emulator.C8DebugSourceLine;
 import emulator.Chip8CPU;
 import emulator.IEmulator;
 import emulator.IEmulatorCallback;
+import ide.CCallback;
+import ide.CMainMenus;
 
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
@@ -86,6 +88,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	private Listener mKeyUpFilter;
 
 	private Listener mKeyDownFIlter;
+	private CMainMenus mMainMenus;
 
 	public void run() {
 		mCPU.run();
@@ -115,6 +118,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		shlChipsuperChipxoChip.open();
 		shlChipsuperChipxoChip.layout();
 		createRegisterLabels();
+		createMenu();
 		display = getParent().getDisplay();
 		mKeyUpFilter = new Listener() {
 
@@ -164,6 +168,18 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			}
 		}
 		return result;
+	}
+
+	private void createMenu() {
+
+			mMainMenus = new CMainMenus(shlChipsuperChipxoChip);
+			mMainMenus.addMenu("&File").add("&Exit", new CCallback() {
+				@Override
+				public void callback() {
+					shlChipsuperChipxoChip.close();
+				}
+			});
+		
 	}
 
 	protected void onKeyUp(char character, int keyCode) {
@@ -333,7 +349,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		});
 
 		btnStart.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/play.png"));
-		btnStart.setBounds(208, 4, 32, 32);
+		btnStart.setBounds(150, 4, 40, 32);
 
 		Button btnPause = new Button(composite_2, SWT.NONE);
 		btnPause.addDisposeListener(new DisposeListener() {
@@ -347,7 +363,18 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			}
 		});
 		btnPause.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/pause.png"));
-		btnPause.setBounds(241, 4, 32, 32);
+		btnPause.setBounds(195, 4, 40, 32);
+
+		Button btnStop = new Button(composite_2, SWT.NONE);
+		btnStop.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onStop();
+			}
+		});
+		btnStop.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/stop.png"));
+		btnStop.setBounds(240, 4, 40, 32);
+
 
 		Button btnStepInto = new Button(composite_2, SWT.NONE);
 		btnStepInto.setToolTipText("F10");
@@ -358,7 +385,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			}
 		});
 		btnStepInto.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/stepinto.png"));
-		btnStepInto.setBounds(340, 4, 32, 32);
+		btnStepInto.setBounds(285, 4, 40, 32);
 
 		Button btnStepOver = new Button(composite_2, SWT.NONE);
 		btnStepOver.setToolTipText("F11");
@@ -369,17 +396,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			}
 		});
 		btnStepOver.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/stepover.png"));
-		btnStepOver.setBounds(373, 4, 32, 32);
-
-		Button btnStop = new Button(composite_2, SWT.NONE);
-		btnStop.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				onStop();
-			}
-		});
-		btnStop.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/stop.png"));
-		btnStop.setBounds(274, 4, 32, 32);
+		btnStepOver.setBounds(330, 4, 40, 32);
 
 		Button btnBreakpoint = new Button(composite_2, SWT.NONE);
 		btnBreakpoint.addSelectionListener(new SelectionAdapter() {
@@ -389,10 +406,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			}
 		});
 		btnBreakpoint.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/breakpoint.png"));
-		btnBreakpoint.setBounds(307, 4, 32, 32);
+		btnBreakpoint.setBounds(375, 4, 40, 32);
 		
 		Label lblSpeed = new Label(composite_2, SWT.NONE);
-		lblSpeed.setBounds(415, 10, 44, 15);
+		lblSpeed.setBounds(420, 10, 44, 15);
 		lblSpeed.setText("Speed");
 		
 		mComboSpeed = new Combo(composite_2, SWT.NONE);
@@ -402,7 +419,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onSpeedSelected();
 			}
 		});
-		mComboSpeed.setBounds(465, 10, 51, 23);
+		mComboSpeed.setBounds(465, 5, 51, 23);
 
 		mLblDisass = new Label(shlChipsuperChipxoChip, SWT.NONE);
 		mLblDisass.setText("200 00 00 NOP");
@@ -410,7 +427,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mLblData = new Label(shlChipsuperChipxoChip, SWT.BORDER | SWT.WRAP);
 		mLblData.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mLblData.setBounds(594, 10, 137, 339);
+		mLblData.setBounds(650, 10, 137, 339);
 		mLblData.setText("0000 00 ");
 		
 		mTabFolder = new TabFolder(shlChipsuperChipxoChip, SWT.NONE);

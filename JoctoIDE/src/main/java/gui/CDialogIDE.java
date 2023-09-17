@@ -1215,6 +1215,8 @@ public class CDialogIDE extends Dialog {
 		shlJoctoIde.setText("J-Octo IDE " + mFilename);
 		saveUndo();
 		Tools.saveTextFile(mTextSource.getText(), mFilename);
+		setAutoload(mFilename);
+
 
 	}
 

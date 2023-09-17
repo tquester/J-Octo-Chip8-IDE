@@ -14,6 +14,7 @@ public class Chip8GPU {
 	public boolean hires = false;
 	public int width = 64;
 	public int height = 32;
+	static String OS = System.getProperty("os.name").toLowerCase();
 
 	public int drawMask = 0x01;
 	GC gc = null;
@@ -244,6 +245,7 @@ public class Chip8GPU {
 	}
 
 	public void waitSemaphore() {
+		if (OS.compareTo("linux") == 0) return;
 		while (mSemaphore) {
 			try {
 				Thread.sleep(100);
