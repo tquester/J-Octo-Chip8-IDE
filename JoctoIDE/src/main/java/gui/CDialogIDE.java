@@ -831,6 +831,7 @@ public class CDialogIDE extends Dialog {
 			sb.append(line + "\n");
 		}
 		mTextSource.setText(sb.toString());
+		parseFile();
 		mTextSource.setSelection(caret, caret);
 
 	}
@@ -858,7 +859,11 @@ public class CDialogIDE extends Dialog {
 			if (!mStackUndo.isEmpty()) {
 				String text = mStackUndo.pop();
 				mUndoing = true;
+				Point selection = mTextSource.getSelection();
 				mTextSource.setText(text);
+				mTextSource.setSelection(selection);
+				parseFile();
+				
 				mUndoing = false;
 				mTextDirty = true;
 			}
@@ -879,6 +884,7 @@ public class CDialogIDE extends Dialog {
 		onSaveFile();
 		mFilename = null;
 		mTextSource.setText("");
+		parseFile();
 
 	}
 
@@ -1083,6 +1089,7 @@ public class CDialogIDE extends Dialog {
 			if (text != null) {
 				mTextSource.setText(text);
 				styleText(text);
+				parseFile();
 				mEditorDirty = false;
 				modifyTitle();
 				mStackUndo.removeAllElements();
@@ -1206,6 +1213,7 @@ public class CDialogIDE extends Dialog {
 		if (mFilename == null)
 			return;
 		mTextSource.setText(Tools.loadTextFile(mFilename));
+		parseFile();
 		if (mEditorDirty) {
 			styleText(mTextSource.getText());
 			mEditorDirty = false;

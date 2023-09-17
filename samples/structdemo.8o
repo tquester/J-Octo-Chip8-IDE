@@ -81,7 +81,10 @@
             end
             Enemy.frame += Enemy.dframe                               # go to next/prev frame
             if Enemy.frame < 0 then enemyReverseFrame                 # if it was the first frame count forward
-            if Enemy.frame >= Enemy.maxframe then enemyReverseFrame
+            if Enemy.frame >= Enemy.maxframe begin
+              enemyReverseFrame
+              Enemy.frame += Enemy.dframe
+            end
 # if it was the last frame, count backwards
             return
 
@@ -115,10 +118,12 @@
             initenemy enemydata1 20 5 1 0 10 100   5 5 8 24
             initenemy enemydata2 5 12 0 1 5 5 5 50 8 24               # second enemy
             initenemy enemydata3 20 50 2 1 5 120   5 55 8 32
+            initenemy enemydata4 10 30 1 2 5 120   5 55 8 32
 
             drawInitEnemy enemydata1 drawPackman                      # draw initital
             drawInitEnemy enemydata2 drawPackman                      # draw initial
-            drawInitEnemy enemydata3 drawBird                      # draw initial
+            drawInitEnemy enemydata3 drawBird                         # draw initial
+            drawInitEnemy enemydata4 drawHeliBird                         # draw initial
 
             loop                                                      # forwever
               i := savedata                                           # save registers
@@ -141,10 +146,18 @@
             i += Enemy.drawframe                                      # add frame to sprite
             sprite Enemy.drawx Enemy.drawy 8                          # draw
             return
+: drawHeliBird
+            i := helibird                                                 # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+
 
 : enemydata1 Enemy.byte
 : enemydata2 Enemy.byte
 : enemydata3 Enemy.byte
+: enemydata4 Enemy.byte
+
 : savedata Enemy.byte
 
 
@@ -168,3 +181,16 @@
             0x00 0x30 0x7a 0xff 0x7a 0x30 0x00 0x00
 # Sprite 4
             0x30 0x78 0xfa 0xff 0xfa 0x70 0x30 0x00
+
+: helibird
+# Sprite 1
+0x00 0x10 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+# Sprite 2
+0x00 0x38 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+# Sprite 3
+0x00 0x7c 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+# Sprite 4
+0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+# Sprite 5
+0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+
