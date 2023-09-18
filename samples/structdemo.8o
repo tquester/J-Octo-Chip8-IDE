@@ -71,13 +71,13 @@
 
             if Enemy.dx != 0 begin                                    # if enemy moves x
               Enemy.x += Enemy.dx                                     # modify coordinate
-              if Enemy.x == Enemy.minx then enemyReverseX             # reverse at start
-              if Enemy.x == Enemy.maxx then enemyReverseX             # and end
+              if Enemy.x <= Enemy.minx then enemyReverseX             # reverse at start
+              if Enemy.x >= Enemy.maxx then enemyReverseX             # and end
             end
             if Enemy.dy != 0 begin                                    # if it moves in y
               Enemy.y += Enemy.dy                                     # advance and
-              if Enemy.y == Enemy.miny then enemyReverseY             # reverse at start
-              if Enemy.y == Enemy.maxy then enemyReverseY             # and end
+              if Enemy.y <= Enemy.miny then enemyReverseY             # reverse at start
+              if Enemy.y >= Enemy.maxy then enemyReverseY             # and end
             end
             Enemy.frame += Enemy.dframe                               # go to next/prev frame
             if Enemy.frame < 0 then enemyReverseFrame                 # if it was the first frame count forward
@@ -123,7 +123,7 @@
             drawInitEnemy enemydata1 drawPackman                      # draw initital
             drawInitEnemy enemydata2 drawPackman                      # draw initial
             drawInitEnemy enemydata3 drawBird                         # draw initial
-            drawInitEnemy enemydata4 drawHeliBird                         # draw initial
+            drawInitEnemy enemydata4 drawHeliBird                     # draw initial
 
             loop                                                      # forwever
               i := savedata                                           # save registers
@@ -131,6 +131,7 @@
               moveenemy enemydata1 drawPackman                        # move enemy1
               moveenemy enemydata2 drawPackman                        # move enemy2
               moveenemy enemydata3 drawBird                           # move enemy2
+              moveenemy enemydata4 drawHeliBird                       # move enemy2
               i := savedata                                           # load registers
               load Enemy
               for v0 := 0 to 50 v0 += 0                               # wait some time
@@ -147,7 +148,7 @@
             sprite Enemy.drawx Enemy.drawy 8                          # draw
             return
 : drawHeliBird
-            i := helibird                                                 # out sprite
+            i := helibird                                             # out sprite
             i += Enemy.drawframe                                      # add frame to sprite
             sprite Enemy.drawx Enemy.drawy 8                          # draw
             return
@@ -184,13 +185,13 @@
 
 : helibird
 # Sprite 1
-0x00 0x10 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+            0x00 0x10 0x10 0x7d 0x7f 0x3d 0x3c 0x24
 # Sprite 2
-0x00 0x38 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+            0x00 0x38 0x10 0x7c 0x7f 0x3c 0x3c 0x24
 # Sprite 3
-0x00 0x7c 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+            0x00 0x7c 0x10 0x7d 0x7f 0x3d 0x3c 0x24
 # Sprite 4
-0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
 # Sprite 5
-0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
 

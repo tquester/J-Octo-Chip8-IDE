@@ -17,6 +17,8 @@ import java.util.TreeSet;
 
 import org.eclipse.nebula.widgets.richtext.RichTextEditor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.LineStyleEvent;
+import org.eclipse.swt.custom.LineStyleListener;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Text;
@@ -79,6 +81,7 @@ public class CDialogIDE extends Dialog {
 	Composite mBarFiles;
 	Composite mBarErrors;
 	Composite mBarLeftRight;
+	OctoLineStyler mOctoLineStyler = new OctoLineStyler();
 	List mListFiles;
 	static final int constErrorSpaceBottom = 80;
 	static final int key_back = 0x1000003;
@@ -267,6 +270,8 @@ public class CDialogIDE extends Dialog {
 				onModifyText(e);
 			}
 		});
+		
+		mTextSource.addLineStyleListener(mOctoLineStyler);
 
 		mTextSource.addKeyListener(new KeyAdapter() {
 			@Override
@@ -1099,6 +1104,7 @@ public class CDialogIDE extends Dialog {
 	}
 
 	private void styleText(String text) {
+		/*
 		mEditorDirty = false;
 		ArrayList<StyleRange> styleRanges = new ArrayList<>();
 		try {
@@ -1163,6 +1169,7 @@ public class CDialogIDE extends Dialog {
 		catch (Exception ex) {
 			ex.printStackTrace();
 		}
+		*/
 
 		/*
 		 * StyleRange ranges[] = new StyleRange[styleRanges.size()]; for (int i = 0; i <
@@ -1191,6 +1198,7 @@ public class CDialogIDE extends Dialog {
 	private void setStyleRange(StyleRange range) {
 
 		try {
+			
 			StyleRange oldRange = mTextSource.getStyleRangeAtOffset(range.start);
 			if (oldRange != null) {
 				oldRange.length = range.length;

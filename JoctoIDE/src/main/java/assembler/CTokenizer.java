@@ -1,7 +1,10 @@
 package assembler;
 
+import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.Flow.Subscriber;
+
+import disass.CC8Label;
 
 public class CTokenizer {
 	String mInput;
@@ -18,6 +21,8 @@ public class CTokenizer {
 	TreeMap<String, String> mMapAlias = new TreeMap<>();
 	public int mBaseline=0;
 	private Object mPrevPos;
+	public boolean deliverWhite=false;
+	private Stack<CC8Label> mStackStruct = new Stack<>();
 
 	public String toString() {
 		try {
@@ -40,6 +45,7 @@ public class CTokenizer {
 	}
 	public void start(String text) {
 		int pos;
+
 
 		mInput = text;
 		sourceLines = text.split("\n");
@@ -90,6 +96,7 @@ public class CTokenizer {
 		token.line = mLine+mBaseline;
 
 		token.posinline = mPosInLine;
+		String white="";
 		while (mPos < mEnd) {
 			c = nextChar();
 			
@@ -101,6 +108,13 @@ public class CTokenizer {
 			
 			if (!Character.isSpace(c))
 				break;
+			white += c;
+		}
+		if (deliverWhite && white.length() > 0) {
+			mPos--;
+			token.literal = white;
+			token.token = Token.whitespace;
+			return true;
 		}
 		token.pos = mPos;
 		switch (c) {
@@ -222,6 +236,10 @@ public class CTokenizer {
 			if (c == '\n') 
 				mPos--;
 			token.literal = replace(sb.toString().trim());
+			
+			if (findStructSymbol(token)) {
+				return true;
+			}
 			if (replaceTokens) {
 				String strAlias = mMapAlias.get(token.literal);
 				if (strAlias != null)
@@ -399,6 +417,29 @@ public class CTokenizer {
 
 	public void deleteAllAlias() {
 		mMapAlias.clear();
+		
+	}
+	
+	private boolean findStructSymbol(CToken token) {
+		if (mStackStruct.size() == 0) return false;
+		for (int i = mStackStruct.size()-1;i>=0;i--) {
+			CC8Label structlabel = mStackStruct.get(i);
+			int reg = structlabel.regFromVar(token.literal);
+			if (reg != -1) {
+				token.token = structlabel.TokenForReg(reg);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void pushStruct(CC8Label structLabel) {
+		mStackStruct.push(structLabel);
+		
+	}
+
+	public void popStruct() {
+		mStackStruct.pop();
 		
 	}
 

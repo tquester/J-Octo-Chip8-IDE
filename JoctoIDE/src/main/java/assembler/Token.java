@@ -115,6 +115,8 @@ public enum Token {
 	loadflags, saveflags, audio, plane, macro, calc, octobyte, stringmode, octoassert, monitor, octopointer, pitch, comment, curlybracketopen, curlybracketclose, newline, exit, invalid, bracketopen, bracketclose, plus, minus, divide, mult, mod,
 	
 	tilde, exclamation, sin, cos, tan, exp, log, abs, sqrt, sign, ceil, floor, atsym, pow, min, max, strlen, none, notkey, 
-	dotif, dotelse, dotend, dotunless, dotinclude, dotsegment, data, code, dotlog, dodumpoptions, dotconst, octofor, octoto, octostep, dotStruct, dot, internaldefs
+	dotif, dotelse, dotend, dotunless, dotinclude, dotsegment, data, code, dotlog, dodumpoptions, dotconst, octofor, octoto, octostep, dotStruct, dot, internaldefs, whitespace, octowith, 
+
+	
 };
 

@@ -2,6 +2,8 @@ package disass;
 
 import java.util.ArrayList;
 
+import assembler.Token;
+
 public class CC8Label {
 	static int labelNr=0;
 	public C8LabelType 		mLabelType = C8LabelType.NONE;
@@ -34,6 +36,28 @@ public class CC8Label {
 		}
 		return r;
 			
+	}
+	
+	public Token TokenForReg(int reg) {
+		switch(reg) {
+			case 0: return Token.v0; 
+			case 1: return Token.v1; 
+			case 2: return Token.v2; 
+			case 3: return Token.v3; 
+			case 4: return Token.v4; 
+			case 5: return Token.v5; 
+			case 6: return Token.v6; 
+			case 7: return Token.v7; 
+			case 8: return Token.v8; 
+			case 9: return Token.v9; 
+			case 10: return Token.va; 
+			case 11: return Token.vb; 
+			case 12: return Token.vc; 
+			case 13: return Token.vd; 
+			case 14: return Token.ve; 
+			case 15: return Token.vf;
+			default: return Token.none;
+		}
 	}
 	
 	public CC8Label() {

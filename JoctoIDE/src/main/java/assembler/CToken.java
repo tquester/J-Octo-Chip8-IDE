@@ -36,5 +36,10 @@ public class CToken {
 		if (token.literal != null) s += " "+literal;
 		return s;
 	}
+	public int length() {
+		if (token == Token.label) return literal.length()+2;
+		return literal.length();
+
+	}
 
 }
