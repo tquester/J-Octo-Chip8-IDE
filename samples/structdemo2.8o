@@ -1,14 +1,19 @@
             jump main
+# --------------------------------------------------------------------------------------
+# Structs in j-octo work like an alias to registers. We do not explicitly map a name to a register
+# but define up to 15 variable names which are assigned automatically to registers v0, v1 and so on.
+# Like in other languagues, a struct does not store data in memory locations, the assembly does not really support this.
+# however you can save the struct with save and load it with load and you can allocate the memory for it with the .byte command
+#
 # The goal is to separate functions in a way that they work by themselfs, not even touchting the registers of the caller
 # we can do it with save and load however without the help of structs the code may become difficult to read.
-# Other than high level languages, the struct only stores register numbers, so we can rename 15 registers with a struct
-# writing something like Coordinates.x instead of v1
 #
 # The struct itself compiles into the last register, so if we write save Coordinates this will compile into the number of registers
-# needed to store.
+# needed to store. So "save Enemy" compiles into "save vd". If we add or remove variables from a struct, the save comamnds
+# and the byte allocations will automatically follow. Also if we modify the order of elements.
 #
-# Coordinates.byte will create as many bytes, as it needs to store the structure. If we modify the members in the struct,
-# data and save/load commands will automatically change
+# Enemy.byte will create as many bytes, as it needs to store the structure. If we modify the members in the struct,
+# data and save/load commands will automatically change. With .byte we also can initialize the data structure
 #
 # So what we get with struct is:
 #   - a local alias for registers
@@ -35,6 +40,7 @@
               drawx                                                   # vb The draw function uses this as x
               drawy                                                   # vc The draw function uses this as y
               drawframe                                               # vd frame for drawing
+			  init													  # ve 0 = first draw
             }
 
 
@@ -60,26 +66,28 @@
 
 : calcEnemyCoords
 
-            Enemy.drawx := Enemy.x                                    # save the old coordinates
-            Enemy.drawy := Enemy.y                                    # and the old frame number
-            Enemy.drawframe := Enemy.frame                            # for deletion draw
+            with Enemy {
+              drawx := x                                              # save the old coordinates
+              drawy := y                                              # and the old frame number
+              drawframe := frame                                      # for deletion draw
 
-            if Enemy.dx != 0 begin                                    # if enemy moves x
-              Enemy.x += Enemy.dx                                     # modify coordinate
-              if Enemy.x <= Enemy.minx then enemyReverseX             # reverse at start
-              if Enemy.x >= Enemy.maxx then enemyReverseX             # and end
-            end
-            if Enemy.dy != 0 begin                                    # if it moves in y
-              Enemy.y += Enemy.dy                                     # advance and
-              if Enemy.y <= Enemy.miny then enemyReverseY             # reverse at start
-              if Enemy.y >= Enemy.maxy then enemyReverseY             # and end
-            end
-            Enemy.frame += Enemy.dframe                               # go to next/prev frame
-            if Enemy.frame < 0 then enemyReverseFrame                 # if it was the first frame count forward
-            if Enemy.frame >= Enemy.maxframe begin
-              enemyReverseFrame
-              Enemy.frame += Enemy.dframe
-            end
+              if dx != 0 begin                                        # if enemy moves x
+                x += dx                                               # modify coordinate
+                if x <= minx then enemyReverseX                       # reverse at start
+                if x >= maxx then enemyReverseX                       # and end
+              end
+              if dy != 0 begin                                        # if it moves in y
+                y += dy                                               # advance and
+                if y <= miny then enemyReverseY                       # reverse at start
+                if y >= maxy then enemyReverseY                       # and end
+              end
+              frame += Enemy.dframe                                   # go to next/prev frame
+              if frame < 0 then enemyReverseFrame                     # if it was the first frame count forward
+              if frame >= maxframe begin
+                enemyReverseFrame
+                frame += dframe
+              end
+            }
 # if it was the last frame, count backwards
             return
 
@@ -122,19 +130,15 @@
 
 
 # copy 4 the initial coordinate data for all 4 enemies to the data section
-            ve := 0
-            for v0 := 0 to 4 begin
-              i := temp
-              save v0                                                 # we ran out of register, save the for variable
+            v2 := 0
+            for v1 := 0 to 4 * (initEnemyData1 - initEnemyData) begin
               i := initEnemyData                                      # load 14 registers
               i += ve
-              load Enemy
+              load v0
               i := enemydata1                                         # save them
               i += ve
-              save Enemy
-              ve += initEnemyData1 - initEnemyData                    # next offset
-              i := temp
-              load v0
+              save v0
+              ve += 1
             end
 
 # draw all 4 enemies at the start position. The next draw will remove and replace them
@@ -180,7 +184,10 @@
 
 
 # ---------------------------------------------------------------------
-# -- Initial data for the coordinates and movements of all enemies  ---
+# -- Initial data for the coordinates and movements of all enemies 
+# -- because we only have 3.5 kb for code, the data must be compact.
+# -- assignments take two byte, the data itself only one byte, so instead
+# -- of assigning, lay out the data and copy them to our structures
 # ---------------------------------------------------------------------
 : initEnemyData
 # packman 1
@@ -237,6 +244,10 @@
               maxframe := 32
             }
 
+# ------------------------------------------------------------------------
+# work data. We copy the coordinates here and then work with them
+# ------------------------------------------------------------------------
+
 
 : enemydata1 Enemy.byte
 : enemydata2 Enemy.byte
@@ -246,6 +257,9 @@
 : temp
             0x00
 
+# ------------------------------------------------------------------------
+# Sprites
+# ------------------------------------------------------------------------
 
 
 : pacman

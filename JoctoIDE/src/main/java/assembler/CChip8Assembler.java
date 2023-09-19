@@ -1502,6 +1502,10 @@ public class CChip8Assembler {
 		for (int i = 0; i < macroData.parameters.size(); i++) {
 			// nextToken(token);
 			nextToken(token);
+			if (token.token == Token.curlybracketopen) {
+				expr(token);
+				expect(Token.curlybracketclose);
+			}
 			// expr(token);
 			tempTokenizer.replace(macroData.parameters.get(i), token.literal);
 			System.out.println(
