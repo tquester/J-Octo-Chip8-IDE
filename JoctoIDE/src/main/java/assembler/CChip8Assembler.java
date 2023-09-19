@@ -1505,6 +1505,13 @@ public class CChip8Assembler {
 			if (token.token == Token.curlybracketopen) {
 				expr(token);
 				expect(Token.curlybracketclose);
+			} else {
+				if (token.token == Token.bracketopen) {
+					expr(token);
+					 
+					expect(Token.bracketclose);
+				}
+
 			}
 			// expr(token);
 			tempTokenizer.replace(macroData.parameters.get(i), token.literal);
@@ -2104,6 +2111,7 @@ public class CChip8Assembler {
 					mTokenizer.ungetToken(token);
 				token.token = Token.number;
 				token.iliteral = stack.pop().intValue();
+				token.literal = String.format("%d", token.iliteral);
 			}
 			return;
 			// todo: Expression evaluation here

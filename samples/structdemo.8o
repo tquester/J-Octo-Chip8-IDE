@@ -112,7 +112,7 @@
 # Macro for moving the enemy.
 # input: adr     = enemy coordinate address
 #        drawfn  = label with subroutine for drawing
-# code in macros should be as short as possible because the code is copied on each 
+# code in macros should be as short as possible because the code is copied on each
 # macro expansion
 
 :macro moveenemy adr drawfn {
@@ -150,7 +150,7 @@
 : main
             hires
 # Copy initital coordinates to work aerea
-copyMemory initEnemyData enemydata1 { 4 * (initEnemyData1 - initEnemyData) }
+            copyMemory initEnemyData enemydata1 (4 * (initEnemyData1 - initEnemyData))
 
 # loop endless
             loop                                                      # forwever
@@ -164,11 +164,11 @@ copyMemory initEnemyData enemydata1 { 4 * (initEnemyData1 - initEnemyData) }
               load Enemy
 
 # here we can place our game code. All registers will be intact
-			  v0 := 2
-			  delay := v0
-			  loop 
-				v0 := delay
-			    if v0 != 0 then 
+              v0 := 2
+              delay := v0
+              loop
+                v0 := delay
+                if v0 != 0 then
               again
 
             again
@@ -176,7 +176,7 @@ copyMemory initEnemyData enemydata1 { 4 * (initEnemyData1 - initEnemyData) }
 # ---------------------------------------------------------------------
 # draw functions for each enemy
 # since we can not pass a pointer to the memory, we need to pass an
-# address to code 
+# address to code
 
 : drawPackman
             i := pacman                                               # out sprite
