@@ -1,7 +1,29 @@
 # j-octo
-IDE for Chip8-Game development: Assembler, Emulator, Sprite-Editor, Disassembler
+IDE for Chip8-Game development: Assembler, Emulator, Sprite-Editor, Tile Editor, Disassembler
 This is an early release, there is lots of work to do, still.
 
+# installation
+
+The git usually contains a runnable jar file for windows. After cloning you may be able to run it with double click.
+
+If you want to compile the project:
+1. download and install eclipse (https://www.eclipse.org/). Install eclipse for java developpers.
+2. clone the project in a separate git directory (for example ~/dev/git/j-octo)
+3. create a workspace (for example ~/dev/workspace/j-octo)
+4. start eclipse and open the workspace
+5. in eclipse, create a new java project. You may name it j-octo or anything you like
+6. in eclipse, right click below the java project and and select import.
+7. Now select: Import from git, existing repository. Now select the cloned repository and import it
+8. If you run on linux or mac os: Open the pom.xml file and find the swt library. There are differnt libraries for windows, macos and linux.
+9. Move the library for your os to the top
+10. right click the pom.xml and select marven/update project
+
+You should be able to run the project now.
+If you want a jar-file right click the tree and select export/runnable jar file and follow the wizard.
+
+
+
+# ide
 The IDE contains an editor, compiler, debugger, disassembler and a sprite editor.
 The compiler accepts the octo langugage as well as the chipper assembly language.
 
