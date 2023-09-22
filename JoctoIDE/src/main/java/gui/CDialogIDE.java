@@ -1,6 +1,7 @@
 package gui;
 
 import org.eclipse.swt.widgets.Dialog;
+import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.FileDialog;
@@ -17,11 +18,15 @@ import java.util.TreeSet;
 
 import org.eclipse.nebula.widgets.richtext.RichTextEditor;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.LineStyleEvent;
 import org.eclipse.swt.custom.LineStyleListener;
 import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.Tree;
+import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.wb.swt.SWTResourceManager;
@@ -44,6 +49,7 @@ import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.internal.Callback;
@@ -63,11 +69,13 @@ import org.eclipse.swt.events.ModifyEvent;
 
 public class CDialogIDE extends Dialog {
 
+	public String mFolder;
+
 	protected Object result;
 	protected Shell shlJoctoIde;
-	private StyledText mTextSource;
 	private String mFilename;
 	private String mStrLabels = "";
+	CTabFolder mTabFolder;
 	Composite composite;
 	List mListLabels;
 	Label mLblStatus;
@@ -82,7 +90,7 @@ public class CDialogIDE extends Dialog {
 	Composite mBarErrors;
 	Composite mBarLeftRight;
 	OctoLineStyler mOctoLineStyler = new OctoLineStyler();
-	List mListFiles;
+	Tree mListFiles;
 	static final int constErrorSpaceBottom = 80;
 	static final int key_back = 0x1000003;
 	static final int state_mask_back = 0x10000;
@@ -102,6 +110,14 @@ public class CDialogIDE extends Dialog {
 	protected int mResizeBase;
 	private boolean mEditorDirty = true;
 
+	
+	private StyledText getTextSource() {
+		StyledText result=null;
+		if (mTabFolder.getSelectionIndex() == -1) return null;
+		CTabItem item = mTabFolder.getItems()[mTabFolder.getSelectionIndex()];
+		result = (StyledText)item.getControl();
+		return result;
+	}
 	/**
 	 * Create the dialog.
 	 * 
@@ -126,6 +142,9 @@ public class CDialogIDE extends Dialog {
 		createMenu();
 
 		mFilename = "test.o8";
+		if (mFolder == null)
+			mFolder = ".";
+		loadFilesTree();
 		modifyTitle();
 		autoload();
 		display = getParent().getDisplay();
@@ -137,6 +156,46 @@ public class CDialogIDE extends Dialog {
 			}
 		}
 		return result;
+	}
+
+	private void loadFilesTree() {
+		mListFiles.removeAll();
+		TreeItem newItem = new TreeItem(mListFiles, SWT.None);
+
+		findFiles(mFolder, null);
+
+	}
+
+	private void findFiles(String strdir, TreeItem root) {
+		File dir = new File(strdir.trim());
+		File files[] = dir.listFiles();
+		if (files == null) {
+			dir = new File(strdir + "\\");
+			files = dir.listFiles();
+		}
+
+		TreeItem fileItem;
+		if (files == null)
+			return;
+		for (File file : files) {
+			if (file.isDirectory()) {
+				if (root == null)
+					fileItem = new TreeItem(mListFiles, SWT.None);
+				else
+					fileItem = new TreeItem(root, SWT.None);
+				fileItem.setText(file.getName());
+				findFiles(file.getAbsolutePath(), fileItem);
+			} else {
+
+				if (root != null)
+					fileItem = new TreeItem(root, SWT.None);
+				else
+					fileItem = new TreeItem(mListFiles, SWT.None);
+				fileItem.setData(file.getAbsolutePath());
+				fileItem.setText(file.getName());
+			}
+		}
+
 	}
 
 	private void modifyTitle() {
@@ -177,7 +236,7 @@ public class CDialogIDE extends Dialog {
 			}
 		});
 //		shlJoctoIde = getParent();
-		shlJoctoIde.setSize(931, 597);
+		shlJoctoIde.setSize(954, 589);
 		shlJoctoIde.setText("J-octo IDE");
 
 		composite = new Composite(shlJoctoIde, SWT.NONE);
@@ -263,32 +322,6 @@ public class CDialogIDE extends Dialog {
 		btnCompileDisass.setText("Compile+Disass");
 		btnCompileDisass.setBounds(253, 10, 97, 25);
 
-		mTextSource = new StyledText(shlJoctoIde, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
-
-		mTextSource.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
-				onModifyText(e);
-			}
-		});
-		
-		mTextSource.addLineStyleListener(mOctoLineStyler);
-
-		mTextSource.addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyReleased(KeyEvent e) {
-				onKeyReleasedEditor(e);
-			}
-		});
-		mTextSource.addSelectionListener(new SelectionAdapter() {
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				Point pt = mTextSource.getSelection();
-				mLblStatus.setText(String.format("%d/%d", pt.x, pt.y));
-			}
-		});
-		mTextSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mTextSource.setBounds(185, 57, 730, 337);
-
 		mListLabels = new List(shlJoctoIde, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		mListLabels.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -306,7 +339,18 @@ public class CDialogIDE extends Dialog {
 		mLblStatus.setBounds(179, 523, 533, 20);
 		mLblStatus.setText("status");
 
-		mListFiles = new List(shlJoctoIde, SWT.BORDER);
+		mListFiles = new Tree(shlJoctoIde, SWT.BORDER);
+		mListFiles.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+			}
+		});
+		mListFiles.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onDoubleClickFileTree(e);
+			}
+		});
 		mListFiles.setBounds(10, 57, 159, 152);
 
 		mBarFiles = new Composite(shlJoctoIde, SWT.NONE);
@@ -349,7 +393,7 @@ public class CDialogIDE extends Dialog {
 				if (mResizing) {
 					System.out.println(String.format("x=%d", e.x));
 					Rectangle rectErrors = mTextErrors.getBounds();
-					Rectangle rectText = mTextSource.getBounds();
+					Rectangle rectText = getTextSource().getBounds();
 					Rectangle rectBarErrors = mBarErrors.getBounds();
 					Rectangle rect = shlJoctoIde.getBounds();
 					int top = mResizeBase + e.y;
@@ -366,7 +410,7 @@ public class CDialogIDE extends Dialog {
 							rectBarErrors.height);
 
 					top -= 8;
-					mTextSource.setBounds(//
+					getTextSource().setBounds(//
 							rectErrors.x, //
 							rectText.y, //
 							rect.width - rectErrors.x - 30, //
@@ -394,6 +438,36 @@ public class CDialogIDE extends Dialog {
 		mBarLeftRight = new Composite(shlJoctoIde, SWT.NONE);
 		mBarLeftRight.setBackground(SWTResourceManager.getColor(SWT.COLOR_GRAY));
 		mBarLeftRight.setBounds(175, 57, 5, 495);
+
+		mTabFolder = new CTabFolder(shlJoctoIde, SWT.NONE);
+		mTabFolder.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onTabSwitched(e);
+			}
+		});
+		mTabFolder.setBounds(185, 57, 740, 337);
+		/*
+		 * mTabFolder.addMouseListener(new MouseListener() {
+		 * 
+		 * @Override public void mouseUp(MouseEvent arg0) { TabFolder curFolder =
+		 * (TabFolder)arg0.widget; Point eventLocation = new Point(arg0.x, arg0.y);
+		 * TabItem item = curFolder.getItem(eventLocation); if(item == null) return;
+		 * 
+		 * Image image = item.getImage();
+		 * 
+		 * // check if click is on image if( eventLocation.x >= item.getBounds().x +
+		 * image.getBounds().x && eventLocation.x <= item.getBounds().x +
+		 * image.getBounds().x + image.getBounds().width && eventLocation.y >=
+		 * item.getBounds().y + image.getBounds().y && eventLocation.y <=
+		 * item.getBounds().y + image.getBounds().y + image.getBounds().height) {
+		 * System.out.println("Close tab"); item.dispose(); } else {
+		 * System.out.println("Don't close tab"); } }
+		 * 
+		 * @Override public void mouseDown(MouseEvent arg0) { }
+		 * 
+		 * @Override public void mouseDoubleClick(MouseEvent arg0) { } });
+		 */
 
 		mBarLeftRight.addMouseMoveListener(new MouseMoveListener() {
 
@@ -423,9 +497,54 @@ public class CDialogIDE extends Dialog {
 
 	}
 
+	protected void onDoubleClickFileTree(SelectionEvent e) {
+		TreeItem items[] = mListFiles.getSelection();
+		boolean found = false;
+		if (items.length == 1) {
+			TreeItem sel = items[0];
+
+			String fname = (String) sel.getData();
+			if (fname != null) {
+				for (CTabItem tabItem : mTabFolder.getItems()) {
+					String tabFile = (String) tabItem.getData();
+					if (tabFile != null) {
+						if (tabFile.compareTo(fname) == 0) {
+							found = true;
+							mTabFolder.setSelection(tabItem);
+						}
+					}
+					if (found)
+						break;
+				}
+				if (!found)
+					loadFile(fname);
+			}
+
+		}
+
+	}
+
+	protected void onTabSwitched(SelectionEvent e) {
+
+		CTabItem item = (CTabItem) e.item;
+		ActivateTab(item);
+
+	}
+
+	private void ActivateTab(CTabItem item) {
+		if (item == null)
+			return;
+		if (item.getControl() == null)
+			return;
+		parseFile();
+
+	}
+
 	protected void onModifyText(ModifyEvent e) {
 		mEditorDirty = true;
-		String text = mTextSource.getText();
+		StyledText ctext = getTextSource();
+		if (ctext == null) return;
+		String text = ctext.getText();
 		saveUndo();
 		if (mStackUndo.size() > 30)
 			mStackUndo.remove(0);
@@ -434,7 +553,8 @@ public class CDialogIDE extends Dialog {
 
 	protected void onCompileDisass() {
 		CChip8Assembler assembler = new CChip8Assembler();
-		assembler.assemble(mTextSource.getText(), mFilename);
+		assembler.mFolder = mFolder;
+		assembler.assemble(getTextSource().getText(), mFilename);
 		String errors = assembler.getErrors();
 		mTextErrors.setText(errors);
 		if (errors.trim().length() == 0) {
@@ -459,6 +579,10 @@ public class CDialogIDE extends Dialog {
 			onEditAutocomplete();
 		if (e.stateMask == state_mask_hyperjump && e.keyCode == key_hyperjump)
 			onEditHyperjump();
+		if (e.character == 13) {
+			if (mEditorDirty)
+				onAutoformat();
+		}
 		if (e.stateMask == state_mask_forward) {
 			if (e.keyCode == key_forward)
 				onEditJumpForward();
@@ -471,7 +595,7 @@ public class CDialogIDE extends Dialog {
 	private void onEditJumpBack() {
 		if (!mLineNumberStack.isEmpty()) {
 			int pos = mLineNumberStack.pop();
-			mTextSource.setSelection(pos, pos);
+			getTextSource().setSelection(pos, pos);
 		}
 
 	}
@@ -482,7 +606,7 @@ public class CDialogIDE extends Dialog {
 
 	private String wordUnderCursor(String text) {
 		char c;
-		int textPos = mTextSource.getCaretOffset();
+		int textPos = getTextSource().getCaretOffset();
 		int begin = textPos - 1;
 		while (begin > 0) {
 			c = text.charAt(begin);
@@ -510,7 +634,7 @@ public class CDialogIDE extends Dialog {
 	}
 
 	private void onEditHyperjump() {
-		String text = mTextSource.getText();
+		String text = getTextSource().getText();
 		String word = wordUnderCursor(text);
 		CTokenizer tokenizer = new CTokenizer();
 		CToken token = new CToken();
@@ -519,8 +643,8 @@ public class CDialogIDE extends Dialog {
 			tokenizer.getToken(token);
 			if (token.token == Token.label) {
 				if (token.literal.compareTo(word) == 0) {
-					mLineNumberStack.push(mTextSource.getCaretOffset());
-					mTextSource.setSelection(token.pos, token.pos);
+					mLineNumberStack.push(getTextSource().getCaretOffset());
+					getTextSource().setSelection(token.pos, token.pos);
 					break;
 				}
 			}
@@ -529,11 +653,11 @@ public class CDialogIDE extends Dialog {
 	}
 
 	private void onEditAutocomplete() {
-		String text = mTextSource.getText();
+		String text = getTextSource().getText();
 		String word = wordUnderCursor(text).toLowerCase();
 		if (word == null)
 			return;
-		mListCompletion = new List(mTextSource, SWT.BORDER);
+		mListCompletion = new List(getTextSource(), SWT.BORDER);
 
 		TreeSet<String> set = new TreeSet<>();
 		CTokenizer tokenizer = new CTokenizer();
@@ -549,7 +673,7 @@ public class CDialogIDE extends Dialog {
 		}
 		for (String str : set) {
 			mListCompletion.add(str);
-			Caret caret = mTextSource.getCaret();
+			Caret caret = getTextSource().getCaret();
 			Point pt = caret.getLocation();
 			mListCompletion.setBounds(pt.x, pt.y, 100, 150);
 			mListCompletion.addKeyListener(new KeyListener() {
@@ -589,8 +713,8 @@ public class CDialogIDE extends Dialog {
 			mListCompletion.addSelectionListener(new SelectionAdapter() {
 				@Override
 				public void widgetSelected(SelectionEvent e) {
-					// mTextSource.setSelection(mWordBegin, mWordEnd);
-					// mTextSource.
+					// getTextSource().setSelection(mWordBegin, mWordEnd);
+					// getTextSource().
 
 					// mListCompletion.dispose();
 				}
@@ -607,7 +731,7 @@ public class CDialogIDE extends Dialog {
 		String[] sel = mListCompletion.getSelection();
 		if (sel.length >= 1) {
 			String newword = sel[0];
-			mTextSource.replaceTextRange(mWordBegin, mWordEnd - mWordBegin + 1, newword);
+			getTextSource().replaceTextRange(mWordBegin, mWordEnd - mWordBegin + 1, newword);
 		}
 		mListCompletion.dispose();
 		mListCompletion = null;
@@ -616,28 +740,30 @@ public class CDialogIDE extends Dialog {
 
 	Runnable timer = new Runnable() {
 		public void run() {
+			if (getTextSource() != null) {
 
-			int offset = mTextSource.getCaretOffset();
-			String text = mTextSource.getText();
-			int line = 1;
-			int pos = 1;
-			for (int i = 0; i < offset; i++) {
-				char c = text.charAt(i);
-				if (c == '\n') {
-					pos = 1;
-					line++;
+				int offset = getTextSource().getCaretOffset();
+				String text = getTextSource().getText();
+				int line = 1;
+				int pos = 1;
+				for (int i = 0; i < offset; i++) {
+					char c = text.charAt(i);
+					if (c == '\n') {
+						pos = 1;
+						line++;
+					}
+					pos++;
+
 				}
-				pos++;
 
+				mLblStatus.setText(String.format("%d/%d", line, pos));
+				if (mEditorDirty) {
+					styleText(getTextSource().getText());
+					parseFile();
+					mEditorDirty = false;
+				}
+				display.timerExec(time, this);
 			}
-
-			mLblStatus.setText(String.format("%d/%d", line, pos));
-			if (mEditorDirty) {
-				styleText(mTextSource.getText());
-				parseFile();
-				mEditorDirty = false;
-			}
-			display.timerExec(time, this);
 
 		}
 
@@ -665,6 +791,11 @@ public class CDialogIDE extends Dialog {
 			@Override
 			public void callback() {
 				onOpenFile();
+			}
+		}).add("Open &Folder", new CCallback() {
+			@Override
+			public void callback() {
+				onOpenFolder();
 			}
 		}).add("&Save", new CCallback() {
 			@Override
@@ -755,19 +886,38 @@ public class CDialogIDE extends Dialog {
 
 	}
 
+	protected void onOpenFolder() {
+		DirectoryDialog dialog = new DirectoryDialog(shlJoctoIde);
+		String folder = dialog.open();
+		if (folder != null) {
+			mFolder = folder;
+			loadFilesTree();
+			setAutoload();
+		}
+
+	}
+
 	protected void OnOptions() {
 		// TODO Auto-generated method stub
 
 	}
 
 	protected void onAutoformat() {
-		String[] lines = mTextSource.getText().split("\n");
+		String text = getTextSource().getText();
+		String[] lines = text.split("\n");
 		int level = 0;
+		Point selection = getTextSource().getSelection();
+		int topIndex = getTextSource().getTopIndex();
 		CTokens tokens = new CTokens();
 		StringBuilder sb = new StringBuilder();
 		CWordParser wordParser = new CWordParser();
 		int iline = 0;
-		int caret = mTextSource.getCaretOffset();
+		int caret = getTextSource().getCaretOffset();
+		int caretLine = 0;
+		for (int pos = 0; pos < caret; pos++) {
+			if (text.charAt(pos) == '\n')
+				caretLine++;
+		}
 		for (String line : lines) {
 			iline++;
 
@@ -835,9 +985,30 @@ public class CDialogIDE extends Dialog {
 
 			sb.append(line + "\n");
 		}
-		mTextSource.setText(sb.toString());
+		text = sb.toString();
+		iline = 0;
+		for (int pos = 0; pos < text.length(); pos++) {
+			if (text.charAt(pos) == '\n') {
+				iline++;
+				if (iline == caretLine) {
+					int i = pos + 1;
+					while (i < text.length()) {
+						if (text.charAt(i) == '\n') {
+							caret = i;
+							break;
+						}
+						i++;
+					}
+					break;
+				}
+			}
+		}
+		getTextSource().setText(sb.toString());
 		parseFile();
-		mTextSource.setSelection(caret, caret);
+
+		getTextSource().setSelection(selection);
+		getTextSource().setTopIndex(topIndex);
+		getTextSource().setCaretOffset(caret);
 
 	}
 
@@ -853,7 +1024,7 @@ public class CDialogIDE extends Dialog {
 
 	private void saveUndo() {
 		if (!mUndoing) {
-			String text = String.valueOf(mTextSource.getText());
+			String text = String.valueOf(getTextSource().getText());
 			mStackUndo.push(text);
 		}
 
@@ -864,11 +1035,11 @@ public class CDialogIDE extends Dialog {
 			if (!mStackUndo.isEmpty()) {
 				String text = mStackUndo.pop();
 				mUndoing = true;
-				Point selection = mTextSource.getSelection();
-				mTextSource.setText(text);
-				mTextSource.setSelection(selection);
+				Point selection = getTextSource().getSelection();
+				getTextSource().setText(text);
+				getTextSource().setSelection(selection);
 				parseFile();
-				
+
 				mUndoing = false;
 				mTextDirty = true;
 			}
@@ -877,32 +1048,28 @@ public class CDialogIDE extends Dialog {
 
 	protected void onFind() {
 		mSerachReplace = new CSearchReplace();
-		mSerachReplace.start(mTextSource.getText());
+		mSerachReplace.start(getTextSource().getText());
 		CDialogFindReplace dlg = new CDialogFindReplace(shlJoctoIde, SWT.TITLE | SWT.CLOSE);
 		dlg.mSerachReplace = mSerachReplace;
-		dlg.mTextSource = mTextSource;
 		dlg.open();
 
 	}
 
 	protected void onNewFile() {
-		onSaveFile();
-		mFilename = null;
-		mTextSource.setText("");
-		parseFile();
+		newFile();
 
 	}
 
 	protected void onTileEditor() {
 		CDialogTileEditor dlg = new CDialogTileEditor(shlJoctoIde, getStyle());
-		dlg.readSourcefile(mTextSource.getText());
+		dlg.readSourcefile(getTextSource().getText());
 		dlg.open();
 
 	}
 
 	protected void onSpriteEditor() {
 		CDialogSpriteEditor dlg = new CDialogSpriteEditor(shlJoctoIde, getStyle());
-		dlg.readSourcefile(mTextSource.getText());
+		dlg.readSourcefile(getTextSource().getText());
 		dlg.open();
 
 	}
@@ -915,8 +1082,10 @@ public class CDialogIDE extends Dialog {
 
 	protected void onCompile() {
 		autosave();
+		mFilename = getCurrentFilename();
 		CChip8Assembler assembler = new CChip8Assembler();
-		assembler.assemble(mTextSource.getText(), mFilename);
+		assembler.mFolder = mFolder;
+		assembler.assemble(getTextSource().getText(), mFilename);
 
 		String errors = assembler.getErrors();
 		boolean ok = errors.trim().length() == 0;
@@ -935,8 +1104,16 @@ public class CDialogIDE extends Dialog {
 
 	}
 
+	private String getCurrentFilename() {
+		CTabItem tabItem;
+		int index = mTabFolder.getSelectionIndex();
+		if (index == -1) return null;
+		tabItem = mTabFolder.getItems()[index];
+		String fname = (String)tabItem.getData();
+		return fname.trim();
+	}
 	private void autosave() {
-		String text = mTextSource.getText();
+		String text = getTextSource().getText();
 		Tools.writeTextFile("autosave.8o", text);
 
 	}
@@ -945,27 +1122,27 @@ public class CDialogIDE extends Dialog {
 		String[] selection = mListLabels.getSelection();
 		if (selection.length == 1) {
 			String label = ": " + selection[0];
-			String text = mTextSource.getText();
+			String text = getTextSource().getText();
 			int p = text.indexOf(label);
 			if (p == -1) {
 				label = selection[0] + ":";
 				p = text.indexOf(label);
 			}
 			if (p != -1) {
-				mTextSource.setSelection(p, p);
+				getTextSource().setSelection(p, p);
 			}
 		}
 
 	}
 
 	protected void onResize() {
-		if (composite == null || mListLabels == null || mTextSource == null || mTextErrors == null
+		if (composite == null || mListLabels == null || getTextSource() == null || mTextErrors == null
 				|| mLblStatus == null)
 			return;
 		Rectangle rect = shlJoctoIde.getBounds();
 		Rectangle rectComposite = composite.getBounds();
 		Rectangle rectList = mListLabels.getBounds();
-		Rectangle rectText = mTextSource.getBounds();
+		Rectangle rectText = mTabFolder.getBounds();
 		Rectangle rectErrors = mTextErrors.getBounds();
 		Rectangle rectStatus = mLblStatus.getBounds();
 		Rectangle rectBarLeftRight = mBarLeftRight.getBounds();
@@ -1016,7 +1193,7 @@ public class CDialogIDE extends Dialog {
 				rectBarErrors.height);
 
 		top -= 8;
-		mTextSource.setBounds(//
+		mTabFolder.setBounds(//
 				right, //
 				rectText.y, //
 				rect.width - right - 30, //
@@ -1053,31 +1230,51 @@ public class CDialogIDE extends Dialog {
 		mFilename = fd.open();
 		if (mFilename == null)
 			return;
-		Tools.saveTextFile(mTextSource.getText(), mFilename);
+		CTabItem item = mTabFolder.getItems()[mTabFolder.getSelectionIndex()];
+		File file = new File(mFilename);
+		item.setData(file.getAbsolutePath());
+		item.setText(file.getName());
+		Tools.saveTextFile(getTextSource().getText(), mFilename);
 		shlJoctoIde.setText("J-Octo IDE " + mFilename);
-		setAutoload(mFilename);
+		setAutoload();
 
 	}
 
 	protected void onSaveFile() {
-		if (mFilename == null) {
-			String[] filterExt = { "*.8o" };
-			FileDialog fd = new FileDialog(shlJoctoIde, SWT.SAVE);
-			fd.setText("Save chip8 program");
-			fd.setFilterExtensions(filterExt);
-			mFilename = fd.open();
-			if (mFilename == null)
-				return;
+		try {
+			CTabItem titem = mTabFolder.getItems()[mTabFolder.getSelectionIndex()];
+			String filename = getCurrentFilename();
+			StyledText stext = (StyledText) titem.getControl();
 
+			if (filename == null) {
+				String[] filterExt = { "*.8o" };
+				FileDialog fd = new FileDialog(shlJoctoIde, SWT.SAVE);
+				fd.setText("Save chip8 program");
+				fd.setFilterExtensions(filterExt);
+				mFilename = fd.open();
+				if (mFilename == null)
+					return;
+
+			}
+			String text = stext.getText();
+			Tools.saveTextFile(text, filename);
+			setAutoload();
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
-		Tools.saveTextFile(mTextSource.getText(), mFilename);
-		setAutoload(mFilename);
 
 	}
 
-	private void setAutoload(String filename) {
-		File file = new File(filename);
-		Tools.writeTextFile("autoload.inf", file.getAbsolutePath());
+	private void setAutoload() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("folder=" + mFolder + "\n");
+		for (CTabItem item : mTabFolder.getItems()) {
+			String fname = (String) item.getData();
+			if (fname != null)
+				sb.append("file=" + fname + "\n");
+		}
+
+		Tools.writeTextFile("autoload.inf", sb.toString());
 	}
 
 	String getAutoload() {
@@ -1086,125 +1283,93 @@ public class CDialogIDE extends Dialog {
 	}
 
 	void autoload() {
-		String fname = getAutoload();
-		if (fname != null) {
-			fname = fname.trim();
-			mFilename = fname;
-			String text = Tools.loadTextFile(fname);
-			if (text != null) {
-				mTextSource.setText(text);
-				styleText(text);
-				parseFile();
-				mEditorDirty = false;
-				modifyTitle();
-				mStackUndo.removeAllElements();
-				saveUndo();
-			}
+		String text = getAutoload();
+		String lines[] = text.split("\n");
+		for (String line : lines) {
+			int p = line.indexOf('=');
+			if (p != -1) {
+				String name = line.substring(0, p);
+				String fname = line.substring(p + 1);
+				if (name.compareTo("folder") == 0) {
+					mFolder = fname;
+					loadFilesTree();
+				} else {
+					loadFile(fname);
+				}
+			} else
+				loadFile(line);
 		}
 	}
 
-	private void styleText(String text) {
-		/*
-		mEditorDirty = false;
-		ArrayList<StyleRange> styleRanges = new ArrayList<>();
-		try {
-			CTokenizer tokenizer = new CTokenizer();
-			Color lime = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_RED);
-			Color white = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_WHITE);
-			Color blue = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_BLUE);
-			Color green = shlJoctoIde.getDisplay().getSystemColor(SWT.COLOR_DARK_GREEN);
-			tokenizer.start(text);
-			int totallen = text.length();
-			int len;
-			int start;
-			CToken token = new CToken();
-			StyleRange range;
-			while (tokenizer.hasData()) {
-				tokenizer.getToken(token);
-				if (token.token == null)
-					continue;
-				switch (token.token) {
-				case newline:
-				case literal:
-				case label:
-					break;
-				case comment:
+	void loadFile(String fname) {
+		String strSource = Tools.loadTextFile(fname.trim());
+		if (strSource == null)
+			return;
+		File file = new File(fname);
+		CTabItem item = new CTabItem(mTabFolder, SWT.CLOSE);
+		mTabFolder.setSelection(item);
+		// item.setImage(new
+		// Image(shlJoctoIde.getDisplay(),"/JoctoIDE/src/main/java/gui/close.bmp"));
+		item.setData(file.getAbsolutePath());
+		item.setText(file.getName());
+		StyledText text = createStyledText();
+		item.setControl(text);
+		StyledText stext = (StyledText)item.getControl();
+		stext.setText(strSource);
+	}
 
-					start = token.pos - 1;
-					len = token.literal.length();
-					if (len > 2 && start > 0 && start + len < totallen) {
-						range = new StyleRange(start, len, green, white);
-						// styleRanges.add(range);
-						setStyleRange(range);
-					}
+	void newFile() {
+		CTabItem item = new CTabItem(mTabFolder, SWT.CLOSE);
+		mTabFolder.setSelection(item);
+		// item.setData(null);
+		StyledText text = createStyledText();
+		item.setControl(text);
+		item.setText("new file");
+	}
 
-					break;
-
-				case number:
-				case string:
-
-					start = token.pos - 1;
-					len = token.literal.length();
-					if (len > 0 && start > 0 && start + len < totallen) {
-						range = new StyleRange(start, len, blue, white);
-						setStyleRange(range);
-						// styleRanges.add(range);
-					}
-
-					break;
-				default:
-					start = token.pos - 1;
-					len = token.literal.length();
-					if (len > 2 && start > 0 && start + len < totallen) {
-						range = new StyleRange(start, len, lime, white);
-						// styleRanges.add(range);
-						setStyleRange(range);
-					}
-					break;
-				}
-
+	private StyledText createStyledText() {
+		StyledText text = new StyledText(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
+		text.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				onModifyText(e);
 			}
-		}
+		});
 
-		catch (Exception ex) {
-			ex.printStackTrace();
-		}
-		*/
+		text.addLineStyleListener(mOctoLineStyler);
 
-		/*
-		 * StyleRange ranges[] = new StyleRange[styleRanges.size()]; for (int i = 0; i <
-		 * styleRanges.size(); i++) ranges[i] = styleRanges.get(i);
-		 * mTextSource.setStyleRanges(ranges); mEditorDirty = false;
-		 * 
-		 * } catch(Exception ex) { mTextSource.style ex.printStackTrace(); int count=1;
-		 * while (styleRanges.size() > 0) { try { StyleRange last =
-		 * styleRanges.get(styleRanges.size()-1);
-		 * styleRanges.remove(styleRanges.size()-1); StyleRange ranges[] = new
-		 * StyleRange[styleRanges.size()]; for (int i = 0; i < styleRanges.size(); i++)
-		 * ranges[i] = styleRanges.get(i); mTextSource.setStyleRanges(ranges);
-		 * mEditorDirty = false;
-		 * 
-		 * System.out.println("worked after removing "+Integer.toString(count)+" "+last.
-		 * toString()); break; } catch(Exception ex2) { count++; } }
-		 * 
-		 * 
-		 * 
-		 * 
-		 * // ex.printStackTrace(); }
-		 */
+		text.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyReleased(KeyEvent e) {
+				onKeyReleasedEditor(e);
+			}
+		});
+		text.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				StyledText text = (StyledText) e.widget;
+				Point pt = text.getSelection();
+				mLblStatus.setText(String.format("%d/%d", pt.x, pt.y));
+			}
+		});
+		text.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
+		return text;
 
+	}
+
+	private void styleText(String text) {
+	
 	}
 
 	private void setStyleRange(StyleRange range) {
 
 		try {
-			
-			StyleRange oldRange = mTextSource.getStyleRangeAtOffset(range.start);
+
+			StyleRange oldRange = getTextSource().getStyleRangeAtOffset(range.start);
 			if (oldRange != null) {
 				oldRange.length = range.length;
 				oldRange.foreground = range.foreground;
 			} else {
-				mTextSource.setStyleRange(range);
+				getTextSource().setStyleRange(range);
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
@@ -1220,24 +1385,13 @@ public class CDialogIDE extends Dialog {
 		mFilename = fd.open();
 		if (mFilename == null)
 			return;
-		mTextSource.setText(Tools.loadTextFile(mFilename));
-		parseFile();
-		if (mEditorDirty) {
-			styleText(mTextSource.getText());
-			mEditorDirty = false;
-			parseFile();
-		}
-		mStackUndo.removeAllElements();
-		shlJoctoIde.setText("J-Octo IDE " + mFilename);
-		saveUndo();
-		Tools.saveTextFile(mTextSource.getText(), mFilename);
-		setAutoload(mFilename);
-
+		loadFile(mFilename);
+		setAutoload();
 
 	}
 
 	private void parseFile() {
-		String text = mTextSource.getText();
+		String text = getTextSource().getText();
 		String lines[] = text.split("\n");
 		StringBuilder sbLabels = new StringBuilder();
 		char c;

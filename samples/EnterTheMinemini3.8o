@@ -1,0 +1,301 @@
+            jump main
+# --------------------------------------------------------------------------------------
+# Structs in j-octo work like an alias to registers. We do not explicitly map a name to a register
+# but define up to 15 variable names which are assigned automatically to registers v0, v1 and so on.
+# Unlike in other languagues, a struct does not store data in memory locations, the assembly does not really support this.
+# However you can save the struct with save and load it with load and you can allocate the memory for it with the .byte command
+#
+# The struct itself compiles into the last register, so if we write "save Enemy" this will compile into "save ve" the number of registers
+# needed to store.
+#
+# Enemy.byte will create as many bytes, as it needs to store the structure. If we modify the members in the struct,
+# data and save/load commands will automatically change. With .byte we also can initialize the data structure
+#
+# So what we get with struct is:
+#   - a local alias for registers
+#   - automatic store/load
+#   - automatic allocation of data
+#   - automatic initialization of data
+
+# Store the data of our enemy. We can move as many enemies as we like. Each one has its own data store in memory
+# a struct mapps names to registers and simplyfies saving and loading to memory
+# the struct name itself returns the last register, "save Enemy" compiles to "save vc"
+# the members compile to a register name. "Enemy.x" compiles to v0
+# .byte compiles into the number of bytes needed in memory, so Enemy.byte compiles to 13 zeros
+
+:struct Enemy {
+              x                                                       # v0 x coordinate
+              y                                                       # v1 y coordinate
+              dx                                                      # v2 direction x
+              dy                                                      # v3 direction y
+              minx                                                    # v4 min x
+              maxx                                                    # v5 max x
+              miny                                                    # v6 min y
+              maxy                                                    # v7 max y
+              frame                                                   # v8 sprite frame
+              maxframe                                                # v9 sprite max frame
+              dframe                                                  # va sprite frame direction
+              drawx                                                   # vb The draw function uses this as x
+              drawy                                                   # vc The draw function uses this as y
+              drawframe                                               # vd frame for drawing
+              init                                                    # ve 0 = first draw
+            }
+
+
+# Enemy.dx := - Enemy.dx
+: enemyReverseX
+            vf := 0
+            Enemy.dx =- vf
+            return
+
+# Enemy.dy := - Enemy.dy
+: enemyReverseY
+            vf := 0
+            Enemy.dy =- vf
+            return
+# Enemy.dframe := - Enemy.dframe
+: enemyReverseFrame
+            vf := 0
+            Enemy.dframe =- vf
+            return
+
+# ------------------------------------------------------------------------------------------
+# Calculate new enemy coordinates and frame.
+# returns:
+#     Enemy.frame = new frame offset
+#     Enemy.drawx = old Enemy coordinate
+#     Enemy.drawy = old Enemy coordinate
+#     Enemy.x     = new Enemy coordinate
+#     Enemy.y     = new Enemy coordinate
+#
+#   Enemy.dx, dy and dframe will change sign on bounce
+#
+
+: calcEnemyCoords
+            with Enemy {
+              drawx := x                                              # save the old coordinates
+              drawy := y                                              # and the old frame number
+              drawframe := frame                                      # for deletion draw
+
+              if dx != 0 begin                                        # if enemy moves x
+                x += dx                                               # modify coordinate
+                if x <= minx then enemyReverseX                       # reverse at start
+                if x >= maxx then enemyReverseX                       # and end
+              end
+              if dy != 0 begin                                        # if it moves in y
+                y += dy                                               # advance and
+                if y <= miny then enemyReverseY                       # reverse at start
+                if y >= maxy then enemyReverseY                       # and end
+              end
+              frame += Enemy.dframe                                   # go to next/prev frame
+              if frame < 0 then enemyReverseFrame                     # if it was the first frame count forward
+              if frame >= maxframe begin
+                enemyReverseFrame
+                frame += dframe
+              end
+            }
+            return
+
+
+# ------------------------------------------------------------------------------------------
+# The drawfn expects the coordinates in Enemy.drawx, Enemy.drawy.
+# Copy x to drawx, y to drawy and set init to 1
+
+: copyEnemyCoords
+            Enemy.drawx := Enemy.x                                    # draw the enemy
+            Enemy.drawy := Enemy.y                                    # at new
+            Enemy.drawframe := Enemy.frame                            # coordinates
+            Enemy.init := 1
+            return
+
+# ------------------------------------------------------------------------------------------
+# Macro for moving the enemy.
+# input: adr     = enemy coordinate address
+#        drawfn  = label with subroutine for drawing
+# code in macros should be as short as possible because the code is copied on each 
+# macro expansion
+
+:macro moveenemy adr drawfn {
+              i := adr                                                # load enemy data
+              load Enemy
+              calcEnemyCoords                                         # move by coordinates
+              if Enemy.init != 0 then drawfn
+              copyEnemyCoords
+              drawfn
+              i := adr                                                # save data
+              save Enemy
+            }
+
+# ------------------------------------------------------------------------------------------
+# Copy memory from source to target
+
+:macro copyMemory source target count  {
+              v2 := 0
+              for v1 := 0 to 4 * (initEnemyData1 - initEnemyData) begin
+                i := initEnemyData                                    # load 14 registers
+                i += ve
+                load v0
+                i := enemydata1                                       # save them
+                i += ve
+                save v0
+                ve += 1
+              end
+            }
+
+
+# ---------------------------------------------------------------------------
+# -- Demo starts here
+# ---------------------------------------------------------------------------
+
+: main
+            hires
+# Copy initital coordinates to work aerea
+copyMemory initEnemyData enemydata1 { 4 * (initEnemyData1 - initEnemyData) }
+
+# loop endless
+            loop                                                      # forwever
+              i := savedata                                           # save registers
+              save Enemy
+              moveenemy enemydata1 drawPackman                        # move enemy1
+              moveenemy enemydata2 drawPackman                        # move enemy2
+              moveenemy enemydata3 drawBird                           # move enemy2
+              moveenemy enemydata4 drawHeliBird                       # move enemy2
+              i := savedata                                           # load registers
+              load Enemy
+
+# here we can place our game code. All registers will be intact
+              for v0 := 0 to 50 v0 += 0                               # wait some time
+
+            again
+
+# ---------------------------------------------------------------------
+# draw functions for each enemy
+# since we can not pass a pointer to the memory, we need to pass an
+# address to code 
+
+: drawPackman
+            i := pacman                                               # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+: drawBird
+            i := bird                                                 # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+: drawHeliBird
+            i := helibird                                             # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+
+
+# ---------------------------------------------------------------------
+# -- Initial data for the coordinates and movements of all enemies
+# -- because we only have 3.5 kb for code, the data must be compact.
+# -- assignments take two byte, the data itself only one byte, so instead
+# -- of assigning, lay out the data and copy them to our structures
+# ---------------------------------------------------------------------
+: initEnemyData
+# packman 1
+            Enemy.byte {
+              x := 20
+              y := 5
+              dx := 1
+              dy := 0
+              minx := 10
+              maxx := 100
+              miny := 5
+              maxy := 5
+              dframe := 8
+              maxframe := 24
+            }
+: initEnemyData1
+# packman 2
+            Enemy.byte {
+              x := 5
+              y := 12
+              dx := 0
+              dy := 1
+              minx := 5
+              maxx := 5
+              miny := 5
+              maxy := 50
+              dframe := 8
+              maxframe := 24
+            }
+# the bird
+            Enemy.byte {
+              x := 20
+              y := 50
+              dx := 2
+              dy := 1
+              minx := 5
+              maxx := 120
+              miny := 5
+              maxy := 55
+              dframe := 8
+              maxframe := 32
+            }
+# the bird copter
+            Enemy.byte {
+              x := 10
+              y := 30
+              dx := 1
+              dy := 2
+              minx := 5
+              maxx := 120
+              miny := 5
+              maxy := 55
+              dframe := 8
+              maxframe := 32
+            }
+
+# ------------------------------------------------------------------------
+# work data. We copy the coordinates here and then work with them
+# ------------------------------------------------------------------------
+
+
+: enemydata1 Enemy.byte
+: enemydata2 Enemy.byte
+: enemydata3 Enemy.byte
+: enemydata4 Enemy.byte
+: savedata Enemy.byte
+: temp
+            0x00
+
+# ------------------------------------------------------------------------
+# Sprites
+# ------------------------------------------------------------------------
+
+
+: pacman
+# Sprite 1
+            0x38 0x7c 0xee 0xfe 0xfe 0x7c 0x38 0x00
+# Sprite 3
+            0x38 0x7c 0xee 0xfe 0xe0 0x7c 0x38 0x00
+# Sprite 4
+            0x38 0x7c 0xee 0xfe 0xc0 0x64 0x38 0x00
+# Sprite 5
+            0x38 0x7c 0xee 0xfe 0xc0 0x64 0x38 0x00
+: bird
+# Sprite 1
+            0x00 0x00 0x02 0xff 0x02 0x00 0x00 0x00
+# Sprite 2
+            0x00 0x00 0x32 0xff 0x32 0x00 0x00 0x00
+# Sprite 3
+            0x00 0x30 0x7a 0xff 0x7a 0x30 0x00 0x00
+# Sprite 4
+            0x30 0x78 0xfa 0xff 0xfa 0x70 0x30 0x00
+
+: helibird
+# Sprite 1
+            0x00 0x10 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+# Sprite 2
+            0x00 0x38 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+# Sprite 3
+            0x00 0x7c 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+# Sprite 4
+            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+# Sprite 5
+            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24

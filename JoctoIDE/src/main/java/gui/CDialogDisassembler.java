@@ -228,7 +228,7 @@ public class CDialogDisassembler extends Dialog {
 		
 		mTextItemsPerRow = new Text(mCompositeRight, SWT.BORDER);
 		mTextItemsPerRow.setText("1");
-		mTextItemsPerRow.setBounds(323, 430, 149, 33);
+		mTextItemsPerRow.setBounds(116, 406, 149, 33);
 		
 		Label lblAlphabet = new Label(mCompositeRight, SWT.NONE);
 		lblAlphabet.setBounds(10, 440, 75, 23);

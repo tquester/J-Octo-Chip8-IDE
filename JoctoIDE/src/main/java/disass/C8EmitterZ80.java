@@ -340,7 +340,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 
 	
 	String bin(int data) {
-		String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", "#");
+		String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", String.format("%c", 0x2588));
 		while (comment.length() < 8) comment = "_"+comment;
 		return comment;
 	}

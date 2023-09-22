@@ -23,6 +23,7 @@ public class CTokenizer {
 	private Object mPrevPos;
 	public boolean deliverWhite=false;
 	private Stack<CC8Label> mStackStruct = new Stack<>();
+	public String mFilename = null;
 
 	public String toString() {
 		try {

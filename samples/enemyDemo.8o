@@ -1,0 +1,251 @@
+            jump main
+:include "libEnemy.8o"
+:include "libTiles.8o"
+:include "libText.8o"
+
+
+: textbase
+: enterTheMine  tinytext8 "Enter the mine#"
+: mariowashere2 tinytext8 "Mario was here!#"                          #
+#
+#: main
+#            Tinytext 10 10 enterTheMine
+
+: main
+            hires
+
+
+# copy 4 the initial coordinate data for all 4 enemies to the data section
+            v2 := 0
+            for v1 := 0 to 4 * (initEnemyData1 - initEnemyData) begin
+              i := initEnemyData                                      # load 14 registers
+              i += ve
+              load v0
+              i := enemydata1                                         # save them
+              i += ve
+              save v0
+              ve += 1
+            end
+
+            i := mylevel
+            DisplayCompressedLevel mylevel 7
+            Tinytext 10 0 enterTheMine
+
+            TileAtXy mylevel 4 0 2
+:log "tile at 0 2 = " + TileDecoder.tilexy
+
+            TileAtXy mylevel 4 0 3
+:log "tile at 0 3= " + TileDecoder.tilexy
+
+            TileAtXy mylevel 4 1 2
+:log "tile at 1 2 = " + TileDecoder.tilexy
+
+            TileAtXy mylevel 4 1 3
+:log "tile at 1 3 = " + TileDecoder.tilexy
+
+
+            DisplayTile (0*8) (2*8) 7
+            DisplayTile (1*8) (2*8) 8
+            DisplayTile (0*8) (3*8) 9
+            DisplayTile (1*8) (3*8) 10
+
+# draw all 4 enemies at the start position. The next draw will remove and replace them
+
+            drawInitEnemy enemydata1 drawPackman                      # draw initital
+            drawInitEnemy enemydata2 drawPackman                      # draw initial
+            drawInitEnemy enemydata3 drawBird                         # draw initial
+            drawInitEnemy enemydata4 drawHeliBird                     # draw initial
+
+# loop endless
+            loop                                                      # forwever
+              i := savedata                                           # save registers
+              save Enemy
+              moveenemy enemydata1 drawPackman                        # move enemy1
+              moveenemy enemydata2 drawPackman                        # move enemy2
+              moveenemy enemydata3 drawBird                           # move enemy2
+              moveenemy enemydata4 drawHeliBird                       # move enemy2
+              i := savedata                                           # load registers
+              load Enemy
+
+# here we can place our game code. All registers will be intact
+              for v0 := 0 to 50 v0 += 0                               # wait some time
+
+            again
+
+# because there is only one I register and we can not save it, each sprite needs a draw routine. this will be passed into the draw macro
+
+: drawPackman
+            i := pacman                                               # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+: drawBird
+            i := bird                                                 # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+: drawHeliBird
+            i := helibird                                             # out sprite
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 8                          # draw
+            return
+
+
+# ---------------------------------------------------------------------
+# -- Initial data for the coordinates and movements of all enemies
+# -- because we only have 3.5 kb for code, the data must be compact.
+# -- assignments take two byte, the data itself only one byte, so instead
+# -- of assigning, lay out the data and copy them to our structures
+# ---------------------------------------------------------------------
+: initEnemyData
+# packman 1
+            Enemy.byte {
+              x := 20
+              y := 5
+              dx := 1
+              dy := 0
+              minx := 10
+              maxx := 100
+              miny := 5
+              maxy := 5
+              dframe := 8
+              maxframe := 24
+            }
+: initEnemyData1
+# packman 2
+            Enemy.byte {
+              x := 5
+              y := 12
+              dx := 0
+              dy := 1
+              minx := 5
+              maxx := 5
+              miny := 5
+              maxy := 50
+              dframe := 8
+              maxframe := 24
+            }
+# the bird
+            Enemy.byte {
+              x := 20
+              y := 50
+              dx := 2
+              dy := 1
+              minx := 5
+              maxx := 120
+              miny := 5
+              maxy := 55
+              dframe := 8
+              maxframe := 32
+            }
+# the bird copter
+            Enemy.byte {
+              x := 10
+              y := 30
+              dx := 1
+              dy := 2
+              minx := 5
+              maxx := 120
+              miny := 5
+              maxy := 55
+              dframe := 8
+              maxframe := 32
+            }
+
+# ------------------------------------------------------------------------
+# work data. We copy the coordinates here and then work with them
+# ------------------------------------------------------------------------
+
+
+: enemydata1 Enemy.byte
+: enemydata2 Enemy.byte
+: enemydata3 Enemy.byte
+: enemydata4 Enemy.byte
+: savedata Enemy.byte
+: temp
+            0x00
+
+# ------------------------------------------------------------------------
+# Sprites
+# ------------------------------------------------------------------------
+
+
+: pacman
+# Sprite 1
+            0x38 0x7c 0xee 0xfe 0xfe 0x7c 0x38 0x00
+# Sprite 3
+            0x38 0x7c 0xee 0xfe 0xe0 0x7c 0x38 0x00
+# Sprite 4
+            0x38 0x7c 0xee 0xfe 0xc0 0x64 0x38 0x00
+# Sprite 5
+            0x38 0x7c 0xee 0xfe 0xc0 0x64 0x38 0x00
+: bird
+# Sprite 1
+            0x00 0x00 0x02 0xff 0x02 0x00 0x00 0x00
+# Sprite 2
+            0x00 0x00 0x32 0xff 0x32 0x00 0x00 0x00
+# Sprite 3
+            0x00 0x30 0x7a 0xff 0x7a 0x30 0x00 0x00
+# Sprite 4
+            0x30 0x78 0xfa 0xff 0xfa 0x70 0x30 0x00
+
+: helibird
+# Sprite 1
+            0x00 0x10 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+# Sprite 2
+            0x00 0x38 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+# Sprite 3
+            0x00 0x7c 0x10 0x7d 0x7f 0x3d 0x3c 0x24
+# Sprite 4
+            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+# Sprite 5
+            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+
+#tiles 8x8
+: scenesprites
+
+: street
+            0xaa 0x55 0xff 0xff 0x00 0x00 0x00 0x00
+
+: streetSolid
+            0xff 0xff 0xff 0xff 0x00 0x00 0x00 0x00
+
+: streetChess
+            0x55 0xaa 0x55 0xaa 0x00 0x00 0x00 0x00
+
+: door1
+            0x00 0x00 0x1f 0x10 0x10 0x10 0x10 0x10
+
+: door2
+            0x10 0x1c 0x14 0x10 0x10 0x10 0x10 0x1f
+            0x00 0x00 0x00 0x00 0x92 0x54 0x28 0x10
+            0x00 0x00 0x00 0x00 0x00 0x00 0xff 0x80
+            0x00 0x00 0x00 0x00 0x00 0x00 0xff 0x01
+            0xb5 0xa5 0xb5 0xa5 0xa7 0x80 0xff 0x00
+            0x69 0x49 0x69 0x49 0x6d 0x01 0xff 0x00
+            0x81 0x42 0x24 0x18 0x18 0x24 0x42 0x81
+            0x00 0x00 0xc0 0xc2 0xc5 0xfd 0x05 0x02
+            0x00 0x00 0x00 0x22 0x22 0x2a 0x2a 0x2a
+            0x1f 0x20 0x7f 0x79 0x76 0x7f 0x7e 0x7d
+            0xfe 0x06 0xfa 0xfa 0xfa 0x7a 0xfa 0xfa
+            0x7d 0x7f 0x7d 0x7f 0x00 0x00 0x00 0x00
+            0xfa 0xfa 0xfc 0xf8 0x00 0x00 0x00 0x00
+
+: rocket
+            0x01 0x03 0x03 0x07 0x07 0x07 0x07 0x07
+            0x00 0x80 0x80 0xc0 0xc0 0xc0 0xc0 0xc0
+            0x07 0x07 0x06 0x0c 0x0c 0x18 0x18 0x18
+            0xc0 0xc0 0xc0 0x60 0x70 0x30 0x30 0x30
+#end
+
+#tileset 16x8
+: mylevel
+            0x01 0xff
+            0x02 0xff
+            0x07 0x08 0xfe 0x08 0x0c 0xfe 0x04 0x04
+            0x09 0x0a 0xfe 0x0d 0x05
+            0xfe 0x0c 0xfd 0x04 0x01
+            0xfe 0x09 0x01 0x01 0x01 0xff
+            0xfd 0x05 0x01 0x06 0xfe 0x06 0xfd 0x04 0x0b
+            0xfe 0x06 0xfd 0x04 0x01 0xff
+#end

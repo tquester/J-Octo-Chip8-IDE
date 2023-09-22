@@ -179,16 +179,43 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 					shlChipsuperChipxoChip.close();
 				}
 			});
-		
+			
+			mMainMenus.addMenu("&Debug")
+				.add("&Run\tF5", SWT.F5, new CCallback() {
+					
+					@Override
+					public void callback() {
+						onRun();
+					}
+				})
+				.add("&Step into\tF11", SWT.F11, new CCallback() {
+					
+					@Override
+					public void callback() {
+						onStepInto();
+					}
+				})
+				.add("&Step over\tF10", SWT.F10, new CCallback() {
+					
+					@Override
+					public void callback() {
+						onStepOver();
+					}
+				})
+				
+				
+				;
+				
 	}
 
 	protected void onKeyUp(char character, int keyCode) {
-		if (keyCode == 0x1000013)
+/*		if (keyCode == 0x1000013)
 			onStepInto();
 		if (keyCode == 0x1000014)
 			onStepOver();
 		if (keyCode == 0x100000e)
 			onRun();
+			*/
 		// System.out.println(String.format("%x - %d", keyCode,(int) character));
 		mCPU.addRemoveKey(character);
 		//displayDebug();
@@ -558,6 +585,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	}
 
 	protected void onRun() {
+		onStepInto();
 		run();
 
 	}

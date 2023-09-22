@@ -346,7 +346,7 @@ public class C8DisassEmitter extends C8Emitter {
 
 
 	String bin(int data) {
-		String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", "#");
+		String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", String.format("%c", 0x2588));
 		while (comment.length() < 8) comment = " "+comment;
 		return comment;
 	}

@@ -318,6 +318,7 @@ public class CChip8Assembler {
 	private boolean mOptIncludeSourceLine = true;
 	String mContext = "";
 	private boolean mbCodegen = true;
+	public String mFolder;
 
 	void initData() {
 		mStackLoopData.clear();
@@ -1171,6 +1172,9 @@ public class CChip8Assembler {
 
 			break;
 		}
+		case dotinclude:
+			compileInclude(token);
+			break;
 		case octowith:
 			compileWith(token);
 			break;
@@ -1186,6 +1190,38 @@ public class CChip8Assembler {
 			error("Undef token " + token.toString());
 		}
 
+	}
+
+	private void compileInclude(CToken token) {
+		String filename;
+		mTokenizer.getToken(token);
+		if (token.token == Token.string || token.token == Token.literal) {
+			filename = token.literal;
+			String text = Tools.loadTextFile(filename);
+			if (text == null) {
+				filename = mFolder.trim()+"\\"+token.literal;
+				text = Tools.loadTextFile(filename);
+			}
+			if (text == null) {
+				error("File "+filename+" not found");
+			}
+			CTokenizer tokenizer = mTokenizer;
+			mTokenizer = new CTokenizer();
+			mTokenizer.mFilename = filename;
+			mTokenizer.start(text);
+			while (mTokenizer.hasData()) {
+				try {
+					assembleLine();
+				} catch (Exception e) {
+					error(e.getLocalizedMessage());
+					e.printStackTrace();
+					break;
+				}
+			}
+			mTokenizer = tokenizer;
+			
+		}
+		
 	}
 
 	private void compileStructByte(CToken token) {
@@ -1450,6 +1486,9 @@ public class CChip8Assembler {
 
 			} else {
 				CC8Label label = mLabels.get(token.literal);
+				if (label == null && mPass == 2) {
+					error("Label "+token.literal+" not found");
+				}
 				if (label != null) {
 					if (label.mLabelType == C8LabelType.STRINGMODE) {
 						compileString(label);
@@ -2266,6 +2305,9 @@ public class CChip8Assembler {
 	private int labelTarget(String literal) {
 		int ret = 0;
 		CC8Label lbl = mLabels.get(literal);
+		if (lbl == null && mPass == 2) {
+			error("Label "+literal+" not found");
+		}
 		if (lbl != null)
 			ret = lbl.mTarget;
 		return ret;
@@ -2418,8 +2460,10 @@ public class CChip8Assembler {
 
 	private void error(String string) {
 		if (mPass == 2) {
+			String file = "(editor)";
+			if (mTokenizer.mFilename != null) file = mTokenizer.mFilename;
 			System.out.println(
-					String.format("Error %d/%d:%s %s", mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
+					String.format("Error %s(%d)/%d:%s %s", file, mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
 			System.out.println(mTokenizer.toString());
 			if (mSBErrors != null) {
 				mSBErrors.append(String.format("Error %d/%d:%s %s\n", mTokenizer.mLine, mTokenizer.mPosInLine, string,
