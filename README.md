@@ -30,7 +30,8 @@ The compiler accepts the octo langugage as well as the chipper assembly language
 F12 in the editor hyper jumps to a label. Alt-Left returns.
 Ctrl-Space opens the auto completion window
 
-![image](https://github.com/tquester/j-octo/assets/5380723/311d6add-7310-43a3-a20d-10326bdc4c55)
+![image](https://github.com/tquester/J-Octo-Chip8-IDE/assets/5380723/dfee6310-c7fa-4c2b-a352-bc639d7e638e)
+
 
 The debugger/emulator displays the disassembled code and the source code. You can see which macro is executed, hidden code (loop, again, while, if,..) and even dead code.
 If the game has been started from the editor, it will contain all symbols, except for the symbols the compiler inserted for if/begin/end/loop/again and while. The data view always shows the data pointed by the I register and decodes binary data into visible sprites
