@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.wb.swt.SWTResourceManager;
 
 import assembler.CChip8Assembler;
+import assembler.CChip8Assembler.CMemoryStatistic;
 import assembler.CToken;
 import assembler.CTokenizer;
 import assembler.CTokens;
@@ -249,7 +250,7 @@ public class CDialogIDE extends Dialog {
 				onSpriteEditor();
 			}
 		});
-		btnNewButton.setBounds(652, 10, 75, 25);
+		btnNewButton.setBounds(583, 10, 100, 25);
 		btnNewButton.setText("Sprite Editor");
 
 		Button btnNewButton_1 = new Button(composite, SWT.NONE);
@@ -259,7 +260,7 @@ public class CDialogIDE extends Dialog {
 				onTileEditor();
 			}
 		});
-		btnNewButton_1.setBounds(733, 10, 75, 25);
+		btnNewButton_1.setBounds(689, 10, 100, 25);
 		btnNewButton_1.setText("Tile Editor");
 
 		Button btnDisassembler = new Button(composite, SWT.NONE);
@@ -269,7 +270,7 @@ public class CDialogIDE extends Dialog {
 				onDisassembler();
 			}
 		});
-		btnDisassembler.setBounds(814, 10, 81, 25);
+		btnDisassembler.setBounds(795, 10, 100, 25);
 		btnDisassembler.setText("Disassembler");
 
 		Button btnOpen = new Button(composite, SWT.NONE);
@@ -309,7 +310,7 @@ public class CDialogIDE extends Dialog {
 				onEmulator();
 			}
 		});
-		btnEmulator.setBounds(571, 10, 75, 25);
+		btnEmulator.setBounds(477, 10, 100, 25);
 		btnEmulator.setText("Emulator");
 
 		Button btnCompileDisass = new Button(composite, SWT.NONE);
@@ -320,7 +321,7 @@ public class CDialogIDE extends Dialog {
 			}
 		});
 		btnCompileDisass.setText("Compile+Disass");
-		btnCompileDisass.setBounds(253, 10, 97, 25);
+		btnCompileDisass.setBounds(253, 10, 140, 25);
 
 		mListLabels = new List(shlJoctoIde, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		mListLabels.addSelectionListener(new SelectionAdapter() {
@@ -446,7 +447,7 @@ public class CDialogIDE extends Dialog {
 				onTabSwitched(e);
 			}
 		});
-		mTabFolder.setBounds(185, 57, 740, 337);
+		mTabFolder.setBounds(185, 88, 740, 337);
 		/*
 		 * mTabFolder.addMouseListener(new MouseListener() {
 		 * 
@@ -1091,6 +1092,9 @@ public class CDialogIDE extends Dialog {
 		boolean ok = errors.trim().length() == 0;
 		errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(),
 				4096 - 0x200 - assembler.getCodeSize());
+		for (CMemoryStatistic stat: assembler.mMemoryStatistics) {
+			errors += String.format("%s: %d (code: %d, data: %d)\n",stat.file, stat.sizeCode+stat.sizeData, stat.sizeCode, stat.sizeData);
+		}
 		mTextErrors.setText(errors);
 		if (ok) {
 			CDialogEmulator dlgEmu = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);

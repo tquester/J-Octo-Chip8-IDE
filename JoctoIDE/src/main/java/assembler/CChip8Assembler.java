@@ -13,10 +13,22 @@ import disass.Tools;
 import emulator.C8DebugSource;
 
 public class CChip8Assembler {
+	
+	public class CMemoryStatistic {
+		public String file = "editor";
+		public int sizeCode = 0;
+		public int sizeData = 0;
+	}
+	
+	CMemoryStatistic mMemoryStatistic = new CMemoryStatistic();
+	public  ArrayList<CMemoryStatistic> mMemoryStatistics = new ArrayList<>();
+	
 	public C8DebugSource mDebugSource = new C8DebugSource();
 	C8DisassEmitter mEmitter = new C8DisassEmitter();
 	public CDebugEntries mDebugEntries = new CDebugEntries();
 	int mLevel = 0;
+	
+	
 
 	StringBuilder mSBErrors = null;
 
@@ -402,6 +414,10 @@ public class CChip8Assembler {
 
 	public void Assemble(String code, String filename) {
 		try {
+			
+			mMemoryStatistic = new CMemoryStatistic();
+			mMemoryStatistics = new ArrayList<>();
+			mMemoryStatistics.add(mMemoryStatistic);
 
 			mTokenizer.start(code);
 			pc = 0x200;
@@ -875,6 +891,7 @@ public class CChip8Assembler {
 			break;
 		case number:
 			mCode[pc++] = (byte) (token.iliteral & 0xff);
+			mMemoryStatistic.sizeData++;
 			break;
 
 		case i:
@@ -1206,6 +1223,11 @@ public class CChip8Assembler {
 				error("File "+filename+" not found");
 			}
 			CTokenizer tokenizer = mTokenizer;
+			CMemoryStatistic memoryStatistic = mMemoryStatistic;
+			mMemoryStatistic = new CMemoryStatistic();
+			if (mPass == 2) 
+				mMemoryStatistics.add(mMemoryStatistic);
+			mMemoryStatistic.file = filename;
 			mTokenizer = new CTokenizer();
 			mTokenizer.mFilename = filename;
 			mTokenizer.start(text);
@@ -1218,7 +1240,9 @@ public class CChip8Assembler {
 					break;
 				}
 			}
+			pc+=2;
 			mTokenizer = tokenizer;
+			mMemoryStatistic = memoryStatistic;
 			
 		}
 		
@@ -2321,6 +2345,7 @@ public class CChip8Assembler {
 			mCode[pc + 1] = (byte) (iliteral & 0xff);
 			// writeSourceLine();
 			pc += 2;
+			mMemoryStatistic.sizeCode += 2;
 		}
 
 	}
@@ -2354,6 +2379,7 @@ public class CChip8Assembler {
 			mCode[pc + 1] = (byte) (bit8 & 0xff);
 			// writeSourceLine();
 			pc += 2;
+			mMemoryStatistic.sizeCode += 2;
 		}
 
 	}
@@ -2368,6 +2394,7 @@ public class CChip8Assembler {
 			mCode[pc + 1] = (byte) (code2 & 0xff);
 			// writeSourceLine();
 			pc += 2;
+			mMemoryStatistic.sizeCode += 2;
 		}
 
 	}

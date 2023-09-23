@@ -5,12 +5,16 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Composite;
 
+import java.io.StreamTokenizer;
 import java.util.ArrayList;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
+import assembler.CToken;
+import assembler.CTokenizer;
+import assembler.Token;
 import spiteed.CResources;
 import spiteed.CSpriteData;
 import spiteed.CTileData;
@@ -72,6 +76,7 @@ public class CDialogTileEditor extends Dialog {
 	protected int mNTilesW;
 	protected int mNTilesH;
 	private int mScreenW, mScreenH;
+	protected boolean mTilesUpdate=false;
 
 	public void readSourcefile(String text) {
 		mResources = new CResources();
@@ -293,6 +298,13 @@ public class CDialogTileEditor extends Dialog {
 		tbtmTiles.setText("Tiles");
 		
 		mTextTiles = new Text(tabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
+		mTextTiles.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				if (mTilesUpdate == false) {
+					onUpdateEditTiles();
+				}
+			}
+		});
 		tbtmTiles.setControl(mTextTiles);
 		
 		mCanvasTileset = new Canvas(shell, SWT.BORDER);
@@ -356,6 +368,71 @@ public class CDialogTileEditor extends Dialog {
 	}
 
 
+
+	protected void onUpdateEditTiles() {
+		CTokenizer tokenizer = new CTokenizer();
+		CToken token = new CToken();
+		String text = mTextTiles.getText();
+		tokenizer.start(text);
+		int nRows = getTileH();
+		int nColumns = getTileW();
+		int pos=0;
+		int posInLine = 0;
+		int i,n, count, b;
+		for (i=0;i<mTileData.length;i++) mTileData[i] = 0;
+		while (tokenizer.hasData()) {
+			tokenizer.getToken(token);
+			if (token.token == Token.number) {
+				n = token.iliteral;
+				switch(n) {
+				case 0xff:
+					while (posInLine < nColumns) {
+						mTileData[pos++] = 0;
+						posInLine++;
+					}
+					posInLine=0;
+					break;
+				case 0xfe:
+					count = nextNumber(tokenizer, token);
+					for (i=0;i<count;i++) {
+						mTileData[pos++] = 0;
+						posInLine++;						
+					}
+					if (posInLine == nColumns) posInLine=0;
+					break;
+				case 0xfd:
+					count = nextNumber(tokenizer, token);
+					b = nextNumber(tokenizer, token);
+					for (i=0;i<count;i++) {
+						mTileData[pos++] = b;
+						posInLine++;						
+					}
+					if (posInLine == nColumns) posInLine=0;
+					break;
+				default:
+					mTileData[pos++] = n;
+					posInLine++;						
+					if (posInLine == nColumns) posInLine=0;
+			}
+			}
+			
+		}
+		mCanvasTilePicture.redraw();
+		// TODO Auto-generated method stub
+		
+	}
+
+	private int nextNumber(CTokenizer tokenizer, CToken token) {
+		int r = 0;
+		while (tokenizer.hasData()) {
+			tokenizer.getToken(token);
+			if (token.token == Token.number) {
+				r = token.iliteral;
+				break;
+			}
+		}
+		return r;
+	}
 
 	protected void onResize() {
 		if (tabFolder == null) return;
@@ -642,10 +719,12 @@ public class CDialogTileEditor extends Dialog {
 	}
 	
 	private void writeTileset() {
+		mTilesUpdate = true;
 		if (mBtnRLE.getSelection())
 			mTextTiles.setText(tilesetToStringRLE());
 		else
 			mTextTiles.setText(tilesetToString());
+		mTilesUpdate = false;
 	}
 	
 	private String tilesetToString() {
