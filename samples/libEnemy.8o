@@ -39,7 +39,7 @@
               drawx                                                   # vb The draw function uses this as x
               drawy                                                   # vc The draw function uses this as y
               drawframe                                               # vd frame for drawing
-			  init													  # ve 0 = first draw
+              init                                                    # ve 0 = first draw
             }
 
 
@@ -81,7 +81,12 @@
                 if y >= maxy then enemyReverseY                       # and end
               end
               frame += Enemy.dframe                                   # go to next/prev frame
-              if frame < 0 then enemyReverseFrame                     # if it was the first frame count forward
+              if frame < 0 begin
+                enemyReverseFrame                                     # if it was the first frame count forward
+                frame += dframe
+              end
+
+
               if frame >= maxframe begin
                 enemyReverseFrame
                 frame += dframe
@@ -119,4 +124,3 @@
               Enemy.drawframe := Enemy.frame
               drawfn
             }
-

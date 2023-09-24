@@ -1,9 +1,4 @@
-folder=D:\Emulator\z80\dev\j-octo\samples
-file=D:\Emulator\z80\dev\j-octo\samples\libEnemy.8o
-file=D:\Emulator\z80\dev\j-octo\samples\enemyDemo.8o
-file=D:\Emulator\z80\dev\j-octo\samples\structdemo2.8o
-file=D:\Emulator\z80\dev\j-octo\samples\structdemo2.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libTiles.8o
-file=D:\Emulator\z80\dev\j-octo\samples\compressedTilesDemo.8o
-file=D:\Emulator\z80\dev\j-octo\samples\EnterTheMinemini2.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libText.8o
+folder=/home/tquester/dev/git/J-Octo-Chip8-IDE/samples
+file=/home/tquester/dev/git/J-Octo-Chip8-IDE/samples/enemyDemo.8o
+file=/home/tquester/dev/git/J-Octo-Chip8-IDE/samples/libEnemy.8o
+file=/home/tquester/dev/git/J-Octo-Chip8-IDE/samples/EnterTheMinemini2.8o

@@ -33,6 +33,12 @@
 		    <artifactId>json</artifactId>
 		    <version>20230618</version>
 		</dependency>
+        <dependency>
+            <groupId>org.eclipse.swt</groupId>
+            <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
+            <version>${swt.version}</version>
+        </dependency>
+
 
         <!-- select prefered one, or move the preferred on to the top: -->
         <dependency>
@@ -40,12 +46,6 @@
             <artifactId>org.eclipse.swt.win32.win32.x86_64</artifactId>
             <version>${swt.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.eclipse.swt</groupId>
-            <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
-            <version>${swt.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.eclipse.swt</groupId>
             <artifactId>org.eclipse.swt.gtk.linux.x86</artifactId>

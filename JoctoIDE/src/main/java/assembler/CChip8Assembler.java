@@ -1216,7 +1216,7 @@ public class CChip8Assembler {
 			filename = token.literal;
 			String text = Tools.loadTextFile(filename);
 			if (text == null) {
-				filename = mFolder.trim()+"\\"+token.literal;
+				filename = mFolder.trim()+"/"+token.literal;
 				text = Tools.loadTextFile(filename);
 			}
 			if (text == null) {

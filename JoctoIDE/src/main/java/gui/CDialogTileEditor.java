@@ -223,6 +223,7 @@ public class CDialogTileEditor extends Dialog {
 		mComboTileset.addModifyListener(new ModifyListener() {
 
 			public void modifyText(ModifyEvent e) {
+				try {
 				mTilesetIndex = mComboTileset.getSelectionIndex();
 				CSpriteData data = mResources.mSprites.get(mTilesetIndex); 
 				mTextIcons.setText(data.getText());
@@ -233,6 +234,10 @@ public class CDialogTileEditor extends Dialog {
 					mCanvasTilePicture.redraw();
 				if (mCanvasTileset != null)
 					mCanvasTileset.redraw();
+				}
+				catch(Exception ex) {
+					ex.printStackTrace();
+				}
 			}
 		});
 		mComboTileset.setBounds(633, 14, 132, 23);
