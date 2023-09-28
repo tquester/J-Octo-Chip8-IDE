@@ -11,7 +11,8 @@ public enum C8LabelType {
 	LETTERS,
 	HEX,
 	STRINGMODE,
-	STRUCT
+	STRUCT,
+	CONST
 	;
 };
 

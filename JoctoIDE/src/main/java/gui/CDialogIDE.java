@@ -112,7 +112,7 @@ public class CDialogIDE extends Dialog {
 	private boolean mEditorDirty = true;
 
 	
-	private StyledText getTextSource() {
+	public StyledText getTextSource() {
 		StyledText result=null;
 		if (mTabFolder.getSelectionIndex() == -1) return null;
 		CTabItem item = mTabFolder.getItems()[mTabFolder.getSelectionIndex()];
@@ -336,7 +336,7 @@ public class CDialogIDE extends Dialog {
 		mTextErrors.setBounds(185, 414, 740, 103);
 
 		mLblStatus = new Label(shlJoctoIde, SWT.NONE);
-		mLblStatus.setBackground(SWTResourceManager.getColor(SWT.COLOR_WIDGET_NORMAL_SHADOW));
+		mLblStatus.setBackground(SWTResourceManager.getColor(SWT.COLOR_TITLE_BACKGROUND));
 		mLblStatus.setBounds(179, 523, 533, 20);
 		mLblStatus.setText("status");
 
@@ -414,7 +414,7 @@ public class CDialogIDE extends Dialog {
 					getTextSource().setBounds(//
 							rectErrors.x, //
 							rectText.y, //
-							rect.width - rectErrors.x - 30, //
+							rect.width - rectErrors.x - 30-70, //
 							top - rectText.y);
 
 					// onResize();
@@ -433,6 +433,7 @@ public class CDialogIDE extends Dialog {
 			@Override
 			public void mouseUp(MouseEvent e) {
 				mResizing = false;
+				onResize();
 			}
 		});
 
@@ -1052,6 +1053,7 @@ public class CDialogIDE extends Dialog {
 		mSerachReplace.start(getTextSource().getText());
 		CDialogFindReplace dlg = new CDialogFindReplace(shlJoctoIde, SWT.TITLE | SWT.CLOSE);
 		dlg.mSerachReplace = mSerachReplace;
+		dlg.mDialogIDE = this;
 		dlg.open();
 
 	}
@@ -1179,17 +1181,23 @@ public class CDialogIDE extends Dialog {
 
 		mLblStatus.setBounds(//
 				rectStatus.x, //
-				rect.height - rectStatus.height - 55, //
-				rect.width - rectStatus.x - 10, //
-				rectStatus.height);
+				rect.height-30-70, //
+				rect.width-rectStatus.x, //
+				30);
+		mLblStatus.setVisible(true);
+		
 
-		int top = rect.height - rectErrors.height - constErrorSpaceBottom;
-		mTextErrors.setBounds( //
+		int top = rect.height - rectErrors.height - constErrorSpaceBottom -rectStatus.height;
+		 mTextErrors.setBounds( //
+		 
 				right, //
-				top, rect.width - right - 30, //
+				top, //
+				rect.width - right - 30, //
 				rectErrors.height);
 
-		top -= 12;
+		 top -= 8;
+
+		
 		mBarErrors.setBounds(//
 				right, //
 				top, //
@@ -1199,14 +1207,9 @@ public class CDialogIDE extends Dialog {
 		top -= 8;
 		mTabFolder.setBounds(//
 				right, //
-				rectText.y, //
+				60, //
 				rect.width - right - 30, //
 				top - rectText.y);
-
-		mTextErrors.setBounds( //
-				right, //
-				rect.height - rectErrors.height - constErrorSpaceBottom, rect.width - right - 30, //
-				rectErrors.height);
 
 		mBarLeftRight.setBounds(//
 				rectBarLeftRight.x, //

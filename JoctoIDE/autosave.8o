@@ -1,102 +1,503 @@
             jump main
+
+
 :include "libEnemy.8o"
-:include "libTiles.8o"
+:include "libTilesDecoded.8o"
 :include "libText.8o"
+:include "libPlayer.8o"
+:include "libFast.8o"
+
+# (C) 2023 Thomas Quester, thomas@quester-hh.de
+#
+# The game uses an object oriented schema. All Enemies, the player and the levels are layed out in memory and
+# are loaded into a :struct
+# sub routines are generally starting by loading their data from memory and saving them if it got changed
+# inside any level loop the PlayerData is loaded but the x/y and moving registers are destroyed
+
+# -------------------------------------------------------------------------------
+# -- data for libPlayer
+# -------------------------------------------------------------------------------
+
+:const DEBUG 1
+:const CHEAT 1
+:const playerHeight 15
+:const playerFrameCount 5
+:const playerMinX 0
+:const playerMaxX 116
+:const playerJumpSteps 29#
 
 
+
+: drawPlayer
+            with PlayerData {
+              i := playerSprite
+              if xdir1 == -1 then i := playerReverseSprite
+
+              i += iPlayer1
+              sprite x1 y1 15
+            }
+            return
+
+:macro copyData source target length {
+              for v1 := 0 to length begin
+                i := source                                           # load 14 registers
+                i += v1
+                load v0
+                i := target                                           # save them
+                i += v1
+                save v0
+              end
+
+            }
 : textbase
-: enterTheMine  tinytext8 "Enter the mine!#"
-: mariowashere2 tinytext8 "Mario was here!#"                          #
+: txtAmoebetronsRevance tinytext8 "Amoebetrons revanche!#"
+: txtCellPhones1  tinytext8 "Attack of mutant#"
+: txtCellPhones2  tinytext8 "cell phones!#"
+: mariowashere2 tinytext8 "Mario took the coin!#"
+: whereiseugene tinytext8 "Where is Eugene?#"
+
+# ----------------------------------------------------------------------------------------------------------------------------------------
+# each tile map has an object data. when the player hits something, we look in the object data for the coordinates, if it is deadly the
+# level is re-started, otherwise we do something with the object
+# every other object, like a sprite that the player hits, is deadly
+# ----------------------------------------------------------------------------------------------------------------------------------------
+
+:struct ObjectData {
+              tilex
+              tiley
+              objtype
+            }
+
+# ----------------------------------------------------------------------------------------------------------------------------------------
+# printCoords is used in debug, it prints the x/y tile address and the tile und the players feet
+# ----------------------------------------------------------------------------------------------------------------------------------------
+
+:if DEBUG
+: bcdbuf1 0 0 0
+: bcdbuf2 0 0 0
+: bcdbuf3 0 0 0
+: bcdfirst 1
+: printsave 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+: printCoords
+            i := printsave
+            save vf
+            With PlayerTilePos {
+              i := bcdfirst
+              load v0
+              if v0 == 0 then printBcdBuf
+              v0 := 0
+              i := bcdfirst
+              save v0
+              i := bcdbuf1
+              bcd tilex
+              i := bcdbuf2
+              bcd tiley
+              v0 := tiley
+
+
+              v1 := tilex
+              tileAtV0V1
+              i := bcdbuf3
+              bcd v0
+
+
+              printBcdBuf
+            }
+            i := printsave
+            load vf
+
+            return
+
+: printBcdBuf
+            v6 := 0
+            v5 := 0
+            i := bcdbuf1+1
+            load v0
+            i := hex v0
+            sprite v6 v5 5
+            v6 += 6
+            i := bcdbuf1+2
+            load v0
+            i := hex v0
+            sprite v6 v5 5
+            v6 += 20
+            i := bcdbuf2+1
+            load v0
+            i := hex v0
+            sprite v6 v5 5
+            v6 += 6
+            i := bcdbuf2+2
+            load v0
+            i := hex v0
+            sprite v6 v5 5
+
+            v6 += 20
+            i := bcdbuf3+1
+            load v0
+            i := hex v0
+            sprite v6 v5 5
+            v6 += 6
+            i := bcdbuf3+2
+            load v0
+            i := hex v0
+            sprite v6 v5 5
+
+
+            return
+:end
+
+
+
+
+
+
+: drawAmoebetron
+            i := amoebetron0                                          # out sprite
+            jump drawSprite12
+
+
+: drawToilette
+            i := toilette                                             # out sprite
+: drawSprite12
+            i += Enemy.drawframe                                      # add frame to sprite
+            sprite Enemy.drawx Enemy.drawy 12                         # draw
+            return
+
+: drawStomper
+            i := stomper                                              # out sprite
+            jump drawSprite12
+
+: drawRobo
+            i := robo                                                 # out sprite
+            jump drawSprite12
+
 #
 #: main
 #            Tinytext 10 10 enterTheMine
 
+: checkFalling
+
+
+            v0 := PlayerTilePos.tiley
+            v1 := PlayerTilePos.tilex
+            tileAtV0V1
+            if v0 == 0 begin
+              if PlayerData.jumping == 0 begin
+                loadPlayerData
+                PlayerData.jumping = -2
+                savePlayerData
+              end
+            else
+              if v0 < 3 begin
+                if PlayerData.jumping != 0 begin
+                  loadPlayerData
+                  PlayerData.jumping = 0
+                  savePlayerData
+                end
+              end
+            end
+
+            return
+
+
 : main
             hires
 
+            initfast
+            fast
+# ----------------------------------------------------------------------------------------------------------------------------------------
+# checks if player is falling. Is there a tile under the feet?
+# if no tile under the feet, we set the jumping-mode to -2 (falling)
+# if the player is jumping or falling and there is a tile under the feet, we set the player to moving (0)
+# warning: destroys v0 and v1
+# ----------------------------------------------------------------------------------------------------------------------------------------
 
-# copy 4 the initial coordinate data for all 4 enemies to the data section
-            v2 := 0
-            for v1 := 0 to 4 * (initEnemyData1 - initEnemyData) begin
-              i := initEnemyData                                      # load 14 registers
-              i += ve
-              load v0
-              i := enemydata1                                         # save them
-              i += ve
-              save v0
-              ve += 1
-            end
 
-# show the compressed level
 
-            i := mylevel
-            DisplayCompressedLevel mylevel 7
+# ----------------------------------------------------------------------------------------------------------------------------------------
+# -- Scene 1: The revanche of the amoebetrons
+# ----------------------------------------------------------------------------------------------------------------------------------------
 
-# Display the level title
-
-            Tinytext 10 0 enterTheMine
-
-# Show tile numbers for the 4 fuel tiles
-            TileAtXy mylevel 4 0 2
-:log "tile at 0 2 = " + TileDecoder.tilexy
-
-            TileAtXy mylevel 4 0 3
-:log "tile at 0 3= " + TileDecoder.tilexy
-
-            TileAtXy mylevel 4 1 2
-:log "tile at 1 2 = " + TileDecoder.tilexy
-
-            TileAtXy mylevel 4 1 3
-:log "tile at 1 3 = " + TileDecoder.tilexy
-
-# remove the 4 fuel tiles
-
-#  DisplayTile (0*8) (2*8) 7
-#  DisplayTile (1*8) (2*8) 8
-#  DisplayTile (0*8) (3*8) 9
-#  DisplayTile (1*8) (3*8) 10
-
-# draw all 4 enemies at the start position. The next draw will remove and replace them
-
-            drawInitEnemy enemydata1 drawPackman                      # draw initital
-            drawInitEnemy enemydata2 drawPackman                      # draw initial
-            drawInitEnemy enemydata3 drawBird                         # draw initial
-            drawInitEnemy enemydata4 drawHeliBird                     # draw initial
-
-# loop endless
+: scene1
+            clear
+:if DEBUG
+            v0 := 1
+            i := bcdfirst
+            save v0
+:end
+            copyData scene1SpriteData enemydata1 ((initEnemyData1 - initEnemyData)*2)
+            DisplayCompressedLevel level1 8
+            Tinytext 10 58 txtAmoebetronsRevance
+            i := playerInitData
+            load PlayerData
+            PlayerData.y = 25
+            playerInitDraw
+            drawInitEnemy enemydata1 drawAmoebetron                   # draw initial
+            drawInitEnemy enemydata2 drawAmoebetron                   # draw initial
             loop                                                      # forwever
-              i := savedata                                           # save registers
-              save Enemy
-              moveenemy enemydata1 drawPackman                        # move enemy1
-              moveenemy enemydata2 drawPackman                        # move enemy2
-              moveenemy enemydata3 drawBird                           # move enemy2
-              moveenemy enemydata4 drawHeliBird                       # move enemy2
-              i := savedata                                           # load registers
-              load Enemy
+:if CHEAT
+              v0 := 1
+              if v0 key then jump scene2
+              v0 := 2
+              if v0 key then jump scene3
+              v0 := 3
+              if v0 key then jump scene4
+:end
+              playerProcessKeys
 
-# here we can place our game code. All registers will be intact
-              for v0 := 0 to 50 v0 += 0                               # wait some time
+              PlayerTilePos.collision := vf
+
+              if PlayerTilePos.moveFlag == 1 begin
+                checkFalling
+
+:if DEBUG
+                printCoords
+:end
+                if PlayerTilePos.collision == 1 begin
+                  i := level1Objects
+                  checkCollision
+                  if v0 == mario begin
+                    Tinytext 0 5 mariowashere2
+                    jump scene1cont
+                  end
+                  if v0 == door then jump scene2
+                  jump scene1
+                end
+              end
+
+: scene1cont
+              moveenemy enemydata1 drawAmoebetron                     # draw initial
+              moveenemy enemydata2 drawAmoebetron                     # move enemy2
+              redraw
 
             again
 
 # because there is only one I register and we can not save it, each sprite needs a draw routine. this will be passed into the draw macro
 
-: drawPackman
+# --------------------------------------------------------------------------------------------
+# -- Scene 2: Where is Eugene
+# --------------------------------------------------------------------------------------------
 
-            i := pacman                                               # out sprite
-            i += Enemy.drawframe                                      # add frame to sprite
-            sprite Enemy.drawx Enemy.drawy 8                          # draw
-            return
-: drawBird
-            i := bird                                                 # out sprite
-            i += Enemy.drawframe                                      # add frame to sprite
-            sprite Enemy.drawx Enemy.drawy 8                          # draw
-            return
-: drawHeliBird
-            i := helibird                                             # out sprite
-            i += Enemy.drawframe                                      # add frame to sprite
-            sprite Enemy.drawx Enemy.drawy 8                          # draw
-            return
+
+: fuelflag 1
+: key1flag 1
+: key2flag 1
+
+:macro getAndResetFlag adr {
+              i := adr
+              load v0
+              vf := v0
+              i := adr
+              v0 := 0
+              save v0
+            }
+
+
+
+
+
+: scene2
+            clear
+            v0 := 1
+            v1 := 1
+            v2 := 1
+            i := fuelflag
+            save v3
+            clear
+
+
+:if DEBUG
+            v0 := 1
+            i := bcdfirst
+            save v0
+:end
+            ve := 1                                                   # fuel flag
+
+
+            copyData scene2SpriteData enemydata1 ((initEnemyData1 - initEnemyData)*2)
+            DisplayCompressedLevel level2 8
+            Tinytext 0 58 whereiseugene
+            i := playerInitData
+            load PlayerData
+# i := playerData
+            PlayerData.y = 17
+            playerInitDraw
+            drawInitEnemy enemydata1 drawToilette                     # draw initial
+            drawInitEnemy enemydata2 drawToilette                     # draw initial
+
+# loop endless
+            loop                                                      # forwever
+              playerProcessKeys
+              PlayerTilePos.collision := vf
+
+              if PlayerTilePos.moveFlag == 1 begin
+                checkFalling
+:if DEBUG
+                printCoords
+:end
+                if PlayerTilePos.collision == 1 begin
+                  i := level2Objects
+                  checkCollision
+                  if v0 == fuel begin
+                    getAndResetFlag fuelflag
+                    if vf == 1 begin
+                      DisplayTile (0*8) (0*8) 7
+                      DisplayTile (1*8) (0*8) 8
+                      DisplayTile (0*8) (1*8) 9
+                      DisplayTile (1*8) (1*8) 10
+                    end
+                    jump scene2cont
+
+                  end
+
+
+                  if v0 == key1 begin
+                    getAndResetFlag key1flag
+                    if vf == 1 begin
+                      DisplayTile (9*8) (0*8) 0x0c
+                    end
+                    jump scene2cont
+                  end
+                  if v0 == key2 begin
+                    getAndResetFlag key2flag
+                    if vf == 1 begin
+                      DisplayTile (15*8) (3*8) 0x0c
+                    end
+                    jump scene2cont
+                  end
+                  if v0 == door then jump scene3
+:if DEBUG
+                  jump scene2cont
+:end
+
+                  jump scene2
+                end
+              end
+: scene2cont
+              moveenemy enemydata1 drawToilette                       # draw initial
+              moveenemy enemydata2 drawToilette                       # move enemy2
+              redraw
+
+            again
+
+# --------------------------------------------------------------------------------------------
+# -- Scene 3: The rocket
+# --------------------------------------------------------------------------------------------
+
+: scene3
+            clear
+:if DEBUG
+            v0 := 1
+            i := bcdfirst
+            save v0
+:end
+
+            copyData scene3SpriteData enemydata1 ((initEnemyData1 - initEnemyData)*2)
+            DisplayCompressedLevel level3 8
+            Tinytext 0 58 whereiseugene
+            i := playerInitData
+            load PlayerData
+# i := playerData
+            PlayerData.y = 18
+            playerInitDraw
+            drawInitEnemy enemydata1 drawStomper                      # draw initial
+            drawInitEnemy enemydata2 drawRobo                         # draw initial
+
+# loop endless
+            loop                                                      # forwever
+              playerProcessKeys
+              PlayerTilePos.collision := vf
+
+              if PlayerTilePos.moveFlag == 1 begin
+:if DEBUG
+                printCoords
+:end
+                if PlayerTilePos.collision == 1 begin
+                  i := level1Objects
+                  checkCollision
+                  if v0 == mario begin
+                    Tinytext 0 5 mariowashere2
+                    jump scene1cont
+                  end
+                  if v0 == door then jump scene2
+                  jump scene1
+                end
+              end
+
+              moveenemy enemydata1 drawStomper                        # draw initial
+              moveenemy enemydata2 drawRobo                           # move enemy2
+              redraw
+
+            again
+
+# --------------------------------------------------------------------------------------------
+# -- Scene 4: Attack of the mutant cell phones
+# --------------------------------------------------------------------------------------------
+
+: scene4
+            clear
+:if DEBUG
+            v0 := 1
+            i := bcdfirst
+            save v0
+:end
+
+            copyData scene1SpriteData enemydata1 ((initEnemyData1 - initEnemyData)*2)
+            DisplayCompressedLevel level4 8
+            Tinytext 0 58 whereiseugene
+            i := playerInitData
+            load PlayerData
+# i := playerData
+            PlayerData.y = 18
+            playerInitDraw
+            drawInitEnemy enemydata1 drawToilette                     # draw initial
+            drawInitEnemy enemydata2 drawToilette                     # draw initial
+
+# loop endless
+            loop                                                      # forwever
+              playerProcessKeys
+              PlayerTilePos.collision := vf
+
+              if PlayerTilePos.moveFlag == 1 begin
+:if DEBUG
+                printCoords
+:end
+                if PlayerTilePos.collision == 1 begin
+                  i := level1Objects
+                  checkCollision
+                  if v0 == mario begin
+                    Tinytext 0 5 mariowashere2
+                    jump scene1cont
+                  end
+                  if v0 == door then jump scene2
+                  jump scene1
+                end
+              end
+
+: scene1cont
+              moveenemy enemydata1 drawToilette                       # draw initial
+              moveenemy enemydata2 drawToilette                       # move enemy2
+              redraw
+
+            again
+
+: checkCollision
+# assume that i is advanced on load!
+
+            loop
+              load ObjectData
+              if ObjectData.tilex == 0xff then return
+              if ObjectData.tilex == PlayerTilePos.tilex begin
+                if ObjectData.tiley == PlayerTilePos.tiley begin
+                  v0 := ObjectData.objtype
+                  return
+                end
+              end
+            again
+
+
+
 
 
 # ---------------------------------------------------------------------
@@ -106,59 +507,80 @@
 # -- of assigning, lay out the data and copy them to our structures
 # ---------------------------------------------------------------------
 : initEnemyData
-# packman 1
+
+: scene1SpriteData
             Enemy.byte {
-              x := 20
-              y := 5
-              dx := 1
-              dy := 0
-              minx := 10
-              maxx := 100
-              miny := 5
-              maxy := 5
-              dframe := 8
-              maxframe := 24
+              x := 48
+              y := 15
+              miny := 40
+              maxy := 4
+              dy := 1
+              maxframe := (3*12)
+              dframe := 12
             }
 : initEnemyData1
-# packman 2
             Enemy.byte {
-              x := 5
-              y := 12
-              dx := 0
+              x := 96
+              y := 0x08
+              maxy := 40
+              miny := 1
               dy := 1
-              minx := 5
-              maxx := 5
-              miny := 5
-              maxy := 50
-              dframe := 8
-              maxframe := 24
+              maxframe := (3*12)
+              dframe := 12
             }
-# the bird
+
+: scene2SpriteData
             Enemy.byte {
-              x := 20
-              y := 50
-              dx := 2
-              dy := 1
-              minx := 5
-              maxx := 120
-              miny := 5
-              maxy := 55
-              dframe := 8
-              maxframe := 32
-            }
-# the bird copter
-            Enemy.byte {
-              x := 10
-              y := 30
+              x := 45
+              y := 20
+              miny := 9
+              maxy := 30
+              minx := 35
+              maxx := 70
               dx := 1
-              dy := 2
-              minx := 5
-              maxx := 120
-              miny := 5
-              maxy := 55
-              dframe := 8
-              maxframe := 32
+
+              maxframe := (6*12)
+              dframe := 12
             }
+
+            Enemy.byte {
+              x := 96
+              y := 8
+              miny := 8
+              maxy := 40
+              minx := 0
+              maxx := 127
+              dy := 1
+              maxframe := (6*12)
+              dframe := 12
+            }
+
+: scene3SpriteData
+            Enemy.byte {
+              x := 69
+              y := 37
+              miny := 9
+              maxy := 38
+              minx := 64
+              maxx := 96
+              dx := 1
+
+              maxframe := (3*12)
+              dframe := 12
+            }
+
+            Enemy.byte {
+              x := 48
+              y := 10
+              miny := 8
+              maxy := 40
+              minx := 0
+              maxx := 128
+              dy := 1
+              maxframe := (3*12)
+              dframe := 12
+            }
+
 
 # ------------------------------------------------------------------------
 # work data. We copy the coordinates here and then work with them
@@ -167,8 +589,7 @@
 
 : enemydata1 Enemy.byte
 : enemydata2 Enemy.byte
-: enemydata3 Enemy.byte
-: enemydata4 Enemy.byte
+
 : savedata Enemy.byte
 : temp
             0x00
@@ -178,38 +599,55 @@
 # ------------------------------------------------------------------------
 
 
-: pacman
-# Sprite 1
-            0x38 0x7c 0xee 0xfe 0xfe 0x7c 0x38 0x00
-# Sprite 3
-            0x38 0x7c 0xee 0xfe 0xe0 0x7c 0x38 0x00
-# Sprite 4
-            0x38 0x7c 0xee 0xfe 0xc0 0x64 0x38 0x00
-# Sprite 5
-            0x38 0x7c 0xee 0xfe 0xc0 0x64 0x38 0x00
-: bird
-# Sprite 1
-            0x00 0x00 0x02 0xff 0x02 0x00 0x00 0x00
-# Sprite 2
-            0x00 0x00 0x32 0xff 0x32 0x00 0x00 0x00
-# Sprite 3
-            0x00 0x30 0x7a 0xff 0x7a 0x30 0x00 0x00
-# Sprite 4
-            0x30 0x78 0xfa 0xff 0xfa 0x70 0x30 0x00
 
-: helibird
-# Sprite 1
-            0x00 0x10 0x10 0x7d 0x7f 0x3d 0x3c 0x24
-# Sprite 2
-            0x00 0x38 0x10 0x7c 0x7f 0x3c 0x3c 0x24
-# Sprite 3
-            0x00 0x7c 0x10 0x7d 0x7f 0x3d 0x3c 0x24
-# Sprite 4
-            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
-# Sprite 5
-            0x00 0xfe 0x10 0x7c 0x7f 0x3c 0x3c 0x24
+#end
 
-#tiles 8x8
+
+# sprite: 8x12
+: amoebetron0
+            0x00 0x00 0x12 0x6D 0xC9 0xF2 0xBC 0xB8 0x58 0x14 0x14 0x24
+: amoebetron1
+            0x00 0x00 0x00 0x6C 0x49 0x72 0xBC 0xB8 0x58 0x14 0x14 0x24
+: amoebetron2
+            0x00 0x00 0xC8 0x48 0x48 0x70 0x3C 0x3A 0x58 0x54 0x92 0x10
+
+: toilette
+            0x01 0x01 0x01 0x01 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+            0x04 0x04 0x02 0x02 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+            0x10 0x08 0x04 0x02 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+            0xC0 0x30 0x0C 0x02 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+            0x00 0xE0 0x1C 0x02 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+            0x00 0x00 0xE0 0x1E 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+            0x00 0x00 0x00 0xFE 0xFD 0xFF 0xFC 0x76 0x79 0x39 0x39 0x00
+
+: stomper
+            0x00 0x38 0x74 0xFE 0xE0 0xE0 0xFE 0x7E 0x28 0x28 0x28 0x7E
+            0x00 0x38 0x74 0xFE 0xE0 0xFC 0xFE 0x7E 0x28 0x28 0x7E 0x00
+            0x00 0x38 0x74 0xFE 0xF8 0xFC 0xFE 0x7E 0x28 0x7E 0x00 0x00
+
+: robo
+            0x38 0x6A 0x7E 0x3E 0x12 0xB8 0xB8 0xFC 0xA0 0xBC 0x38 0x18
+            0x38 0x6A 0x7E 0x3E 0x12 0x38 0xB8 0xFC 0xA0 0x3C 0x38 0x18
+            0x38 0x6A 0x7E 0x3E 0x12 0x38 0x38 0xFC 0x30 0x3C 0x38 0x18
+
+: cellphone
+            0xff 0xff 0xe7 0xc3 0xc3 0xa5 0xa5 0xe7 0xe7 0xdb 0xff 0xff
+            0xff 0xff 0xe7 0xdb 0xc3 0xa5 0xa5 0xe7 0xe7 0xdb 0xff 0xff
+            0xff 0xff 0xe7 0xdb 0xdb 0xa5 0xa5 0xa5 0xe7 0xdb 0xff 0xff
+            0xff 0xff 0xe7 0xdb 0xdb 0xa5 0xa5 0xa5 0xa5 0xdb 0xff 0xff
+: antenna
+#            0x00 0x78 0x3c 0x06 0x06 0x06 0x0c 0x78 0x18 0x18 0x3c 0x7e
+#            0x00 0x38 0x3c 0x0c 0x0c 0x0c 0x0c 0x38 0x18 0x18 0x3c 0x7e
+#            0x00 0x18 0x18 0x18 0x18 0x18 0x18 0x18 0x18 0x18 0x3c 0x7e
+#            0x00 0x1c 0x3c 0x30 0x30 0x30 0x30 0x1c 0x18 0x18 0x3c 0x7e
+#            0x00 0x1e 0x3c 0x60 0x60 0x60 0x30 0x1e 0x18 0x18 0x3c 0x7e
+#            0x00 0x1c 0x3c 0x30 0x30 0x30 0x30 0x1c 0x18 0x18 0x3c 0x7e
+#            0x00 0x18 0x18 0x18 0x18 0x18 0x18 0x18 0x18 0x18 0x3c 0x7e
+
+
+
+
+#tiles: 8x8
 : scenesprites
 
 : street
@@ -246,8 +684,123 @@
             0xc0 0xc0 0xc0 0x60 0x70 0x30 0x30 0x30
 #end
 
+
+
+
+# sprite: 8x15
+: playerSprite
+            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x6e 0x6e 0x6e 0x76 0x3c 0x18 0x18 0x1c
+            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x7e 0x7e 0xf7 0xfb 0x3c 0x76 0x6e 0x77
+            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x7e 0x7e 0xf7 0xbb 0x3e 0x66 0xc7 0xe3
+            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x7e 0x7e 0xf7 0xfb 0x3c 0x76 0x6e 0x77
+            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x6e 0x6e 0x6e 0x76 0x3c 0x18 0x18 0x1c
+: playerReverseSprite
+            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x76 0x76 0x76 0x6e 0x3c 0x18 0x18 0x38
+            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x7e 0x7e 0xef 0xdf 0x3c 0x6e 0x76 0xee
+            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x7e 0x7e 0xef 0xdd 0x7c 0x66 0xe3 0xc7
+            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x7e 0x7e 0xef 0xdf 0x3c 0x6e 0x76 0xee
+            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x76 0x76 0x76 0x6e 0x3c 0x18 0x18 0x38
+
+#end
+
+
+# tileset 16x8
+: level1x
+
+            0xfe 0x09 0x0e 0x0f 0xff
+            0xfe 0x09 0x10 0x11 0xff
+            0xff
+            0xfe 0x0f 0x04
+            0xfe 0x05 0x06 0xfe 0x05 0x06 0xfe 0x03 0x05
+            0xfd 0x06 0x01 0x00 0xfd 0x04 0x01 0x01 0x00 0x01 0x01 0x01
+            0xff
+            0xff
+            0xff
+#end
+
 #tileset 16x8
-: mylevel
+: level1
+#tileset 16x8
+            0xfe 0x09 0x0e 0x0f 0xff
+            0xfe 0x09 0x10 0x11 0xff
+            0xff
+            0xfe 0x0f 0x04
+            0xfe 0x03 0x06 0xfe 0x05 0x06 0xfe 0x05 0x05
+            0x01 0x01 0x01 0x01 0x00 0x01 0x00 0x01 0x01 0x01 0x00 0x01 0x00 0x01 0x01 0x01
+            0xff
+            0xff
+            0xff
+#end
+
+#tileset 16x8
+: level1c
+            0xfe 0x03 0x0b 0xfe 0x05 0x0e 0x0f 0xff
+            0xfe 0x09 0x10 0x11 0xff
+            0xff
+            0xfe 0x0f 0x04
+            0xfe 0x03 0x06 0xfe 0x05 0x06 0xfe 0x05 0x05
+            0xfd 0x04 0x01 0xfd 0x05 0x01 0x01 0x01 0x01 0x01
+            0xff
+            0xff
+            0xff
+#end
+
+
+:const deadly 0
+:const door 1
+:const mario 2
+:const key1 3
+:const key2 4
+:const fuel 5
+
+: level1Objects
+            5 5 deadly
+            6 5 deadly
+            15 5 door
+            9 3 mario
+            9 5 mario
+            10 3 mario
+            10 5 deadly
+            11 5 deadly
+            0xff 0xff 0xff
+
+: level2Objects
+            db 0, 1, fuel
+            db 1, 1, door
+            db 9, 0, key1
+            db 15, 2, key2
+            db 14, 2, key2
+            db 15, 5, door
+            db 0xff, 0xff, 0xff
+
+
+
+# tileset 16x8
+: level2
+            0x07 0x08 0xfe 7 0x0c 0xff
+            0x09 0x0a 0xff
+            0xff
+            0x00 0x00 0x06 0xfe 12  0x0c
+            0xfd 4 0x01 0x03 0x00 0x00 0xfd 5 0x02 0x00 0x00 0x02 0x02
+            0x01 0x02 0x03 0xfe 12 0x04
+            0xfe 11 0x06 0xfe 0x03 0x05
+            0xfe 11 0xfd 4 1 0x03
+# end
+
+# tileset 16x8
+: level3
+            0xfe 15 0x04
+            0xfe 15 0x05
+            0xfe 0x0d 0x01 0x01 0x01
+            0x01 0x02 0x03 0xff
+            0x00 0x00 0x01 0x02 0x03 0xfe 0x09 0x12 0x13
+            0xfe 0x04 0x02 0x02 0xfe 0x08 0x14 0x15
+            0xfe 7 0x02 0x02 0x00 0x00 0xfd 5 1
+            0xff
+#end
+
+#tileset 16x8
+: level4
             0xff
             0x07 0x08 0xfe 0x08 0x0c 0xfe 0x04 0x04
             0x09 0x0a 0xfe 0x0d 0x05
@@ -256,4 +809,6 @@
             0x01 0x06 0xfe 0x04 0xfd 0x06 0x0b 0xff
             0x00 0x00 0xfd 0x04 0x01 0xff
             0xff
+            0xff
+
 #end

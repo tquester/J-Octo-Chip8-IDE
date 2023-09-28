@@ -1,19 +1,45 @@
 The goal was to make a game which feels like Manic Miner, Mario and similar jump and rum games from the past. 
-The miner changes his sprite on each movement, so that he moves arms and legs while walking. He also jumps in time lapse and can change the movement while jumping. 
+The player and the enemies move and change on each step. The player and some enemies remind of Manic Miner, however the sprites a smaller and a bit different.
 
 In order to complete the game, you must find out where and when to jump. Sometimes there are only a few pixels between you and the enemy.
 
-Chip8 has some restrictions, most of all, there is no easy way to tell where the miner has been hit. It would be possible to find out if I device the miner into many sprites and see if the head or the feet are hit. I took the lazy way and there is only one danger on each x coordinate. Also enemies only hurt if the miner is moving.
+Chip8 has some restrictions, most of all, there is no easy way to tell where the miner has been hit, so there are some technical restrictions: There is never any enemy or other danger at the same colon as a bonus like a key, also the enemies never hit any background pixel so if there is a collision, it is with the player.
 
-Currently the game only compiles with the j-octo IDE, it uses for..next and expressions but with some small modifications it may compile on any octo compiler.
+Also you have unlimited lives due to memory restrictions.
 
-In order to run flicker free on my Chip8 Emulator on the ZX Spectrum, there are three private opcodes, they are activated if the first two bytes in the memory are Z and X. The opcodes are 
+Compilation
+-----------
+
+The game was written in j-octo, my own IDE for chip8 games. j-octo is still in process, be sure to save your files before running. j-octo is litarlly the octo assembly language but with some new elements:
+ :struct defines a structure, which is a set of registers with automated save/load to memory
+ for..next is the for loop known from Basic
+ :if :end for conditional compiling
+ :include for including external files 
+
+In order to compile it with a regular octo compiler, you can compile to disassembler, then select octo assembly. The output should now compile. 
+
+ZX Spectrum
+------------
+
+In oder to have it flicker free the ZX Spectrum chip8 emulator, I invented 3 new opcodes which work similar to Basic command on ZX81:
+
  F0E0	- fast
  F0E1	- slow
  F0E2	- redraw
 
-Fast stops all screen updates, the screen freezes even if sprites are drawn. Slow returns to normal operation and redraw updates the screen. In the game loop, the game removes and re-draws all sprites then calls the redraw opcode. Now the emulator draws all changed lines. Even without a vsync you never will see a flicker because the new screen displays the restored background and the new sprite position at the same time.
+fast turns the emulator into redraw via interrupt but disables the redraw. Slow turns the drawing on again.
+redraw draws redraws the screen.
 
-On all other emulators, the opcodes are not executed.
+The game runs enirly in fast mode so it can re-arrange all sprites and have screen redrawed after the sprites have a new position. This way, you never will see a sprite disappearing. Also all calculations inside the game run a bit faster because the vsync does nothing.
 
-For the ZX Spectrum there is also a version which runs nativly in Z80 Machine code. One of j-octos disasseblers produce Z80 Assembly instead of octo code, this code can run on all systems which provide a small backend (Sprite drawing, keyboard etc.) The native game runs about 10 times faster than on the emulator
+ZX Chip8 stores the letters Z and X into memory location 0 and 1, only if this is present, the opcodes are present. Otherwise they simply return
+
+Native Code
+------------
+
+In order to gain a bit more speed, j-octos disassembler has a Z80 output format. This produces native Z80 assembler, which can be used with the runtime of the ZX Chip8 emulator. Many chip8 commands are compiled into a single Z80 opcode and even the I register is mapped to a real register (iy). 
+
+It should be realtivly easy to run the Z80 compiled Chip8 code on any other Z80 based machine like the Gameboy or Amstrad CPC, only a minimal runtime for sprite drawing, keyboard and interrupt must be implemented.
+
+
+

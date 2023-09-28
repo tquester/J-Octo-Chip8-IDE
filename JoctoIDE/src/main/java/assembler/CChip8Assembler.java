@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Stack;
 import java.util.TreeMap;
 
+import org.eclipse.swt.graphics.Point;
+
 import assembler.CDebugEntry.CDebugElem;
 import disass.C8DisassEmitter;
 import disass.C8LabelType;
@@ -875,7 +877,8 @@ public class CChip8Assembler {
 			writeCode(0x0e, reg1, 0xA1);
 			break;
 		case db:
-			while (nextToken(token)) {
+			while (mTokenizer.hasData()) {
+				expr(token);
 				if (token.token != Token.number) {
 					mTokenizer.ungetToken(token);
 					break;
@@ -1068,6 +1071,7 @@ public class CChip8Assembler {
 			CC8Label newlabel = new CC8Label();
 			newlabel.mName = astr;
 			newlabel.mTarget = token.iliteral;
+			newlabel.mLabelType = C8LabelType.CONST; 
 			mLabels.put(astr, newlabel);
 		}
 			break;
@@ -1137,6 +1141,7 @@ public class CChip8Assembler {
 			}
 			label.mName = astr;
 			label.mTarget = token.iliteral;
+			label.mLabelType = C8LabelType.CONST;
 			break;
 		case dotif:
 			expr(token);
@@ -1266,7 +1271,7 @@ public class CChip8Assembler {
 			// now we find x = number until }
 			while (mTokenizer.hasData()) {
 				mTokenizer.getToken(token, false);
-				if (token.token == Token.newline || token.token == Token.whitespace) continue;
+				if (token.token == Token.newline || token.token == Token.whitespace || token.token == Token.comment) continue;
 				if (token.token == Token.curlybracketclose)
 					break;
 				if (token.token != Token.literal) {
@@ -1485,6 +1490,7 @@ public class CChip8Assembler {
 		double result = parseCalc(token);
 		label.mTarget = (int) result;
 		label.mValue = result;
+		label.mLabelType = C8LabelType.CONST;
 
 		expect(Token.curlybracketclose);
 
@@ -1514,10 +1520,16 @@ public class CChip8Assembler {
 					error("Label "+token.literal+" not found");
 				}
 				if (label != null) {
-					if (label.mLabelType == C8LabelType.STRINGMODE) {
+					switch(label.mLabelType) {
+					case STRINGMODE:
 						compileString(label);
-					} else {
+						break;
+					case CONST:
+						mCode[pc++] = (byte)(label.mTarget & 0xff);
+						break;
+					default:
 						writeCode(0x2, label.mTarget);
+						break;
 					}
 				} else {
 					writeCode(0x2, 0);
@@ -2493,7 +2505,8 @@ public class CChip8Assembler {
 					String.format("Error %s(%d)/%d:%s %s", file, mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
 			System.out.println(mTokenizer.toString());
 			if (mSBErrors != null) {
-				mSBErrors.append(String.format("Error %d/%d:%s %s\n", mTokenizer.mLine, mTokenizer.mPosInLine, string,
+				Point p = mTokenizer.getLineFromPos();
+				mSBErrors.append(String.format("Error %d/%d:%s %s\n", p.y, p.x, string,
 						mContext));
 				mSBErrors.append(mTokenizer.toString() + "\n");
 

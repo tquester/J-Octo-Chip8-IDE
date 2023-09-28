@@ -10,6 +10,8 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 
 public class CDialogFindReplace extends Dialog {
 
@@ -21,6 +23,7 @@ public class CDialogFindReplace extends Dialog {
 	public StyledText mTextSource;
 	Button btnCheckIgnoreCase;
 	Button btnWords;
+	public CDialogIDE mDialogIDE;
 
 	/**
 	 * Create the dialog.
@@ -54,6 +57,12 @@ public class CDialogFindReplace extends Dialog {
 	 */
 	private void createContents() {
 		shell = new Shell(getParent(), getStyle());
+		shell.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyReleased(KeyEvent e) {
+				System.out.println("Key Released "+e.keyCode);
+			}
+		});
 		shell.setSize(450, 259);
 		shell.setText(getText());
 		
@@ -80,6 +89,7 @@ public class CDialogFindReplace extends Dialog {
 		btnWords.setText("words");
 		
 		Button btnFind = new Button(shell, SWT.NONE);
+
 		btnFind.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
@@ -87,13 +97,25 @@ public class CDialogFindReplace extends Dialog {
 			}
 		});
 		btnFind.setBounds(10, 175, 75, 25);
-		btnFind.setText("Find");
+		btnFind.setText("&Find");
 		
 		Button btnReplace = new Button(shell, SWT.NONE);
+		btnReplace.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onReplace();
+			}
+		});
 		btnReplace.setBounds(249, 175, 75, 25);
 		btnReplace.setText("Replace");
 		
 		Button btnNewButton = new Button(shell, SWT.NONE);
+		btnNewButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onReplaceAll();
+			}
+		});
 		btnNewButton.setBounds(330, 175, 75, 25);
 		btnNewButton.setText("Replace all");
 		
@@ -109,25 +131,45 @@ public class CDialogFindReplace extends Dialog {
 
 	}
 
+	protected void onReplaceAll() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	protected void onReplace() {
+		// TODO Auto-generated method stub
+		
+	}
+
 	protected void onFindNext() {
+		try {
 		String str = mTextFind.getText();
 		boolean word = btnWords.getSelection();
 		boolean ignore = btnCheckIgnoreCase.getSelection();
 		int pos = mSerachReplace.find(str, word, ignore);
 		if (pos != -1) {
-			mTextSource.setSelection(pos, pos+str.length());
+			mDialogIDE.getTextSource().setSelection(pos, pos+str.length());
+		}
+		} catch(Exception ex) {
+			ex.printStackTrace();
 		}
 		
 	}
 
 	protected void onFind() {
+		try {
 		String str = mTextFind.getText();
 		mSerachReplace.wordParaser.pos = 0;
 		boolean word = btnWords.getSelection();
 		boolean ignore = btnCheckIgnoreCase.getSelection();
+		mSerachReplace.start(mDialogIDE.getTextSource().getText());
 		int pos = mSerachReplace.find(str, word, ignore);
 		if (pos != -1) {
-			mTextSource.setSelection(pos, pos+str.length());
+			mDialogIDE.getTextSource().setSelection(pos, pos+str.length());
+		}
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
 		}
 		
 		

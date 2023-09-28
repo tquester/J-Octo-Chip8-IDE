@@ -1,6 +1,7 @@
 package emulator;
 
 import java.security.spec.MGF1ParameterSpec;
+import java.util.HashSet;
 import java.util.Stack;
 import java.util.TreeSet;
 
@@ -19,7 +20,7 @@ public class Chip8CPU {
 	Stack<Integer> stack = new Stack<>();
 	public int regDelay;
 	public int regSound;
-	 TreeSet<Integer> mBreakpoints = new TreeSet();
+	HashSet<Integer> mBreakpoints = new HashSet();
 	public Chip8GPU gpu = new Chip8GPU();
 	public Chip8Debugger debugger = new Chip8Debugger();
 	private boolean mStop=false;
@@ -134,8 +135,11 @@ public class Chip8CPU {
 					if (mDebugEntries != null) {
 					   CDebugEntry entry = mDebugEntries.get(pc);
 					   if (entry != null) {
-						   if (entry.mIsBreakpoint) 
+						   if (entry.mIsBreakpoint) {
+							   
 							   mStop = true;
+							   break;
+						   }
 						   if (entry.mLog != null) {
 							   String log = "";
 							   for (CDebugElem elem: entry.mLog) {
@@ -150,7 +154,7 @@ public class Chip8CPU {
 						   }
 					   }
 					}
-					
+				
 					cpuTick();
 				}
 				try {

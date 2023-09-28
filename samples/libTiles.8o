@@ -154,7 +154,7 @@
               tilexy := v0
 : searchTileSkip
               byteInLine += 1
-              if byteInLine == 16 begin
+              if byteInLine == 17 begin
                 byteInLine := 0
                 line += 1
               end
@@ -197,10 +197,17 @@
                 again
                 return
               end
-              v0 -= 1
-              v0x8
+              if v0 != 0 begin
+                v0 -= 1
+                v0x8
+                drawTile
+              else
+                x += 8
 
-              drawTile
+              end
+              displayCompressedByteCheckLine
+
+
             }
             return
 
@@ -209,7 +216,7 @@
 
 : displayCompressedByteCheckLine
             with TileDecoder {
-              if byteInLine == 16 begin
+              if x >= 128 begin
                 byteInLine := 0
                 x := 0
                 y += 8
@@ -233,5 +240,3 @@
               displayCompressedByteCheckLine
             }
             return
-
-

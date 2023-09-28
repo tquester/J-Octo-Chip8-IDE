@@ -4,6 +4,8 @@ import java.util.Stack;
 import java.util.TreeMap;
 import java.util.concurrent.Flow.Subscriber;
 
+import org.eclipse.swt.graphics.Point;
+
 import disass.CC8Label;
 
 public class CTokenizer {
@@ -441,6 +443,24 @@ public class CTokenizer {
 
 	public void popStruct() {
 		mStackStruct.pop();
+		
+	}
+
+	public Point getLineFromPos() {
+		int line=1;
+		int posInLine=1;
+		int size=mInput.length();
+		int i;
+		for (i=0;i<mPos;i++) {
+			char c = mInput.charAt(i);
+			if (c == '\n') {
+				line++;
+				posInLine=1;
+			} else
+				posInLine++;
+			
+		}
+		return new Point(posInLine, line);
 		
 	}
 

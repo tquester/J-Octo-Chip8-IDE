@@ -76,14 +76,13 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	TabFolder mTabFolder;
 	Combo mComboSpeed;
 	public boolean startRunning = false;
-	
+
 	private String mChip8Filename;
 	private Color colors[];
 	int bytesRead;
 	Display display;
 	CC8Decoder mDisassembler = new CC8Decoder();
 	C8DisassEmitter mDisassEmitter = new C8DisassEmitter();
-	
 
 	private Listener mKeyUpFilter;
 
@@ -127,20 +126,18 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onKeyUp(event.character, event.keyCode);
 
 			}
-		}; 
-		
+		};
+
 		mKeyDownFIlter = new Listener() {
 
 			@Override
 			public void handleEvent(Event event) {
 				System.out.println(String.format("event: %d", event.type));
 				onKeyDown(event.character, event.keyCode);
-				
 
 			}
 		};
-		
-		
+
 		display.addFilter(SWT.KeyUp, mKeyUpFilter);
 		display.addFilter(SWT.KeyDown, mKeyDownFIlter);
 
@@ -149,7 +146,8 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		colors[1] = display.getSystemColor(SWT.COLOR_BLACK);
 		colors[2] = display.getSystemColor(SWT.COLOR_RED);
 		colors[3] = display.getSystemColor(SWT.COLOR_GREEN);
-		for (int i=5;i<100;i+=5) mComboSpeed.add(Integer.toString(i));
+		for (int i = 5; i < 100; i += 5)
+			mComboSpeed.add(Integer.toString(i));
 
 		createTimer();
 		initDoubleBuffer();
@@ -172,53 +170,46 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	private void createMenu() {
 
-			mMainMenus = new CMainMenus(shlChipsuperChipxoChip);
-			mMainMenus.addMenu("&File").add("&Exit", new CCallback() {
-				@Override
-				public void callback() {
-					shlChipsuperChipxoChip.close();
-				}
-			});
-			
-			mMainMenus.addMenu("&Debug")
-				.add("&Run\tF5", SWT.F5, new CCallback() {
-					
-					@Override
-					public void callback() {
-						onRun();
-					}
-				})
-				.add("&Step into\tF11", SWT.F11, new CCallback() {
-					
-					@Override
-					public void callback() {
-						onStepInto();
-					}
-				})
-				.add("&Step over\tF10", SWT.F10, new CCallback() {
-					
-					@Override
-					public void callback() {
-						onStepOver();
-					}
-				})
-				
-				
-				;
-				
+		mMainMenus = new CMainMenus(shlChipsuperChipxoChip);
+		mMainMenus.addMenu("&File").add("&Exit", new CCallback() {
+			@Override
+			public void callback() {
+				shlChipsuperChipxoChip.close();
+			}
+		});
+
+		mMainMenus.addMenu("&Debug").add("&Run\tF5", SWT.F5, new CCallback() {
+
+			@Override
+			public void callback() {
+				onRun();
+			}
+		}).add("&Step into\tF11", SWT.F11, new CCallback() {
+
+			@Override
+			public void callback() {
+				onStepInto();
+			}
+		}).add("&Step over\tF10", SWT.F10, new CCallback() {
+
+			@Override
+			public void callback() {
+				onStepOver();
+			}
+		})
+
+		;
+
 	}
 
 	protected void onKeyUp(char character, int keyCode) {
-/*		if (keyCode == 0x1000013)
-			onStepInto();
-		if (keyCode == 0x1000014)
-			onStepOver();
-		if (keyCode == 0x100000e)
-			onRun();
-			*/
+		/*
+		 * if (keyCode == 0x1000013) onStepInto(); if (keyCode == 0x1000014)
+		 * onStepOver(); if (keyCode == 0x100000e) onRun();
+		 */
 		// System.out.println(String.format("%x - %d", keyCode,(int) character));
 		mCPU.addRemoveKey(character);
-		//displayDebug();
+		// displayDebug();
 
 	}
 
@@ -265,7 +256,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	public TreeMap<String, CC8Label> mLabels;
 	private Text mTextLog;
-	private String mLastLogLine="";
+	private String mLastLogLine = "";
 
 	void createTimer() {
 		mTimerStop = false;
@@ -402,7 +393,6 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		btnStop.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/stop.png"));
 		btnStop.setBounds(240, 4, 40, 32);
 
-
 		Button btnStepInto = new Button(composite_2, SWT.NONE);
 		btnStepInto.setToolTipText("F10");
 		btnStepInto.addSelectionListener(new SelectionAdapter() {
@@ -434,11 +424,11 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		});
 		btnBreakpoint.setImage(SWTResourceManager.getImage(CDialogEmulator.class, "/disass/breakpoint.png"));
 		btnBreakpoint.setBounds(375, 4, 40, 32);
-		
+
 		Label lblSpeed = new Label(composite_2, SWT.NONE);
 		lblSpeed.setBounds(420, 10, 44, 15);
 		lblSpeed.setText("Speed");
-		
+
 		mComboSpeed = new Combo(composite_2, SWT.NONE);
 		mComboSpeed.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -456,35 +446,33 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		mLblData.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
 		mLblData.setBounds(650, 10, 137, 339);
 		mLblData.setText("0000 00 ");
-		
+
 		mTabFolder = new TabFolder(shlChipsuperChipxoChip, SWT.NONE);
 		mTabFolder.setBounds(10, 374, 721, 101);
-		
+
 		TabItem tbtmDisassembler = new TabItem(mTabFolder, SWT.NONE);
 		tbtmDisassembler.setText("Disassembler");
-		
-				mListSource = new List(mTabFolder, SWT.BORDER | SWT.V_SCROLL);
-				tbtmDisassembler.setControl(mListSource);
-				mListSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-				
-				TabItem tbtmLog = new TabItem(mTabFolder, SWT.NONE);
-				tbtmLog.setText("Log");
-				
-				mTextLog = new Text(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
-				tbtmLog.setControl(mTextLog);
+
+		mListSource = new List(mTabFolder, SWT.BORDER | SWT.V_SCROLL);
+		tbtmDisassembler.setControl(mListSource);
+		mListSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
+
+		TabItem tbtmLog = new TabItem(mTabFolder, SWT.NONE);
+		tbtmLog.setText("Log");
+
+		mTextLog = new Text(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
+		tbtmLog.setControl(mTextLog);
 
 	}
 
 	protected void onSpeedSelected() {
-			try {
-				int speed = Integer.parseInt(mComboSpeed.getText());
-				mCPU.setSpeed(speed);
-			}
-			catch(Exception e){
-				
-			}
-		
-		
+		try {
+			int speed = Integer.parseInt(mComboSpeed.getText());
+			mCPU.setSpeed(speed);
+		} catch (Exception e) {
+
+		}
+
 	}
 
 	protected void onClose() {
@@ -493,27 +481,25 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		onStop();
 		stopTimer();
 		mCPU.gpu.mIEmulator = null;
-		
+
 		display.removeFilter(SWT.KeyDown, mKeyUpFilter);
 		display.removeFilter(SWT.KeyUp, mKeyDownFIlter);
-
 
 	}
 
 	protected void setClearBreakpoint() {
 		try {
-		int line = mListSource.getSelectionIndex();
-		int pc = mDebugSource.getPCForLine(line);
-		if (pc != -1) {
-			mCPU.setBreakpoint(pc);
-			boolean breakpoint = mCPU.isBreakpoint(pc);
+			int line = mListSource.getSelectionIndex();
+			int pc = mDebugSource.getPCForLine(line);
+			if (pc != -1) {
+				mCPU.setBreakpoint(pc);
+				boolean breakpoint = mCPU.isBreakpoint(pc);
 
-			String text = mListSource.getItem(line);
-			text = (breakpoint ? "*" : " ") + text.substring(1);
-			mListSource.setItem(line, text);
-		}
-		}
-		catch(Exception ex) {
+				String text = mListSource.getItem(line);
+				text = (breakpoint ? "*" : " ") + text.substring(1);
+				mListSource.setItem(line, text);
+			}
+		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 
@@ -564,16 +550,24 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	}
 
 	protected void onStepInto() {
-		mCPU.cpuTick();
-		displayDebug();
+		try {
+			mCPU.cpuTick();
+			displayDebug();
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	protected void onStop() {
-		mCPU.reset();
-		mCPU.gpu.cls();
-		if (!mDisposed) {
-			mCanvasScreen.redraw();
-			displayDebug();
+		try {
+			mCPU.reset();
+			mCPU.gpu.cls();
+			if (!mDisposed) {
+				mCanvasScreen.redraw();
+				displayDebug();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 
 	}
@@ -690,7 +684,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		}
 		mDisassembler.start(mCPU.getMemory(), bytesRead);
 		mDebugSource = mDisassEmitter.getDebugSource(sourceHints);
-		
+
 		if (mDebugSource != null)
 			initListDebugSource();
 
@@ -766,16 +760,17 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	@Override
 	public void log(String text) {
-		if (text.compareTo(mLastLogLine) == 0) return;
+		if (text.compareTo(mLastLogLine) == 0)
+			return;
 		mLastLogLine = text;
 		shlChipsuperChipxoChip.getDisplay().asyncExec(new Runnable() {
 			public void run() {
 				String edit = mTextLog.getText();
-				edit += text+"\r\n";
+				edit += text + "\r\n";
 				mTextLog.setText(edit);
-				mTextLog.setSelection(edit.length()-1);
+				mTextLog.setSelection(edit.length() - 1);
 			}
 		});
-		
+
 	}
 }
