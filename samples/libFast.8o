@@ -1,0 +1,46 @@
+#####################################################################################################
+## Init ZX Spectrum specitic Opcodes
+## The ZX Emulator stores the bytes "ZX" in memory lodation 0 and 1
+## This library only works on zx chip8 on all other emulators it simply does nothing
+##
+## Double buffereing is done with three commands
+## 0xF0E0 = Fast - Disable all Screen drawing (like in ZX81)
+## 0xF1E0 = Slow - Back to normal. All sprites are drawn
+## 0xF2E0 = Update - Force Screen update in fast mode
+##
+## Now we can re-arrange the scene, move all sprites etc. then call redraw to force a redraw.
+## Flickering is impossible because you never see a sprite beeing removed
+#####################################################################################################
+
+
+
+: initfast
+            i := 0
+            load v1
+            if v0 == 90 begin
+              if v1 == 88 begin
+                v0 := 0xF0
+                v1 := 0xE0
+                i := fast
+                save v1
+                v0 := 0xF1
+                i := slow
+                save v1
+                v0 := 0xf2
+                i := redraw
+                save v1
+              end
+            end
+            return
+
+: fast
+            return
+            return
+
+: slow
+            return
+            return
+
+: redraw
+            return
+            return

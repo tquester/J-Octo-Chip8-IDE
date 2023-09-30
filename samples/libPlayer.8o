@@ -1,0 +1,222 @@
+# ------------------------------------------------
+# -- libPlayer
+# ------------------------------------------------
+
+:struct PlayerData {
+              moveFlag                                                # vb
+              x                                                       # v0 Miners x
+              y                                                       # v1 Miners y
+              x1                                                      # v2 temp x
+              y1                                                      # v3 temp y
+              xdir1                                                   # v4 the previous direction flag
+              xdir                                                    # v5 Direction 1 = right, -1 = left
+              jumping                                                 # v7 Jump status
+              iPlayer                                                 # v8 miner Frame
+              diPlayer                                                # v9 Frame direction
+              iPlayer1                                                # va temp iPlayer
+              falling                                                 # vb
+            }
+
+# PlayerTilePos has the same structure as PlayerData for the first 3 variables
+# x1 becomes tilex, y1 becomes tiley by dividing the coordinate with the tile size (8)
+:struct PlayerTilePos {
+              moveFlag                                                # vb
+              x                                                       # v0 Miners x
+              y                                                       # v1 Miners y
+              tilex                                                   # v2 temp x
+              tiley                                                   # v3 temp y
+              collision                                               # v4
+            }
+
+
+
+: playerData
+            PlayerData.byte
+: playerSaveData
+            PlayerData.byte
+: playerTilePos
+            PlayerTilePos.byte
+: playerInitData
+            PlayerData.byte {
+              xdir := 1
+              x := 0
+              y := 20
+              jumping := 0
+              iPlayer := 0
+              diPlayer := 1
+            }
+
+: loadPlayerData
+            i := playerData
+            load PlayerData
+            return
+
+: savePlayerData
+            i := playerData
+            save PlayerData
+            return
+
+
+
+: playerTileAddress
+            with PlayerData {
+              x1 := x
+              y1 := y
+              y1 += playerHeight
+              x1 += 6
+              x1 >>= x1
+              x1 >>= x1
+              x1 >>= x1
+              y1 >>= y1
+              y1 >>= y1
+              y1 >>= y1
+            }
+            return
+
+: movePlayer
+            with PlayerData {
+
+              i := playerSprite
+              if xdir == -1 then i := playerReverseSprite
+              i += iPlayer
+              x1 := x
+              y1 := y
+              iPlayer1 := iPlayer
+              iPlayer += playerHeight
+              if iPlayer == playerHeight * playerFrameCount then iPlayer := 0
+              x += xdir
+              if x <= playerMinX then x := playerMinX
+              if x > playerMaxX then x := playerMaxX
+              if jumping == 0xfe begin
+                y += 1
+                x -= xdir
+                iPlayer := 0
+              else
+                if jumping > 0 begin
+                  if jumping <= playerJumpSteps / 2 begin
+                    y -= 1
+                  else
+                    y += 1
+                  end
+                  jumping += 1
+                  if jumping >= playerJumpSteps begin
+                    jumping := 0
+                  end
+                end
+              end
+
+              drawPlayer
+              x1 := x                                                 # prepare for draw
+              y1 := y                                                 # new position
+              iPlayer1 := iPlayer
+              xdir1 := xdir
+              drawPlayer                                              # draw new position
+              xdir1 := vf
+              playerTileAddress
+              if jumping == 0xfe then xdir1 := 0
+              vf := xdir1
+            }
+            return
+
+# ----------------------------------------------------------------------------------------------
+# -- move the player. If it is jumping it will move without any key but can reverse the direction
+# -- during a jump.
+# -- if the player does not move, there will be no redraw to avoid flicker
+# -- returns vf = 1 if the player has had a collision
+# ----------------------------------------------------------------------------------------------
+
+: playerProcessKeys
+            i := playerData
+            load PlayerData
+
+            with PlayerData {
+              moveFlag := 0                                           # v1 = Flag if miner moved
+              xdir1 := xdir                                           # save direction flag
+              x1 := 9                                                 # we use x1 as temp variable for keyboard check
+              if x1 key begin                                         # left
+                xdir := 1
+                moveFlag := 1
+              end
+
+              x1 := 7
+              if x1 key begin                                         # right
+                xdir := 0xff
+                moveFlag := 1
+              end
+
+              if jumping == 0 begin                                   # only start a new jump if not jumping
+                x1 := 5
+                if x1 key then jumping := 1                           # jump
+              else
+                moveFlag := 1
+              end
+
+              vf := 0
+              if moveFlag == 1 begin
+                movePlayer                                            # move walking or jumping player
+              end
+            }
+            i := playerData
+            save PlayerData
+
+            return
+
+: playerInitDraw
+            with PlayerData {
+              xdir := 1
+              jumping := 0
+              iPlayer := 0
+              x1 := x
+              y1 := y
+              iPlayer1 := iPlayer
+              drawPlayer
+              i := playerData
+              save PlayerData
+            }
+
+            return
+
+
+
+: playerCheckJump
+            i := playerSaveData
+            save PlayerData
+            i := playerData
+            load PlayerData
+            if PlayerData.jumping != 0 then movePlayer
+            i := playerSaveData
+            load v4
+            return
+#-------------------------------------------------
+# extern
+
+# uncomment and copy to your game
+
+:const playerHeight 15
+:const playerFrameCount 5
+:const playerMinX 0
+:const playerMaxX 116
+:const playerJumpSteps 29#
+#
+#: drawPlayer
+#           with PlayerData {
+#              i := playerSprite
+#              if xdir1 == -1 then i := playerReverseSprite#
+#
+#             i += iPlayer1
+#            sprite x1 y1 15
+#            }#
+#
+#            return
+#: playerSprite
+#            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x6e 0x6e 0x6e 0x76 0x3c 0x18 0x18 0x1c
+#            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x7e 0x7e 0xf7 0xfb 0x3c 0x76 0x6e 0x77
+#            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x7e 0x7e 0xf7 0xbb 0x3e 0x66 0xc7 0xe3
+#            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x7e 0x7e 0xf7 0xfb 0x3c 0x76 0x6e 0x77
+#            0x06 0x3e 0x7c 0x34 0x3e 0x18 0x3c 0x6e 0x6e 0x6e 0x76 0x3c 0x18 0x18 0x1c
+#: playerReverseSprite
+#            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x76 0x76 0x76 0x6e 0x3c 0x18 0x18 0x38
+#            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x7e 0x7e 0xef 0xdf 0x3c 0x6e 0x76 0xee
+#            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x7e 0x7e 0xef 0xdd 0x7c 0x66 0xe3 0xc7
+#            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x7e 0x7e 0xef 0xdf 0x3c 0x6e 0x76 0xee
+#            0x60 0x7c 0x3e 0x2c 0x7c 0x18 0x3c 0x76 0x76 0x76 0x6e 0x3c 0x18 0x18 0x38

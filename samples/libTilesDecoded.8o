@@ -1,0 +1,208 @@
+
+# Structure for
+#   a) decompressing a tileset to uncompressed tileset
+#   b) displaying a compressed tileset
+#   c) finding the tile at x/y
+:struct TileDecoder {
+              dataByte
+              line                                                    # v1 line
+              byteInLine                                              # v2 byte in line (not used while showing compressed tiles)
+              source                                                  # v3 source offset (to compressed or uncompressed tile set)
+              dest                                                    # v4 dest offset to uncompressed tile set
+              count                                                   # v5 used in decompressing 0xfd, number of tiles
+              x                                                       # v6 x coordinate (while displaying compressed tile set)
+              y                                                       # v7  y coordinate (while displaying compressed tile set)
+              tile                                                    # v8  tile (used in decoding 0xfd)
+              displayX                                                # v9 -1 if we display all or the tile to be displayed
+              displayY                                                # va tile to be displyed if
+              tilexy                                                  # vb Tile found at x/y
+            }
+
+
+
+: decompressLevelStart
+            with TileDecoder {
+              line := 0
+              byteInLine := 0
+              source := 0
+              dest := 0
+              x := 0
+              y := 0
+              tilexy := 0xff
+            }
+            return
+
+
+: decompressByteCheckNewLine
+            with TileDecoder {
+              if byteInLine == 16 begin
+                byteInLine := 0
+                line += 1
+              end
+            }
+
+            return
+
+: decompressByteWrite
+            with TileDecoder {
+              i := levelData
+              i += dest
+              save v0
+              dest += 1
+              byteInLine += 1
+            }
+            return
+
+: decompressCopyBytes
+            with TileDecoder {
+              loop
+                if count == 0 then return
+                decompressByteWrite
+                decompressByteCheckNewLine
+                count -= 1
+              again
+            }
+
+
+: decompressByte
+            with TileDecoder {
+              i += source
+              load dataByte
+              source += 1
+
+              if dataByte == 0xff begin                               # 0xff skip until end of line, fill with 0
+                dataByte := 0
+                loop while byteInLine < 16
+                  decompressByteWrite
+                again
+                line += 1
+                byteInLine := 0
+                return
+              end
+              if dataByte == 0xfe begin                               # 0xfe n skip n bytes, fill with 0
+                load v0
+                count := dataByte
+                source += 1
+                dataByte := 0
+                jump decompressCopyBytes
+              end
+              if dataByte == 0xfd begin                               # 0xfd n m skip n bytes, fill with m
+                load v0
+                count := v0
+                load v0
+                source += 2
+                jump decompressCopyBytes
+              end
+              decompressByteWrite
+              decompressByteCheckNewLine
+            }
+            return
+
+
+: v0x16
+            v0 += v0
+: v0x8
+            v0 += v0
+: v0x4
+            v0 += v0
+            v0 += v0
+            return
+
+# ----------------------------------------------------------------------------------------------
+# -- Display a run level compressed level
+# -- input: leveladr: level tileset (compressed)
+# --        numLines: Number of lines to display (0..7)
+# ----------------------------------------------------------------------------------------------
+
+
+:macro DisplayCompressedLevel leveladr numLines {
+              TileDecoder.displayX = 0xff
+              decompressLevelStart
+              loop
+                while TileDecoder.line != numLines
+                i := leveladr
+                decompressByte
+              again
+              drawTileLevel
+
+            }
+
+:macro DisplayTile tilex tiley tile {
+              v1 := tilex
+              v2 := tiley
+              v0 := tile
+              displayTileSub
+            }
+
+: displayTileSub
+            v0 -= 1
+            v0x8
+            i := scenesprites
+            i += v0
+            sprite v1 v2 8
+            return
+
+
+
+
+# ----------------------------------------------------------------------------------------------
+# -- Find a tile in compressed level
+# -- input: leveladr: level tileset (compressed)
+# --        numLines: Number of lines to display (0..7)
+# --        tileX: column of tile to display
+# --        tileY: row of tile to display
+# -- output:
+#           TileDecoder.tilexy = Found tile
+# ----------------------------------------------------------------------------------------------
+
+: tileAtV0V1
+# v0 = y
+# v1 = x
+# return v0 = tile
+
+            v0x16
+            v0 += v1
+            i := levelData
+            i += v0
+            load v0
+            return
+: drawTileLevel
+            with TileDecoder {
+
+              i := levelData
+              displayX := 0
+              displayY := 0
+              source := 0
+              for source := 0 to 8*16 begin
+                i := levelData
+                i += source
+                load v0
+                if v0 != 0 begin
+                  v0 -= 1
+                  v0x8
+                  i := scenesprites
+                  i += v0
+                  sprite displayX displayY 8
+                end
+                displayX += 8
+                if displayX == 128 begin
+                  displayX := 0
+                  displayY += 8
+                end
+              end
+
+              return
+            }
+
+
+
+
+: levelData
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
