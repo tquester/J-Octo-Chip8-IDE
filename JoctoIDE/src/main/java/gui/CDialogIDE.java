@@ -1,5 +1,6 @@
 package gui;
 
+
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
@@ -776,7 +777,7 @@ public class CDialogIDE extends Dialog {
 	private double mSplitError = 0;
 
 	protected void onEmulator() {
-		CDialogEmulator dlg = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
+		CDialogEmulator dlg = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX + SWT.CLOSE);
 		dlg.open();
 
 	}

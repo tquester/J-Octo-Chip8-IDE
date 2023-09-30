@@ -1,8 +1,7 @@
-folder=D:\Emulator\z80\dev\j-octo\samples
-file=D:\Emulator\z80\dev\j-octo\samples\minegame.8o
-file=D:\Emulator\z80\dev\j-octo\samples\EnterTheMinemini2.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libTilesDecoded.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libPlayer.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libTilesDecoded.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libTiles.8o
-file=D:\Emulator\z80\dev\j-octo\samples\libFast.8o
+folder=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples
+file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/minegame.8o
+file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/enemyDemo.8o
+file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/libPlayer.8o
+file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/libTiles.8o
+file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/libTilesDecoded.8o
+file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/EnterTheMinemini2.8o

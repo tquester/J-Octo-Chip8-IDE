@@ -63,7 +63,7 @@
               x1 := x
               y1 := y
               y1 += playerHeight
-              x1 += 6
+              x1 += 4
               x1 >>= x1
               x1 >>= x1
               x1 >>= x1

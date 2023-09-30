@@ -172,6 +172,11 @@
             i := robo                                                 # out sprite
             jump drawSprite12
 
+: drawCellphone
+            i := cellphone                                            # out sprite
+            jump drawSprite12
+
+
 #
 #: main
 #            Tinytext 10 10 enterTheMine
@@ -189,7 +194,7 @@
                 savePlayerData
               end
             else
-              if v0 < 3 begin
+              if v0 < 8 begin
                 if PlayerData.jumping != 0 begin
                   loadPlayerData
                   PlayerData.jumping = 0
@@ -197,7 +202,9 @@
                 end
               end
             end
-
+            vf := 0
+            if PlayerTilePos.tiley > 7 then
+            vf := 1
             return
 
 
@@ -321,7 +328,7 @@
             i := playerInitData
             load PlayerData
 # i := playerData
-            PlayerData.y = 17
+            PlayerData.y = 9
             playerInitDraw
             drawInitEnemy enemydata1 drawToilette                     # draw initial
             drawInitEnemy enemydata2 drawToilette                     # draw initial
@@ -333,6 +340,8 @@
 
               if PlayerTilePos.moveFlag == 1 begin
                 checkFalling
+                if vf == 1 then jump scene2
+
 :if DEBUG
                 printCoords
 :end
@@ -399,7 +408,7 @@
             i := playerInitData
             load PlayerData
 # i := playerData
-            PlayerData.y = 18
+            PlayerData.y = 9
             playerInitDraw
             drawInitEnemy enemydata1 drawStomper                      # draw initial
             drawInitEnemy enemydata2 drawRobo                         # draw initial
@@ -408,28 +417,80 @@
             loop                                                      # forwever
               playerProcessKeys
               PlayerTilePos.collision := vf
+              if PlayerTilePos.tiley == 8 then jump scene3
+
 
               if PlayerTilePos.moveFlag == 1 begin
+                checkFalling
 :if DEBUG
                 printCoords
 :end
+                if PlayerTilePos.tilex < 6 then jump scene3cont
+
+
                 if PlayerTilePos.collision == 1 begin
-                  i := level1Objects
+                  i := level3Objects
                   checkCollision
-                  if v0 == mario begin
-                    Tinytext 0 5 mariowashere2
-                    jump scene1cont
-                  end
-                  if v0 == door then jump scene2
-                  jump scene1
+:log "collision object=" v0 " tilex=" PlayerTilePos.tilex " tiley=" PlayerTilePos.tiley
+                  if v0 == rocket then jump rocketHit
+
+                  if v0 == door then jump scene4
+                  jump scene3
                 end
               end
+: scene3cont
+
 
               moveenemy enemydata1 drawStomper                        # draw initial
               moveenemy enemydata2 drawRobo                           # move enemy2
               redraw
 
             again
+: rocketHit
+
+            i := playerData
+            load PlayerData
+            playerInitDraw
+
+            DisplayTile (14*8) (4*8) 0x12
+            DisplayTile (15*8) (4*8) 0x13
+            DisplayTile (14*8) (5*8) 0x14
+            DisplayTile (15*8) (5*8) 0x15
+
+
+            v4 := 8
+            for v3 := 0 to 30 begin
+              drawRocket
+              for v5 := 0 to 30 v5 += 0
+              drawRocket
+            end
+            i := playerData
+            load PlayerData
+            PlayerData.x := 13*8
+            PlayerData.y := 0*8+1
+            i := playerData
+            savePlayerData
+            playerInitDraw
+            jump scene3cont
+
+: drawRocket
+            v4 := 8
+            i := scenesprites + 0x11 * 8
+            v1 := 14 * 8
+            v2 := 4 * 8
+            v2 -= v3
+            sprite v1 v2 8
+            v1 += 8
+            i += v4
+            sprite v1 v2 8
+            v1 -= 8
+            v2 += 8
+            i += v4
+            sprite v1 v2 8
+            v1 += 8
+            i += v4
+            sprite v1 v2 8
+            return
 
 # --------------------------------------------------------------------------------------------
 # -- Scene 4: Attack of the mutant cell phones
@@ -441,9 +502,9 @@
             v0 := 1
             i := bcdfirst
             save v0
-:end
 
-            copyData scene1SpriteData enemydata1 ((initEnemyData1 - initEnemyData)*2)
+
+            copyData scene4SpriteData enemydata1 ((initEnemyData1 - initEnemyData)*2)
             DisplayCompressedLevel level4 8
             Tinytext 0 58 whereiseugene
             i := playerInitData
@@ -451,8 +512,8 @@
 # i := playerData
             PlayerData.y = 18
             playerInitDraw
-            drawInitEnemy enemydata1 drawToilette                     # draw initial
-            drawInitEnemy enemydata2 drawToilette                     # draw initial
+            drawInitEnemy enemydata1 drawCellphone                    # draw initial
+            drawInitEnemy enemydata2 drawCellphone                    # draw initial
 
 # loop endless
             loop                                                      # forwever
@@ -476,8 +537,8 @@
               end
 
 : scene1cont
-              moveenemy enemydata1 drawToilette                       # draw initial
-              moveenemy enemydata2 drawToilette                       # move enemy2
+              moveenemy enemydata1 drawCellphone                      # draw initial
+              moveenemy enemydata2 drawCellphone                      # move enemy2
               redraw
 
             again
@@ -577,6 +638,34 @@
               minx := 0
               maxx := 128
               dy := 1
+              maxframe := (3*12)
+              dframe := 12
+            }
+
+
+: scene4SpriteData
+            Enemy.byte {
+              x := 69
+              y := 37
+              miny := 9
+              maxy := 50
+              minx := 10
+              maxx := 100
+              dx := 2
+              dy := 1
+              maxframe := (3*12)
+              dframe := 12
+            }
+
+            Enemy.byte {
+              x := 48
+              y := 10
+              miny := 15
+              maxy := 40
+              minx := 0
+              maxx := 128
+              dy := 2
+              dx := 1
               maxframe := (3*12)
               dframe := 12
             }
@@ -752,6 +841,8 @@
 :const key1 3
 :const key2 4
 :const fuel 5
+:const way 6
+:const rocket 7
 
 : level1Objects
             5 5 deadly
@@ -765,15 +856,20 @@
             0xff 0xff 0xff
 
 : level2Objects
-            db 0, 1, fuel
-            db 1, 1, door
-            db 9, 0, key1
-            db 15, 2, key2
-            db 14, 2, key2
-            db 15, 5, door
-            db 0xff, 0xff, 0xff
+            0 1 fuel
+            1 1 door
+            9 0 key1
+            15 2 key2
+            14 2 key2
+            15 5 door
+            0xff 0xff 0xff
 
-
+: level3Objects
+            14 6 rocket
+            14 5 rocket
+            14 2 door
+            15 2 door
+            0xff 0xff 0xff
 
 # tileset 16x8
 : level2
