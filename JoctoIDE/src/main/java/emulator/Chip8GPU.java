@@ -28,6 +28,10 @@ public class Chip8GPU {
 
 	private boolean mSemaphore;
 
+	public int tileWidth;
+
+	public int tileHeight;
+
 	public void initImage(Device device, int width, int height) {
 		mImage = new Image(device, width, height);
 		colors = new Color[4];
@@ -161,8 +165,8 @@ public class Chip8GPU {
 			int chip8Width = this.width;
 			int chip8Height = this.height;
 			Rectangle bounds = mImage.getBounds();
-			int tileWidth = (bounds.width) / chip8Width;
-			int tileHeight = (bounds.height) / chip8Height;
+			tileWidth = (bounds.width) / chip8Width;
+			tileHeight = (bounds.height) / chip8Height;
 			int imgx, imgy, imgx1;
 			x &= (width - 1);
 			y &= (this.height - 1);
@@ -182,6 +186,7 @@ public class Chip8GPU {
 				for (int iy = 0; iy < height; iy++) {
 					imgx1 = imgx;
 					int mask = 0x80;
+					if (address < 0) break;
 					int spriteByte = memory[address++];
 					for (int ix = 0; ix <= 7; ix++) {
 						if (x + ix < this.width) {

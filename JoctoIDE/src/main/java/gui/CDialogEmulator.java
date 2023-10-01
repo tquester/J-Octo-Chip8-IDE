@@ -54,6 +54,8 @@ import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.TabFolder;
 import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.MouseEvent;
 
 public class CDialogEmulator extends Dialog implements IEmulator {
 
@@ -73,6 +75,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	Label mLblDisass;
 	Label mLblData;
 	List mListSource;
+	Label lblPosition;
 	TabFolder mTabFolder;
 	Combo mComboSpeed;
 	public boolean startRunning = false;
@@ -334,6 +337,11 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		});
 
 		mCanvasScreen = new Canvas(shlChipsuperChipxoChip, SWT.NO_BACKGROUND);
+		mCanvasScreen.addMouseMoveListener(new MouseMoveListener() {
+			public void mouseMove(MouseEvent e) {
+				onMouseMoveCanvas(e);
+			}
+		});
 		mCanvasScreen.addPaintListener(new PaintListener() {
 			public void paintControl(PaintEvent e) {
 				onRepaintScreen(e);
@@ -440,7 +448,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mLblDisass = new Label(shlChipsuperChipxoChip, SWT.NONE);
 		mLblDisass.setText("200 00 00 NOP");
-		mLblDisass.setBounds(10, 353, 576, 15);
+		mLblDisass.setBounds(115, 348, 471, 20);
 
 		mLblData = new Label(shlChipsuperChipxoChip, SWT.BORDER | SWT.WRAP);
 		mLblData.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
@@ -462,7 +470,21 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mTextLog = new Text(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
 		tbtmLog.setControl(mTextLog);
+		
+		lblPosition = new Label(shlChipsuperChipxoChip, SWT.NONE);
+		lblPosition.setBounds(10, 348, 70, 20);
+		lblPosition.setText("0/0");
 
+	}
+
+	protected void onMouseMoveCanvas(MouseEvent e) {
+		int pixelHeight = mCPU.gpu.tileHeight;
+		int pixelWidth = mCPU.gpu.tileWidth;
+		if (pixelHeight != 0 && pixelWidth != 0) {
+			int x = e.x / pixelWidth;
+			int y = e.y / pixelHeight;
+			lblPosition.setText(String.format("%d/%d",x,y));
+		}
 	}
 
 	protected void onSpeedSelected() {

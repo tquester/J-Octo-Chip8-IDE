@@ -1,7 +1,3 @@
-folder=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples
-file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/minegame.8o
-file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/enemyDemo.8o
-file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/libPlayer.8o
-file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/libTiles.8o
-file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/libTilesDecoded.8o
-file=/home/thomas/dev/git/J-Octo-Chip8-IDE/samples/EnterTheMinemini2.8o
+folder=C:\Users\tques\git\J-Octo-Chip8-IDE\samples
+file=C:\Users\tques\git\J-Octo-Chip8-IDE\samples\minegame.8o
+file=C:\Users\tques\git\J-Octo-Chip8-IDE\samples\libPlayer.8o
