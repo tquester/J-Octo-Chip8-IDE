@@ -77,6 +77,7 @@ public class CDialogTileEditor extends Dialog {
 	protected int mNTilesH;
 	private int mScreenW, mScreenH;
 	protected boolean mTilesUpdate=false;
+	private Combo mComboTileMap;
 
 	public void readSourcefile(String text) {
 		mResources = new CResources();
@@ -151,6 +152,9 @@ public class CDialogTileEditor extends Dialog {
 		for (CSpriteData data: mResources.mSprites) {
 			mComboTileset.add(data.toString());
 		}
+		for (CSpriteData data: mResources.mTilesets) {
+			mComboTileMap.add(data.toString());
+		}
 		
 	}
 
@@ -223,21 +227,7 @@ public class CDialogTileEditor extends Dialog {
 		mComboTileset.addModifyListener(new ModifyListener() {
 
 			public void modifyText(ModifyEvent e) {
-				try {
-				mTilesetIndex = mComboTileset.getSelectionIndex();
-				CSpriteData data = mResources.mSprites.get(mTilesetIndex); 
-				mTextIcons.setText(data.getText());
-				tilesetBytes = data.parse(data.getText());
-				
-				
-				if (mCanvasTilePicture != null)
-					mCanvasTilePicture.redraw();
-				if (mCanvasTileset != null)
-					mCanvasTileset.redraw();
-				}
-				catch(Exception ex) {
-					ex.printStackTrace();
-				}
+				onModifyComboTileset(e);
 			}
 		});
 		mComboTileset.setBounds(633, 14, 132, 23);
@@ -260,7 +250,12 @@ public class CDialogTileEditor extends Dialog {
 		});
 		mComboH.setBounds(148, 14, 40, 23);
 		
-		Combo mComboTileMap = new Combo(composite, SWT.NONE);
+		mComboTileMap = new Combo(composite, SWT.NONE);
+		mComboTileMap.addModifyListener(new ModifyListener() {
+			public void modifyText(ModifyEvent e) {
+				onModifyComboTileMap(e);
+			}
+		});
 		mComboTileMap.setBounds(434, 17, 132, 23);
 		
 		Label lblZoom = new Label(composite, SWT.NONE);
@@ -372,15 +367,52 @@ public class CDialogTileEditor extends Dialog {
 
 	}
 
+	protected void onModifyComboTileset(ModifyEvent e) {
+		try {
+		mTilesetIndex = mComboTileset.getSelectionIndex();
+		CSpriteData data = mResources.mSprites.get(mTilesetIndex); 
+		mTextIcons.setText(data.getText());
+		tilesetBytes = data.parse(data.getText());
+		
+		
+		if (mCanvasTilePicture != null)
+			mCanvasTilePicture.redraw();
+		if (mCanvasTileset != null)
+			mCanvasTileset.redraw();
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
 
+
+	protected void onModifyComboTileMap(ModifyEvent e) {
+		try {
+		mTilesetIndex = mComboTileMap.getSelectionIndex();
+		CSpriteData data = mResources.mTilesets.get(mTilesetIndex); 
+		mTextTiles.setText(data.getText());
+	//	tilesetBytes = data.parse(data.getText());
+		
+		
+		if (mCanvasTilePicture != null)
+			mCanvasTilePicture.redraw();
+		if (mCanvasTileset != null)
+			mCanvasTileset.redraw();
+		}
+		catch(Exception ex) {
+			ex.printStackTrace();
+		}
+		
+	}
 
 	protected void onUpdateEditTiles() {
 		CTokenizer tokenizer = new CTokenizer();
 		CToken token = new CToken();
 		String text = mTextTiles.getText();
 		tokenizer.start(text);
-		int nRows = getTileH();
-		int nColumns = getTileW();
+		int nRows = getTilesetH();
+		int nColumns = getTilesetW();
 		int pos=0;
 		int posInLine = 0;
 		int i,n, count, b;
@@ -425,6 +457,26 @@ public class CDialogTileEditor extends Dialog {
 		mCanvasTilePicture.redraw();
 		// TODO Auto-generated method stub
 		
+	}
+
+	private int getTilesetW() {
+		try {
+			return Integer.parseInt(mComboW.getText());
+		} catch(Exception ex)
+		{
+			
+		}
+		return 8;
+	}
+
+	private int getTilesetH() {
+		try {
+			return Integer.parseInt(mComboH.getText());
+		} catch(Exception ex)
+		{
+			
+		}
+		return 8;
 	}
 
 	private int nextNumber(CTokenizer tokenizer, CToken token) {
@@ -524,8 +576,8 @@ public class CDialogTileEditor extends Dialog {
 			Rectangle rect = mCanvasTilePicture.getBounds();
 			int tileh = getTileH();
 			int tilew = getTileW();
-			int tilesW = Integer.parseInt(mComboW.getText());
-			int tilesH = Integer.parseInt(mComboH.getText());
+			int tilesW = parseInt(mComboW.getText());
+			int tilesH = parseInt(mComboH.getText());
 			int x = 0;
 			int y = 0;
 			int w = mScreenW / tilesW;
@@ -565,6 +617,16 @@ public class CDialogTileEditor extends Dialog {
 			ex.printStackTrace();
 		}
 		
+	}
+
+	private int parseInt(String text) {
+		try {
+			return Integer.parseInt(text);
+		}
+		catch(Exception ex) {
+			
+		}
+		return 1;
 	}
 
 	protected void onRepaintCanvasPreview(PaintEvent e) {

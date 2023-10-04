@@ -1203,6 +1203,13 @@ public class CChip8Assembler {
 		case dotStruct:
 			compileStruct(token);
 			break;
+		case dotTiles: 
+		case dotSprites:
+		case dotTileset: {
+			compileTiles(token);
+			break;
+			
+		}
 
 		case newline:
 		case none:
@@ -1212,6 +1219,53 @@ public class CChip8Assembler {
 			error("Undef token " + token.toString());
 		}
 
+	}
+
+	private void compileTiles(CToken token) {
+		CC8Label label = new CC8Label();
+		int w,h;
+		switch(token.token) {
+		case dotTiles:
+			label.mLabelType = C8LabelType.TILES;
+			break;
+		case dotSprites:
+			label.mLabelType = C8LabelType.SPRITES;
+			break;
+		case dotTileset:
+			label.mLabelType = C8LabelType.TILESET;
+			break;
+		}
+		nextToken(token);
+		if (token.token != Token.literal) {error("Expected label name"); return; }
+		label.mName = token.literal;
+		label.mTarget = pc;
+		mLabels.put(label.mName, label);
+		expect(Token.comma);
+		expr(token);
+		if (!(token.token == Token.number)) {error("Expected width"); return; }
+		expect(Token.comma);
+		expr(token);
+		if (!(token.token == Token.number)) {error("Expected height"); return; }
+		expectBegin();
+		
+		while (mTokenizer.hasData()) {
+			mTokenizer.getToken(token);
+			if (token.token == Token.curlybracketclose || token.token == Token.octoend) {
+				break;
+			}
+			if (token.token == Token.comma || token.token == Token.comment || token.token == Token.newline) continue;
+			if (token.token == Token.label) {
+				CC8Label label2 = new CC8Label();
+				label2.mName = token.literal;
+				label2.mLabelType = label.mLabelType;
+				label2.mTarget = pc;
+				mLabels.put(label2.mName, label2);
+				continue;
+			}
+			if (token.token == Token.number) {
+				mCode[pc++] = (byte)(token.iliteral & 0xff);
+			}
+		}
 	}
 
 	private void compileInclude(CToken token) {
@@ -2420,6 +2474,24 @@ public class CChip8Assembler {
 			return true;
 		}
 		return false;
+	}
+
+	private boolean expectBegin() {
+		CToken token = new CToken();
+		if (nextToken(token)) {
+			if (token.token == Token.curlybracketopen || token.token ==Token.octobegin) return true;
+		}
+		return false;
+		
+	}
+	
+	private boolean expectEnd() {
+		CToken token = new CToken();
+		if (nextToken(token)) {
+			if (token.token == Token.curlybracketclose || token.token ==Token.octoend) return true;
+		}
+		return false;
+		
 	}
 
 	private boolean expect(Token expected) {

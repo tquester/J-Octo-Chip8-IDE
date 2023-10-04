@@ -6,7 +6,9 @@ import assembler.CToken;
 
 public class CSpriteData extends CBinaryData {
 	public String text;
+	public String name = null;
 	public boolean tiles;
+	public int w,h;
 
 	
 	public CSpriteData(CToken token) {
@@ -25,6 +27,7 @@ public class CSpriteData extends CBinaryData {
 		this.dirty = true;
 	}
 	public String toString() {
+		if (name != null) return name;
 		return String.format("line %d",line);
 	}
 	

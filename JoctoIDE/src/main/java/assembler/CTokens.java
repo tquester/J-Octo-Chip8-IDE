@@ -207,6 +207,10 @@ public class CTokens {
 	        {"code", Token.code},
 	        {":log", Token.dotlog },
 	        {":struct", Token.dotStruct },
+	        {":tileset", Token.dotTileset },
+	        {":tiles", Token.dotTiles },
+	        {":sprites", Token.dotSprites },
+	        {":sprite", Token.dotSprites },
 	        
 	        
 	        

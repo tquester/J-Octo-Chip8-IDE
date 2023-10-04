@@ -12,7 +12,10 @@ public enum C8LabelType {
 	HEX,
 	STRINGMODE,
 	STRUCT,
-	CONST
+	CONST,
+	TILES,
+	SPRITES,
+	TILESET
 	;
 };
 

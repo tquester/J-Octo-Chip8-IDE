@@ -64,6 +64,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	protected Object result;
 	protected Shell shlChipsuperChipxoChip;
+	List mListMemory;
 	Label registerLabels[] = new Label[19];
 	Label registerLabelTitles[] = new Label[19];
 	String titles[] = { "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "VA", "VB", "VC", "VD", "VE", "VF",
@@ -180,6 +181,14 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				shlChipsuperChipxoChip.close();
 			}
 		});
+		
+		mMainMenus.addMenu("&Edit").add("&Refresh", new CCallback() {
+			@Override
+			public void callback() {
+				onRefresh();
+			}
+			
+		});
 
 		mMainMenus.addMenu("&Debug").add("&Run\tF5", SWT.F5, new CCallback() {
 
@@ -203,6 +212,11 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		;
 
+	}
+
+	protected void onRefresh() {
+		disassAndInitDebugger(mFilename);
+		
 	}
 
 	protected void onKeyUp(char character, int keyCode) {
@@ -260,6 +274,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	public TreeMap<String, CC8Label> mLabels;
 	private Text mTextLog;
 	private String mLastLogLine = "";
+	private String mFilename;
 
 	void createTimer() {
 		mTimerStop = false;
@@ -318,7 +333,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onResize();
 			}
 		});
-		shlChipsuperChipxoChip.setSize(886, 520);
+		shlChipsuperChipxoChip.setSize(886, 594);
 		shlChipsuperChipxoChip.setText("Chip8/Super Chip8/XO Chip8");
 		shlChipsuperChipxoChip.addFocusListener(new FocusListener() {
 
@@ -456,7 +471,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		mLblData.setText("0000 00 ");
 
 		mTabFolder = new TabFolder(shlChipsuperChipxoChip, SWT.NONE);
-		mTabFolder.setBounds(10, 374, 721, 101);
+		mTabFolder.setBounds(10, 374, 721, 161);
 
 		TabItem tbtmDisassembler = new TabItem(mTabFolder, SWT.NONE);
 		tbtmDisassembler.setText("Disassembler");
@@ -470,6 +485,19 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mTextLog = new Text(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
 		tbtmLog.setControl(mTextLog);
+		
+		TabItem mTabMemory = new TabItem(mTabFolder, SWT.NONE);
+		mTabMemory.setText("Memory");
+		
+		mListMemory = new List(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
+		mListMemory.setFont(SWTResourceManager.getFont("Courier New", 10, SWT.NORMAL));
+		mTabMemory.setControl(mListMemory);
+		
+		TabItem tbtmMonitor = new TabItem(mTabFolder, SWT.NONE);
+		tbtmMonitor.setText("Monitor");
+		
+		Composite composite = new Composite(mTabFolder, SWT.NONE);
+		tbtmMonitor.setControl(composite);
 		
 		lblPosition = new Label(shlChipsuperChipxoChip, SWT.NONE);
 		lblPosition.setBounds(10, 348, 70, 20);
@@ -696,6 +724,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	private void disassAndInitDebugger(String filename) {
 
+		mFilename = filename;
 		C8DebugSource sourceHints = mDebugSource;
 		mDisassEmitter.createDebugSource();
 		if (filename != null) {
@@ -706,10 +735,28 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		}
 		mDisassembler.start(mCPU.getMemory(), bytesRead);
 		mDebugSource = mDisassEmitter.getDebugSource(sourceHints);
+		mListMemory.removeAll();
+		int pc = 0;
+		while (pc < bytesRead+0x200) {
+			String str = memoryLine(pc, 16);
+			pc += 16;
+			mListMemory.add(str);
+		}
 
 		if (mDebugSource != null)
 			initListDebugSource();
 
+	}
+
+	private String memoryLine(int pc, int len) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("%04x ", pc));
+		for (int i=0;i<len;i++) {
+			int b = mCPU.memory[pc++];
+			sb.append(String.format("%02x ", b & 0xff));
+		}
+		
+		return sb.toString();
 	}
 
 	private void initListDebugSource() {

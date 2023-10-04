@@ -10,6 +10,7 @@ public class CResources {
 	CTokenizer mTokenizer = new CTokenizer();
 	ArrayList<CTileData> mTiles = new ArrayList<>();
 	public ArrayList<CSpriteData> mSprites = new ArrayList<>();
+	public ArrayList<CSpriteData> mTilesets = new ArrayList<>();
 
 	
 	public void readSourcecode(String text) {
@@ -20,7 +21,13 @@ public class CResources {
 		mTokenizer.start(text);
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
-			if (token.token == Token.comment) {
+			switch(token.token) {
+			case dotTiles:
+			case dotSprites:
+			case dotTileset:
+				compileTiles(token);
+				break;
+			case comment:
 				String lit = token.literal.trim();
 				if (lit.startsWith("tiles:")) {
 					CSpriteData sdata = new CSpriteData(token);
@@ -42,7 +49,10 @@ public class CResources {
 					getDimen(sdata, lit);
 					data = sdata;					
 				}
+				break;
+
 			}
+			
 			if (data != null) {
 				if (token.token == Token.label) 
 					data.addLabel(token.literal);
@@ -51,6 +61,51 @@ public class CResources {
 			}
 
 		}
+	}
+
+
+	private void compileTiles(CToken token) {
+		Token typ = token.token;
+		CSpriteData data = new CSpriteData(token);
+		switch(typ) {
+		case dotTileset: mTilesets.add(data); break;
+		default:
+			mSprites.add(data);
+		}
+		mTokenizer.getToken(token);		// labelname;
+		if (token.token != Token.literal) return;
+		
+		if (token.token != Token.literal) return;
+		data.name = token.literal;
+		
+		mTokenizer.getToken(token);		
+		if (token.token != Token.comma) return;
+		
+		mTokenizer.getToken(token);		// w
+		if (token.token != Token.number) return;
+		data.w = token.iliteral;
+		mTokenizer.getToken(token);		
+		if (token.token != Token.comma) return;
+	
+		mTokenizer.getToken(token);		// h
+		if (token.token != Token.number) return;
+		data.h = token.iliteral;
+		mTokenizer.getToken(token);
+		if (!CToken.isBegin(token.token)) return;
+		
+		StringBuilder sb = data.sb;
+		while (mTokenizer.hasData()) {
+			mTokenizer.getToken(token);
+			if (CToken.isEnd(token.token)) break;
+			switch(token.token) {
+				case number: sb.append(token.literal+" "); break;
+				case comma: sb.append(", "); break;
+				case label: sb.append(": "+token.literal); break;
+				case newline: sb.append("\n"); break;
+				case comment: sb.append("# "+token.literal+"\n"); break;
+			}
+		}
+		data.text = sb.toString();
 	}
 
 

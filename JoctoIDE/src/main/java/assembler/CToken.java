@@ -41,5 +41,14 @@ public class CToken {
 		return literal.length();
 
 	}
+	public static boolean isBegin(Token token) {
+		if (token == Token.curlybracketopen || token == Token.octobegin) return true;
+		return false;
+	}
+	
+	public static boolean isEnd(Token token) {
+		if (token == Token.curlybracketclose || token == Token.octoend) return true;
+		return false;
+	}
 
 }
