@@ -200,7 +200,7 @@ public class CDialogTileEditor extends Dialog {
 		lblHeight.setText("Height");
 		
 		Label lblTiles = new Label(composite, SWT.NONE);
-		lblTiles.setBounds(370, 18, 35, 15);
+		lblTiles.setBounds(370, 18, 35, 18);
 		lblTiles.setText("Tiles");
 		
 		Label lblSprites = new Label(composite, SWT.NONE);
@@ -241,7 +241,7 @@ public class CDialogTileEditor extends Dialog {
 				mCanvasTilePicture.redraw();
 			}
 		});
-		mComboW.setBounds(48, 14, 40, 23);
+		mComboW.setBounds(56, 15, 40, 23);
 		
 		mComboH = new Combo(composite, SWT.NONE);
 		mComboH.addModifyListener(new ModifyListener() {
@@ -250,7 +250,7 @@ public class CDialogTileEditor extends Dialog {
 				mCanvasTilePicture.redraw();
 			}
 		});
-		mComboH.setBounds(142, 14, 40, 23);
+		mComboH.setBounds(142, 15, 40, 23);
 		
 		mComboTileMap = new Combo(composite, SWT.NONE);
 		mComboTileMap.addModifyListener(new ModifyListener() {
@@ -258,7 +258,7 @@ public class CDialogTileEditor extends Dialog {
 				onModifyComboTileMap(e);
 			}
 		});
-		mComboTileMap.setBounds(398, 14, 100, 23);
+		mComboTileMap.setBounds(408, 15, 92, 28);
 		
 		Label lblZoom = new Label(composite, SWT.NONE);
 		lblZoom.setBounds(289, 18, 40, 15);
@@ -863,40 +863,36 @@ public class CDialogTileEditor extends Dialog {
 		int dest=0;
 		int count;
 		int b;
+		int b1;
+		int i;
+		
 		while (src < line.length) {
 			b = line[src++];
-			if (b == 0) {
-				count =1;
-			
-				for (int i=src;i<line.length;i++) {
-					if (line[i] != 0) break;
-					count++;
-				}
-				if (src+count-1 == line.length) {
-					line[dest++] = 0xff;
-					return dest;
-				} else {
-					if (count > 2) {
+			count = 1;
+			for (i=src;i<line.length;i++) {
+				b1 = line[i];
+				if (b1 != b) 
+					break;
+				count++;
+			}
+			if ((count>2 && b == 0) || count>3) {
+				if (b == 0) {
+					if (i == line.length) {
+						line[dest++] = 0xff;
+					} else {
 						line[dest++] = 0xfe;
 						line[dest++] = count;
-						src+=count-1;
 					}
-				}
-			} else {
-				count=1;
-				for (int i=src;i<line.length;i++) {
-					if (line[i] != b) break;
-					count++;
-				}
-				if (count > 3) {
+				} else {
 					line[dest++] = 0xfd;
 					line[dest++] = count;
 					line[dest++] = b;
-					src += count;
-				} else					
-					line[dest++] = b;
-			}
+				}
+				src+=count-1;
+			} else
+				line[dest++] = b;
 		}
+			
 		return dest;
 
 	}

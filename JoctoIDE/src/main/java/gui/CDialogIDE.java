@@ -598,7 +598,8 @@ public class CDialogIDE extends Dialog {
 	private void onEditJumpBack() {
 		if (!mLineNumberStack.isEmpty()) {
 			int pos = mLineNumberStack.pop();
-			getTextSource().setSelection(pos, pos);
+			getTextSource().setSelection(pos, pos+1);
+			getTextSource().setCaretOffset(pos);;
 		}
 
 	}
@@ -1134,7 +1135,7 @@ public class CDialogIDE extends Dialog {
 				String label = selection[0];
 				Integer line = mLineNumbers.get(label);
 				if (line != null) {
-					getTextSource().setCaret(null);
+					getTextSource().setCaretOffset(line.intValue());
 					getTextSource().setSelection(line.intValue(), line.intValue()+label.length());
 				}
 			}

@@ -1,6 +1,5 @@
 folder=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples
 file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\enemyDemo.8o
 file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\minegame_tileedit.8o
-file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\libEnemy.8o
-file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\libFast.8o
-file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\halloween\halloween.8o
+file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\lib\libPlayer.8o
+file=C:\Users\Admin\git\J-Octo-Chip8-IDE\samples\lib\libText.8o
