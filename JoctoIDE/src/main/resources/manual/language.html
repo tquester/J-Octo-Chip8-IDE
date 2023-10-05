@@ -48,7 +48,7 @@ subtraction and shift operations.</p>
 		<td>ld i, 123</td>
 	</tr>
 </table>
-<h2>Math</h2>
+<h1>Math</h1>
 <table style="width: 100%">
 	<tr>
 		<td>v1 += 1</td>
@@ -106,8 +106,7 @@ subtraction and shift operations.</p>
 		<td>add register to i</td>
 	</tr>
 </table>
-<p>Loading and saving registers to memory</p>
-<h1>Alias</h1>
+<h2>Alias</h2>
 <p>It is not easy to understand a code if you are working with v0..vf the 
 compatible way to replace registers with names is :alias</p>
 <table class="Code" style="width: 100%">
@@ -125,7 +124,7 @@ compatible way to replace registers with names is :alias</p>
 	</tr>
 </table>
 <p>However this will be incompatible with other octo compilers</p>
-<h1>Structs (j-octo)</h1>
+<h2>Structs (j-octo)</h2>
 <p>j-octo supports structs</p>
 <table class="Code" style="width: 100%">
 	<tr>
@@ -181,7 +180,28 @@ save and load</p>
 Coordinates" is the same as "load v1". If you later need new variables in your 
 structure, simply add it to the struct. The data allocation, save and load will 
 automaticylly modify</p>
-<p>&nbsp;</p>
+<h2>loading and saving registers to Memory</h2>
+<p>save vx will save registers to the memory at the position where the I 
+register points to</p>
+<p>load vx will load them</p>
+<table class="Code" style="width: 100%">
+	<tr>
+		<td><span class="CodeFont">:<span class="Code"> data<br />
+&nbsp;&nbsp;&nbsp; 0x01 0x02<br />
+		: main<br />
+		<br />
+&nbsp;&nbsp;&nbsp; i := data<br />
+&nbsp;&nbsp;&nbsp; load v1</span></span></td>
+	</tr>
+	<tr>
+		<td>&nbsp;</td>
+	</tr>
+</table>
+<p>In j-octo you can use the name of the :struct instead of a register or any of 
+the variables</p>
+<h1>Control structures</h1>
+<p>jump jumps to a label<br />
+to call a sub routine, simply type the name</p>
 <p>&nbsp;</p>
 <p class="auto-style1">&nbsp;</p>
 <p class="auto-style1">&nbsp;</p>

@@ -776,6 +776,8 @@ public class CDialogIDE extends Dialog {
 	private boolean mUndoing = false;
 	private double mSplitError = 0;
 
+	private TreeMap<String, Integer> mLineNumbers = new TreeMap<>();
+
 	protected void onEmulator() {
 		CDialogEmulator dlg = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX + SWT.CLOSE);
 		dlg.open();
@@ -1066,14 +1068,14 @@ public class CDialogIDE extends Dialog {
 
 	protected void onTileEditor() {
 		CDialogTileEditor dlg = new CDialogTileEditor(shlJoctoIde, getStyle());
-		dlg.readSourcefile(getTextSource().getText());
+		dlg.readSourcefile(getTextSource());
 		dlg.open();
 
 	}
 
 	protected void onSpriteEditor() {
 		CDialogSpriteEditor dlg = new CDialogSpriteEditor(shlJoctoIde, getStyle());
-		dlg.readSourcefile(getTextSource().getText());
+		dlg.readSourcefile(getTextSource());
 		dlg.open();
 
 	}
@@ -1126,18 +1128,20 @@ public class CDialogIDE extends Dialog {
 	}
 
 	protected void onListLabelSelected(SelectionEvent e) {
-		String[] selection = mListLabels.getSelection();
-		if (selection.length == 1) {
-			String label = ": " + selection[0];
-			String text = getTextSource().getText();
-			int p = text.indexOf(label);
-			if (p == -1) {
-				label = selection[0] + ":";
-				p = text.indexOf(label);
+		try {
+			String[] selection = mListLabels.getSelection();
+			if (selection.length == 1) {
+				String label = selection[0];
+				Integer line = mLineNumbers.get(label);
+				if (line != null) {
+					getTextSource().setCaret(null);
+					getTextSource().setSelection(line.intValue(), line.intValue()+label.length());
+				}
 			}
-			if (p != -1) {
-				getTextSource().setSelection(p, p);
-			}
+			
+		}
+		catch(Exception ex) {
+			
 		}
 
 	}
@@ -1406,6 +1410,36 @@ public class CDialogIDE extends Dialog {
 		int pos, len;
 		String word;
 		ArrayList<String> list = new ArrayList<>();
+		CTokenizer tokenizer = new CTokenizer();
+		tokenizer.start(text);
+		CToken token = new CToken();
+		
+		mLineNumbers.clear();
+		while (tokenizer.hasData()) {
+			tokenizer.getToken(token);
+			switch(token.token) {
+			case label:
+				list.add(token.literal);
+				mLineNumbers .put(token.literal, token.pos);
+				sbLabels.append(token.literal + "\n");
+				break;
+			case macro:
+			case dotTiles:
+			case dotSprites:
+			case dotTileset:
+				tokenizer.getToken(token);
+				if (token.token == Token.literal) {
+					list.add(token.literal);
+					mLineNumbers.put(token.literal, token.pos);
+					sbLabels.append(token.literal + "\n");
+					break;
+				}
+				
+			}
+			
+		}
+		
+		/*
 		for (String line : lines) {
 			line = line.trim();
 			if (line.startsWith(": ")) {
@@ -1441,6 +1475,7 @@ public class CDialogIDE extends Dialog {
 				}
 			}
 		}
+		*/
 		list.sort(new Comparator<String>() {
 
 			@Override

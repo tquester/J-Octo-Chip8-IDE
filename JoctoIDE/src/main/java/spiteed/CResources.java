@@ -2,6 +2,8 @@ package spiteed;
 
 import java.util.ArrayList;
 
+import org.eclipse.swt.custom.StyledText;
+
 import assembler.CToken;
 import assembler.CTokenizer;
 import assembler.Token;
@@ -11,10 +13,14 @@ public class CResources {
 	ArrayList<CTileData> mTiles = new ArrayList<>();
 	public ArrayList<CSpriteData> mSprites = new ArrayList<>();
 	public ArrayList<CSpriteData> mTilesets = new ArrayList<>();
+	
+	StyledText mCurrentEditor = null;
 
 	
-	public void readSourcecode(String text) {
+	public void readSourcecode(StyledText editor) {
 		int p;
+		mCurrentEditor = editor;
+		String text = editor.getText();
 		CBinaryData data = null;
 		
 		CToken token = new CToken();
@@ -128,6 +134,32 @@ public class CResources {
 					
 			}
 		}
+		
+	}
+
+
+	public boolean save(CSpriteData mCurrentTileMap) {
+		if (mCurrentTileMap.name == null) return false;
+		String text = mCurrentEditor.getText();
+		String such = ":tileset "+mCurrentTileMap.name;
+		int p = text.indexOf(such);
+		if (p == -1) return false;
+		int p1;
+		p1 = text.indexOf('}', p+1);
+		if (p1 == -1) return false;
+		String left = text.substring(0,p);
+		String right = text.substring(p1+1);
+		text = left + String.format(":tileset %s, %d, %d {\n%s\n}\n", 
+				mCurrentTileMap.name,
+				mCurrentTileMap.w,
+				mCurrentTileMap.h,
+				mCurrentTileMap.text) + right;
+				
+		int caret = mCurrentEditor.getCaretOffset();
+		mCurrentEditor.setText(text);
+		mCurrentEditor.setCaretOffset(caret);
+		mCurrentEditor.setSelection(caret, caret+1);
+		return true;
 		
 	}
 

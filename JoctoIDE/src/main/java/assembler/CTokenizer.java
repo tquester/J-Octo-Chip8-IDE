@@ -10,7 +10,7 @@ import disass.CC8Label;
 
 public class CTokenizer {
 	String mInput;
-	int mPos;
+	public int mPos;
 	int mEnd;
 	public boolean modeOcto = true;
 	public int mPosInLine, mLine;

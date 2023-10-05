@@ -35,6 +35,7 @@ import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.custom.ScrolledComposite;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -78,10 +79,11 @@ public class CDialogTileEditor extends Dialog {
 	private int mScreenW, mScreenH;
 	protected boolean mTilesUpdate=false;
 	private Combo mComboTileMap;
+	private CSpriteData mCurrentTileMap = null;
 
-	public void readSourcefile(String text) {
+	public void readSourcefile(StyledText editor) {
 		mResources = new CResources();
-		mResources.readSourcecode(text);
+		mResources.readSourcecode(editor);
 	}
 	
 	class SpriteLocation {
@@ -190,19 +192,19 @@ public class CDialogTileEditor extends Dialog {
 		composite.setBounds(10, 0, 942, 43);
 		
 		Label lblWidth = new Label(composite, SWT.NONE);
-		lblWidth.setBounds(10, 14, 40, 15);
+		lblWidth.setBounds(10, 18, 40, 15);
 		lblWidth.setText("Width");
 		
 		Label lblHeight = new Label(composite, SWT.NONE);
-		lblHeight.setBounds(102, 17, 40, 15);
+		lblHeight.setBounds(96, 18, 40, 15);
 		lblHeight.setText("Height");
 		
 		Label lblTiles = new Label(composite, SWT.NONE);
-		lblTiles.setBounds(393, 17, 35, 15);
+		lblTiles.setBounds(370, 18, 35, 15);
 		lblTiles.setText("Tiles");
 		
 		Label lblSprites = new Label(composite, SWT.NONE);
-		lblSprites.setBounds(194, 17, 40, 15);
+		lblSprites.setBounds(188, 18, 40, 15);
 		lblSprites.setText("Sprites");
 		
 		
@@ -217,10 +219,10 @@ public class CDialogTileEditor extends Dialog {
 					mCanvasTileset.redraw();
 			}
 		});
-		mComboSpriteSize.setBounds(240, 14, 55, 23);
+		mComboSpriteSize.setBounds(228, 14, 55, 23);
 		
 		Label lblSpriteSet = new Label(composite, SWT.NONE);
-		lblSpriteSet.setBounds(572, 17, 55, 15);
+		lblSpriteSet.setBounds(504, 18, 55, 15);
 		lblSpriteSet.setText("Sprite set");
 		
 		mComboTileset = new Combo(composite, SWT.NONE);
@@ -230,7 +232,7 @@ public class CDialogTileEditor extends Dialog {
 				onModifyComboTileset(e);
 			}
 		});
-		mComboTileset.setBounds(633, 14, 132, 23);
+		mComboTileset.setBounds(565, 15, 100, 23);
 		
 		mComboW = new Combo(composite, SWT.NONE);
 		mComboW.addModifyListener(new ModifyListener() {
@@ -239,7 +241,7 @@ public class CDialogTileEditor extends Dialog {
 				mCanvasTilePicture.redraw();
 			}
 		});
-		mComboW.setBounds(56, 14, 40, 23);
+		mComboW.setBounds(48, 14, 40, 23);
 		
 		mComboH = new Combo(composite, SWT.NONE);
 		mComboH.addModifyListener(new ModifyListener() {
@@ -248,7 +250,7 @@ public class CDialogTileEditor extends Dialog {
 				mCanvasTilePicture.redraw();
 			}
 		});
-		mComboH.setBounds(148, 14, 40, 23);
+		mComboH.setBounds(142, 14, 40, 23);
 		
 		mComboTileMap = new Combo(composite, SWT.NONE);
 		mComboTileMap.addModifyListener(new ModifyListener() {
@@ -256,10 +258,10 @@ public class CDialogTileEditor extends Dialog {
 				onModifyComboTileMap(e);
 			}
 		});
-		mComboTileMap.setBounds(434, 17, 132, 23);
+		mComboTileMap.setBounds(398, 14, 100, 23);
 		
 		Label lblZoom = new Label(composite, SWT.NONE);
-		lblZoom.setBounds(301, 17, 40, 15);
+		lblZoom.setBounds(289, 18, 40, 15);
 		lblZoom.setText("Zoom");
 		
 		mComboZoom = new Combo(composite, SWT.NONE);
@@ -272,7 +274,7 @@ public class CDialogTileEditor extends Dialog {
 				
 			}
 		});
-		mComboZoom.setBounds(347, 14, 40, 23);
+		mComboZoom.setBounds(324, 15, 40, 23);
 		mComboZoom.setText("8");
 		
 		mBtnRLE = new Button(composite, SWT.CHECK);
@@ -282,8 +284,18 @@ public class CDialogTileEditor extends Dialog {
 				writeTileset();
 			}
 		});
-		mBtnRLE.setBounds(775, 16, 107, 16);
+		mBtnRLE.setBounds(825, 17, 107, 16);
 		mBtnRLE.setText("RLE Compress");
+		
+		Button btnSave = new Button(composite, SWT.NONE);
+		btnSave.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onSave();
+			}
+		});
+		btnSave.setBounds(751, 12, 55, 25);
+		btnSave.setText("Save");
 		
 		tabFolder = new TabFolder(shell, SWT.NONE);
 		tabFolder.setBounds(0, 385, 952, 172);
@@ -367,6 +379,14 @@ public class CDialogTileEditor extends Dialog {
 
 	}
 
+	protected void onSave() {
+		if (mCurrentTileMap != null) {
+			mCurrentTileMap.text = mTextTiles.getText();
+			mResources.save(mCurrentTileMap);
+		}
+		
+	}
+
 	protected void onModifyComboTileset(ModifyEvent e) {
 		try {
 		mTilesetIndex = mComboTileset.getSelectionIndex();
@@ -391,6 +411,7 @@ public class CDialogTileEditor extends Dialog {
 		try {
 		mTilesetIndex = mComboTileMap.getSelectionIndex();
 		CSpriteData data = mResources.mTilesets.get(mTilesetIndex); 
+		mCurrentTileMap  = data;
 		mTextTiles.setText(data.getText());
 	//	tilesetBytes = data.parse(data.getText());
 		
@@ -879,5 +900,4 @@ public class CDialogTileEditor extends Dialog {
 		return dest;
 
 	}
-
 }

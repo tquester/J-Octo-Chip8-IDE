@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.TreeMap;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Rectangle;
@@ -56,9 +57,9 @@ public class CDialogSpriteEditor extends Dialog {
 	private boolean mParse = true;
 	private CSpriteData mCurSprite;
 	
-	public void readSourcefile(String text) {
+	public void readSourcefile(StyledText editor) {
 		mResources = new CResources();
-		mResources.readSourcecode(text);
+		mResources.readSourcecode(editor);
 	}
 
 	/**
