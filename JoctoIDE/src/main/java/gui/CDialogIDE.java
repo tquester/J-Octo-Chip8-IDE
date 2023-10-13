@@ -1,6 +1,5 @@
 package gui;
 
-
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.DirectoryDialog;
 import org.eclipse.swt.widgets.Display;
@@ -112,14 +111,15 @@ public class CDialogIDE extends Dialog {
 	protected int mResizeBase;
 	private boolean mEditorDirty = true;
 
-	
 	public StyledText getTextSource() {
-		StyledText result=null;
-		if (mTabFolder.getSelectionIndex() == -1) return null;
+		StyledText result = null;
+		if (mTabFolder.getSelectionIndex() == -1)
+			return null;
 		CTabItem item = mTabFolder.getItems()[mTabFolder.getSelectionIndex()];
-		result = (StyledText)item.getControl();
+		result = (StyledText) item.getControl();
 		return result;
 	}
+
 	/**
 	 * Create the dialog.
 	 * 
@@ -415,7 +415,7 @@ public class CDialogIDE extends Dialog {
 					getTextSource().setBounds(//
 							rectErrors.x, //
 							rectText.y, //
-							rect.width - rectErrors.x - 30-70, //
+							rect.width - rectErrors.x - 30 - 70, //
 							top - rectText.y);
 
 					// onResize();
@@ -546,7 +546,8 @@ public class CDialogIDE extends Dialog {
 	protected void onModifyText(ModifyEvent e) {
 		mEditorDirty = true;
 		StyledText ctext = getTextSource();
-		if (ctext == null) return;
+		if (ctext == null)
+			return;
 		String text = ctext.getText();
 		saveUndo();
 		if (mStackUndo.size() > 30)
@@ -598,8 +599,9 @@ public class CDialogIDE extends Dialog {
 	private void onEditJumpBack() {
 		if (!mLineNumberStack.isEmpty()) {
 			int pos = mLineNumberStack.pop();
-			getTextSource().setSelection(pos, pos+1);
-			getTextSource().setCaretOffset(pos);;
+			getTextSource().setSelection(pos, pos + 1);
+			getTextSource().setCaretOffset(pos);
+			;
 		}
 
 	}
@@ -1098,8 +1100,9 @@ public class CDialogIDE extends Dialog {
 		boolean ok = errors.trim().length() == 0;
 		errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(),
 				4096 - 0x200 - assembler.getCodeSize());
-		for (CMemoryStatistic stat: assembler.mMemoryStatistics) {
-			errors += String.format("%s: %d (code: %d, data: %d)\n",stat.file, stat.sizeCode+stat.sizeData, stat.sizeCode, stat.sizeData);
+		for (CMemoryStatistic stat : assembler.mMemoryStatistics) {
+			errors += String.format("%s: %d (code: %d, data: %d)\n", stat.file, stat.sizeCode + stat.sizeData,
+					stat.sizeCode, stat.sizeData);
 		}
 		mTextErrors.setText(errors);
 		if (ok) {
@@ -1117,11 +1120,13 @@ public class CDialogIDE extends Dialog {
 	private String getCurrentFilename() {
 		CTabItem tabItem;
 		int index = mTabFolder.getSelectionIndex();
-		if (index == -1) return null;
+		if (index == -1)
+			return null;
 		tabItem = mTabFolder.getItems()[index];
-		String fname = (String)tabItem.getData();
+		String fname = (String) tabItem.getData();
 		return fname.trim();
 	}
+
 	private void autosave() {
 		String text = getTextSource().getText();
 		Tools.writeTextFile("autosave.8o", text);
@@ -1136,13 +1141,12 @@ public class CDialogIDE extends Dialog {
 				Integer line = mLineNumbers.get(label);
 				if (line != null) {
 					getTextSource().setCaretOffset(line.intValue());
-					getTextSource().setSelection(line.intValue(), line.intValue()+label.length());
+					getTextSource().setSelection(line.intValue(), line.intValue() + label.length());
 				}
 			}
-			
-		}
-		catch(Exception ex) {
-			
+
+		} catch (Exception ex) {
+
 		}
 
 	}
@@ -1187,23 +1191,21 @@ public class CDialogIDE extends Dialog {
 
 		mLblStatus.setBounds(//
 				rectStatus.x, //
-				rect.height-30-70, //
-				rect.width-rectStatus.x, //
+				rect.height - 30 - 70, //
+				rect.width - rectStatus.x, //
 				30);
 		mLblStatus.setVisible(true);
-		
 
-		int top = rect.height - rectErrors.height - constErrorSpaceBottom -rectStatus.height;
-		 mTextErrors.setBounds( //
-		 
+		int top = rect.height - rectErrors.height - constErrorSpaceBottom - rectStatus.height;
+		mTextErrors.setBounds( //
+
 				right, //
 				top, //
 				rect.width - right - 30, //
 				rectErrors.height);
 
-		 top -= 8;
+		top -= 8;
 
-		
 		mBarErrors.setBounds(//
 				right, //
 				top, //
@@ -1327,7 +1329,7 @@ public class CDialogIDE extends Dialog {
 		item.setText(file.getName());
 		StyledText text = createStyledText();
 		item.setControl(text);
-		StyledText stext = (StyledText)item.getControl();
+		StyledText stext = (StyledText) item.getControl();
 		stext.setText(strSource);
 	}
 
@@ -1370,7 +1372,7 @@ public class CDialogIDE extends Dialog {
 	}
 
 	private void styleText(String text) {
-	
+
 	}
 
 	private void setStyleRange(StyleRange range) {
@@ -1404,92 +1406,71 @@ public class CDialogIDE extends Dialog {
 	}
 
 	private void parseFile() {
-		String text = getTextSource().getText();
-		String lines[] = text.split("\n");
-		StringBuilder sbLabels = new StringBuilder();
-		char c;
-		int pos, len;
-		String word;
-		ArrayList<String> list = new ArrayList<>();
-		CTokenizer tokenizer = new CTokenizer();
-		tokenizer.start(text);
-		CToken token = new CToken();
-		
-		mLineNumbers.clear();
-		while (tokenizer.hasData()) {
-			tokenizer.getToken(token);
-			switch(token.token) {
-			case label:
-				list.add(token.literal);
-				mLineNumbers .put(token.literal, token.pos);
-				sbLabels.append(token.literal + "\n");
-				break;
-			case macro:
-			case dotTiles:
-			case dotSprites:
-			case dotTileset:
+		try {
+			String text = getTextSource().getText();
+			String lines[] = text.split("\n");
+			StringBuilder sbLabels = new StringBuilder();
+			char c;
+			int pos, len;
+			String word;
+			ArrayList<String> list = new ArrayList<>();
+			CTokenizer tokenizer = new CTokenizer();
+			tokenizer.start(text);
+			CToken token = new CToken();
+
+			mLineNumbers.clear();
+			while (tokenizer.hasData()) {
 				tokenizer.getToken(token);
-				if (token.token == Token.literal) {
+				switch (token.token) {
+				case label:
 					list.add(token.literal);
 					mLineNumbers.put(token.literal, token.pos);
 					sbLabels.append(token.literal + "\n");
 					break;
-				}
-				
-			}
-			
-		}
-		
-		/*
-		for (String line : lines) {
-			line = line.trim();
-			if (line.startsWith(": ")) {
-				int p = line.indexOf(' ', 2);
-				if (p == -1)
-					p = line.length();
-				String label = line.substring(1, p).trim();
-				list.add(label);
-				sbLabels.append(label + "\n");
-			} else {
-				len = line.length();
-				word = "";
-				pos = 0;
-				c = 0;
-				while (pos < len) {
-					c = line.charAt(pos++);
-					if (!Character.isWhitespace(c))
+				case macro:
+				case dotTiles:
+				case dotSprites:
+				case dotTileset:
+					tokenizer.getToken(token);
+					if (token.token == Token.literal) {
+						list.add(token.literal);
+						mLineNumbers.put(token.literal, token.pos);
+						sbLabels.append(token.literal + "\n");
 						break;
-				}
-				if (c != 0) {
-					word = String.format("%c", c);
-					while (pos < len) {
-						c = line.charAt(pos++);
-						if (!(c == '-' || c == ':' || c == '_' || Character.isAlphabetic(c) || Character.isDigit(c)))
-							break;
-						word += c;
 					}
-				}
-				if (word.endsWith(":")) {
-					String label = word.substring(0, word.length() - 1);
-					list.add(label);
-					sbLabels.append(label + "\n");
-				}
-			}
-		}
-		*/
-		list.sort(new Comparator<String>() {
 
-			@Override
-			public int compare(String o1, String o2) {
-				return o1.toLowerCase().compareTo(o2.toLowerCase());
+				}
+
 			}
-		});
-		String labels = sbLabels.toString();
-		if (labels.compareTo(mStrLabels) != 0) {
-			mStrLabels = labels;
-			mListLabels.removeAll();
-			for (String lbl : list)
-				mListLabels.add(lbl);
+
+			/*
+			 * for (String line : lines) { line = line.trim(); if (line.startsWith(": ")) {
+			 * int p = line.indexOf(' ', 2); if (p == -1) p = line.length(); String label =
+			 * line.substring(1, p).trim(); list.add(label); sbLabels.append(label + "\n");
+			 * } else { len = line.length(); word = ""; pos = 0; c = 0; while (pos < len) {
+			 * c = line.charAt(pos++); if (!Character.isWhitespace(c)) break; } if (c != 0)
+			 * { word = String.format("%c", c); while (pos < len) { c = line.charAt(pos++);
+			 * if (!(c == '-' || c == ':' || c == '_' || Character.isAlphabetic(c) ||
+			 * Character.isDigit(c))) break; word += c; } } if (word.endsWith(":")) { String
+			 * label = word.substring(0, word.length() - 1); list.add(label);
+			 * sbLabels.append(label + "\n"); } } }
+			 */
+			list.sort(new Comparator<String>() {
+
+				@Override
+				public int compare(String o1, String o2) {
+					return o1.toLowerCase().compareTo(o2.toLowerCase());
+				}
+			});
+			String labels = sbLabels.toString();
+			if (labels.compareTo(mStrLabels) != 0) {
+				mStrLabels = labels;
+				mListLabels.removeAll();
+				for (String lbl : list)
+					mListLabels.add(lbl);
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 
 	}

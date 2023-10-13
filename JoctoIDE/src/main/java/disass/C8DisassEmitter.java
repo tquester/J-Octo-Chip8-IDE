@@ -228,7 +228,7 @@ public class C8DisassEmitter extends C8Emitter {
 		}
 		else {
 			if (disassFormat)
-				return String.format("%s\t;%x", lbl.toString(),adr);
+				return String.format("%s\t;%x",  lbl.toString(),adr);
 			else {
 				if (lbl.mLabelType == C8LabelType.CODE && lbl.mNr == 1) 
 					return "main\t";

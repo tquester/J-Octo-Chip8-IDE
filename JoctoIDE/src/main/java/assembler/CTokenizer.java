@@ -26,6 +26,7 @@ public class CTokenizer {
 	public boolean deliverWhite=false;
 	private Stack<CC8Label> mStackStruct = new Stack<>();
 	public String mFilename = null;
+	public String mHint=null;
 
 	public String toString() {
 		try {
@@ -244,7 +245,7 @@ public class CTokenizer {
 				return true;
 			}
 			if (replaceTokens) {
-				String strAlias = mMapAlias.get(token.literal);
+				String strAlias = mMapAlias.get(token.literal.toLowerCase());
 				if (strAlias != null)
 					token.literal = strAlias;
 			}
@@ -408,6 +409,7 @@ public class CTokenizer {
 	}
 
 	public void setAlias(String key, String value) {
+		key = key.toLowerCase();
 		String test = mMapAlias.get(key);
 		if (test != null) mMapAlias.remove(key);
 		mMapAlias.put(key, value);

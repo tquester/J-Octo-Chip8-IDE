@@ -211,6 +211,9 @@ public class CTokens {
 	        {":tiles", Token.dotTiles },
 	        {":sprites", Token.dotSprites },
 	        {":sprite", Token.dotSprites },
+	        {"switch", Token.octoswitch },
+	        {"case", Token.octocase },
+	        {"break", Token.octobreak },
 	        
 	        
 	        

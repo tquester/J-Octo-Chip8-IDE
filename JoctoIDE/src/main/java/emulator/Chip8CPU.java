@@ -341,15 +341,15 @@ public class Chip8CPU {
 
 				break;
 			case 0x04:
-				a = (getvx(highnib) + expand(reg2) & 0xff);
+				a = getvx(highnib) + expand(reg2);
 				// a = expand(vx[highnib]) + expand(reg2);
-				vx[highnib] = a;
-				vx[15] = a < 128 ? 0 : 1;
+				vx[highnib] = a & 0xff;
+				vx[15] = a < 256 ? 0 : 1;
 				break;
 			case 0x05:
-				a = (getvx(highnib) - reg2) & 0xff;
-				setvx(highnib, a);
-				vx[15] = a < 128 ? 1 : 0;
+				a = getvx(highnib) - reg2;
+				setvx(highnib, a & 0xff);
+				vx[15] = a < 0 ? 0 : 1;
 				// a = expand(vx[highnib]) - expand(reg2);
 				// vx[highnib] = (byte)(a & 0xff);
 				// vx[15] = a < 0 ? 0 : 1;

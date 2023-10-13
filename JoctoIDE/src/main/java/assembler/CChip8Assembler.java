@@ -345,6 +345,16 @@ public class CChip8Assembler {
 	public String getErrors() {
 		return mSBErrors == null ? "" : mSBErrors.toString();
 	}
+	
+	boolean nextNonWhiteToken(CToken token) {
+		boolean r=false;
+		while (mTokenizer.hasData()) {
+			r = nextToken(token);
+			if (token.token == Token.newline || token.token == Token.comment) continue;
+			break;
+		}
+		return r;
+	}
 
 	boolean nextToken(CToken token) {
 		CToken token2 = new CToken();
@@ -436,6 +446,7 @@ public class CChip8Assembler {
 				}
 			}
 			mTokenizer.start(code);
+			mTokenizer.mMapAlias.clear();
 			pc = 0x200;
 			mPass = 2;
 			mSBErrors = new StringBuilder();
@@ -1210,6 +1221,9 @@ public class CChip8Assembler {
 			break;
 			
 		}
+		case octoswitch: 
+			compileSwitch(token);
+			break;
 
 		case newline:
 		case none:
@@ -1219,6 +1233,83 @@ public class CChip8Assembler {
 			error("Undef token " + token.toString());
 		}
 
+	}
+
+	private void compileSwitch(CToken token) {
+		int blockPatchAddr=0;
+		nextToken(token);
+		int patchAdr;
+		ArrayList<Integer> patchAddresses = new ArrayList<Integer>();
+		int regnr = regNr(token);
+		if (regnr == -1) {
+			if (token.token != Token.key) {
+				error("Expected register or key");
+				return;
+			}
+		}
+		if (!expect(Token.octobegin)) return;
+		while (mTokenizer.hasData()) {
+			nextNonWhiteToken(token);			// must be case or end
+			if (token.token == Token.octoend) break;
+			if (token.token != Token.octocase) {
+				error("Expected case");
+				return;
+			}
+			expr(token);
+			if (token.token != Token.number) {
+				error("Expected constant");
+			}
+			int ilit = token.iliteral;
+			nextNonWhiteToken(token);
+			mTokenizer.ungetToken(token);
+			if (token.token == Token.octobegin) {
+				if (regnr == -1) {
+					writeCode(0x6, 0xf, ilit);				// vf := token.iliteral	
+					writeCode(0xe, 0xf, 0x9e);							// skip key not vf
+				} else {
+					writeCode(0x03, regnr, ilit);				// skip if reg != token.iliteral
+				}
+				patchAdr = pc;
+				writeCode(0x1, 0);										// jump
+				compileBlock(token);
+				if (regnr != -1) {
+					patchAddresses.add(pc);
+					writeCode(0x1, 0);
+				}
+				patch(patchAdr, pc);
+			} else {
+				if (regnr == -1) {
+					writeCode(0x6, 0xf, ilit);					// vf := token.iliteral	
+					writeCode(0xe, 0xf, 0xa1);					// skip key not vf
+				} else {
+					writeCode(0x04, regnr, ilit);				// skip if reg != token.iliteral
+				}
+				compileBlock(token);
+			}
+			
+		}
+		for (Integer adr: patchAddresses) {
+			patch(adr, pc);
+		}
+		
+	}
+
+	private void compileBlock(CToken token) {
+		int level = 0;
+		while (mTokenizer.hasData()) {
+			nextNonWhiteToken(token);
+			if (token.token == Token.octobegin) {
+				level++;
+				nextNonWhiteToken(token);
+			}
+			if (token.token == Token.octoend) {
+				level--;
+				if (level == 0) break;
+			}
+			assembleStatement(token);
+			if (level == 0) break;
+		}
+		
 	}
 
 	private void compileTiles(CToken token) {
@@ -1569,6 +1660,8 @@ public class CChip8Assembler {
 				compileMacroExpansion(macroData, token);
 
 			} else {
+				if (token.literal.compareTo("flagsnocarry") == 0) 
+					System.out.println("Stop");
 				CC8Label label = mLabels.get(token.literal);
 				if (label == null && mPass == 2) {
 					error("Label "+token.literal+" not found");
@@ -1627,6 +1720,7 @@ public class CChip8Assembler {
 			writeSourceLine();
 		System.out.println("------------ Macro expansion at line " + token.line);
 		CTokenizer tempTokenizer = new CTokenizer();
+		tempTokenizer.mHint = macroData.name;
 		tempTokenizer.mBaseline = mTokenizer.mLine;
 		for (int i = 0; i < macroData.parameters.size(); i++) {
 			// nextToken(token);
@@ -1681,6 +1775,7 @@ public class CChip8Assembler {
 		macroData.name = token.literal;
 		while (mTokenizer.hasData()) {
 			nextToken(token);
+			if (isWhiteToken(token)) continue;
 			if (token.token == Token.curlybracketopen) {
 				StringBuilder sb = new StringBuilder();
 				int level = 0;
@@ -1707,6 +1802,12 @@ public class CChip8Assembler {
 			macroData.parameters.add(token.literal);
 		}
 
+	}
+
+	private boolean isWhiteToken(CToken token2) {
+		if (token.token == Token.newline || token.token == Token.comment)
+			return true;
+		return false;
 	}
 
 	private void patch(int patchAdr, int pc) {
@@ -2496,7 +2597,7 @@ public class CChip8Assembler {
 
 	private boolean expect(Token expected) {
 		CToken token = new CToken();
-		if (nextToken(token)) {
+		if (nextNonWhiteToken(token)) {
 			if (token.token != expected) {
 				error("Erwarte " + expected.toString());
 				return false;
@@ -2573,13 +2674,14 @@ public class CChip8Assembler {
 		if (mPass == 2) {
 			String file = "(editor)";
 			if (mTokenizer.mFilename != null) file = mTokenizer.mFilename;
+			if (mTokenizer.mHint != null) file += " ("+mTokenizer.mHint+") ";
 			System.out.println(
 					String.format("Error %s(%d)/%d:%s %s", file, mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
 			System.out.println(mTokenizer.toString());
 			if (mSBErrors != null) {
 				Point p = mTokenizer.getLineFromPos();
-				mSBErrors.append(String.format("Error %d/%d:%s %s\n", p.y, p.x, string,
-						mContext));
+				mSBErrors.append(String.format("Error %s %d/%d:%s %s\nline %d+%d=%d", file, p.y, p.x, string,
+						mContext,mTokenizer.mBaseline,mTokenizer.mLine,mTokenizer.mBaseline+mTokenizer.mLine));
 				mSBErrors.append(mTokenizer.toString() + "\n");
 
 			}

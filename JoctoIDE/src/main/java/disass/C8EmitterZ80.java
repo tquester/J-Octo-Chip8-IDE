@@ -59,28 +59,28 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			break;
 		case 0x01: {
 			int adr = high2 * 256 + low;
-			listCmds.add(String.format("jp     %s", lbladr(adr)));
+			listCmds.add(String.format("jp     %s", z80lbl(lbladr(adr))));
 			break;
 		}
 		case 0x02: {
 			int adr = high2 * 256 + low;
-			listCmds.add(String.format("call   %s", lbladr(adr)));
+			listCmds.add(String.format("call   %s", z80lbl(lbladr(adr))));
 			break;
 		}
 		case 0x03:
 			listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
 			listCmds.add(String.format("cp  %s",number(low)));
-			listCmds.add(String.format("jr  z,%s",lbladr(skip(pos,code))));
+			listCmds.add(String.format("jr  z,%s",z80lbl(lbladr(skip(pos,code)))));
 			break;
 		case 0x04:
 			listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
 			listCmds.add(String.format("cp  %s",number(low)));
-			listCmds.add(String.format("jr  nz,%s",lbladr(skip(pos,code))));
+			listCmds.add(String.format("jr  nz,%s",z80lbl(lbladr(skip(pos,code)))));
 			break;
 		case 0x05:
 			listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
 			listCmds.add(String.format("cp  (ix+reg_%s)",reg(lownib1)));
-			listCmds.add(String.format("jr  z,%s",lbladr(skip(pos,code))));
+			listCmds.add(String.format("jr  z,%s",z80lbl(lbladr(skip(pos,code)))));
 			break;
 		case 0x06:
 			listCmds.add(String.format("ld  (ix+reg_%s),%s",reg(high2),number(low)));
@@ -98,7 +98,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				break;
 			case 0x01:
 				listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
-				listCmds.add(String.format("or  (ix+reg_%s)",reg(low)));
+				listCmds.add(String.format("or  (ix+reg_%s)",reg(lownib1)));
 				listCmds.add(String.format("ld  (ix+reg_%s),a",reg(high2)));
 				break;
 			case 0x02:
@@ -113,10 +113,10 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				break;
 			case 0x04:
 				listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
-				listCmds.add(String.format("adc (ix+reg_%s)",reg(lownib1)));
+				listCmds.add(String.format("add (ix+reg_%s)",reg(lownib1)));
 				listCmds.add(String.format("ld	(ix+reg_%s),a",reg(high2)));
 				listCmds.add(String.format("ld  a,0"));
-				listCmds.add(String.format("add 0"));
+				listCmds.add(String.format("adc 0"));
 				listCmds.add(String.format("ld  (ix+reg_vf),a"));
 				break;
 			case 0x05:
@@ -165,11 +165,11 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 		case 0x09:
 			listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
 			listCmds.add(String.format("cp  (ix+reg_%s)",reg(lownib1)));
-			listCmds.add(String.format("jr  nz,%s",lbladr(skip(pos,code))));
+			listCmds.add(String.format("jr  nz,%s",z80lbl(lbladr(skip(pos,code)))));
 			break;
 		case 0x0A: {
 			int adr = high2 * 256 + low;
-			listCmds.add(String.format("ld  iy, %s",lbladr(adr)));
+			listCmds.add(String.format("ld  iy, %s",z80lbl(lbladr(adr))));
 			break;
 		}
 
@@ -197,13 +197,13 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			case 0x9e:
 				listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
 				listCmds.add(String.format("call checkKey"));
-				listCmds.add(String.format("jr  z,%s",lbladr(skip(pos,code))));
+				listCmds.add(String.format("jr  z,%s",z80lbl(lbladr(skip(pos,code)))));
 				break;
 
 			case 0xa1:
 				listCmds.add(String.format("ld  a, (ix+reg_%s)",reg(high2)));
 				listCmds.add(String.format("call checkKey"));
-				listCmds.add(String.format("jr  nz,%s",lbladr(skip(pos,code))));
+				listCmds.add(String.format("jr  nz,%s",z80lbl(lbladr(skip(pos,code)))));
 				break;
 			}
 			break;
@@ -271,11 +271,13 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				if (high2 == 0) {
 					listCmds.add(String.format("ld  a,(ix)"));
 					listCmds.add(String.format("ld  (iy),a"));
+					listCmds.add(String.format("inc  iy"));
 					
 				} else {
 					listCmds.add(String.format("ld  hl, ix"));
 					listCmds.add(String.format("ld  de, iy"));
 					listCmds.add(String.format("ld  bc,%d", high2+1));
+					listCmds.add(String.format("add iy, bc"));
 					listCmds.add(String.format("ldir"));
 				}
 				comment = String.format("save   %s", reg(high2));
@@ -284,11 +286,14 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				if (high2 == 0) {
 					listCmds.add(String.format("ld  a,(iy)"));
 					listCmds.add(String.format("ld  (ix),a"));
+					listCmds.add(String.format("inc  iy"));
+					
 					
 				} else {
 					listCmds.add(String.format("ld  de, ix"));
 					listCmds.add(String.format("ld  hl, iy"));
 					listCmds.add(String.format("ld  bc,%d", high2+1));
+					listCmds.add(String.format("add iy, bc"));
 					listCmds.add(String.format("ldir"));
 				}
 				comment = String.format("load   %s", reg(high2));
@@ -303,7 +308,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			if (lbl.mTarget == 0x027f) {
 				System.out.println("stop");
 			}
-			strlbl = lbl.toString() + ":";
+			strlbl = z80lbl(lbl.toString()) + ":";
 		}
 		
 		int op = high*256+low;
@@ -333,6 +338,10 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 		return pos;
 	}
 
+	private String z80lbl(String label) {
+		return "z"+label.replaceAll("-", "_");
+	}
+
 	private int skip(int pos, byte[] code) {
 		
 		return pos+2;
@@ -360,7 +369,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 		pc++;
 		String strlbl = "";
 		if (lbl != null) {
-			strlbl = lbl.toLabelString();
+			strlbl = z80lbl(lbl.toLabelString());
 			if (lbl.mLabelType == C8LabelType.SKIP) strlbl = "";
 			label = lbl;
 		}

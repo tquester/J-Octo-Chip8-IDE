@@ -504,6 +504,8 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		lblPosition.setText("0/0");
 
 	}
+	
+	
 
 	protected void onMouseMoveCanvas(MouseEvent e) {
 		int pixelHeight = mCPU.gpu.tileHeight;
