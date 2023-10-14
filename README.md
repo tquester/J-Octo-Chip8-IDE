@@ -76,7 +76,7 @@ Sample:
             i := playerInit                                           # load init data
             load Player
 
-            with Player {                                             # within the block we can use x,y etc.
+            with Player begin                                             # within the block we can use x,y etc.
               i := ball                                               # outside write Player.x
               sprite x y 8                                            # initial draw the ball
               loop
@@ -120,7 +120,7 @@ Sample:
                   while vf != 0
                 again
               again
-          }
+          end
           : playerInit
             Player.byte {                                             # this creates 4 bytes
               x := 10                                                 # the remaining registers will
