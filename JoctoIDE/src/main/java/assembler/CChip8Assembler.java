@@ -999,6 +999,8 @@ public class CChip8Assembler {
 		// if vx operator vx begin ... end
 		// if vx operator byte begin ... end
 		case octoif: {
+			compileIf(token);
+			/*
 			if (!mOptAnnotateAllLines)
 				writeSourceLine();
 			CToken tokenb = new CToken();
@@ -1035,7 +1037,7 @@ public class CChip8Assembler {
 
 			}
 			compileCompare(reg1, token, compareToken, beginEndData);
-
+*/
 		}
 			break;
 		case macro:
@@ -1285,6 +1287,7 @@ public class CChip8Assembler {
 					writeCode(0x04, regnr, ilit);				// skip if reg != token.iliteral
 				}
 				compileBlock(token);
+				
 			}
 			
 		}
@@ -1463,10 +1466,11 @@ public class CChip8Assembler {
 			return;
 		}
 		mTokenizer.pushStruct(structLabel);
-		expect(Token.curlybracketopen);
+		//expect(Token.curlybracketopen);
+		if (!expectBegin()) return;
 		while (mTokenizer.hasData()) {
 			nextToken(token);
-			if (token.token == Token.curlybracketclose)
+			if (token.token == Token.curlybracketclose || token.token == Token.octoend )
 				break;
 			assembleStatement(token);
 		}
@@ -1916,6 +1920,68 @@ public class CChip8Assembler {
 		}
 
 	}
+	
+	private void compileIf(CToken token) {
+		int reg1;
+		CBeginEndData beginEndData;
+		if (!mOptAnnotateAllLines)
+			writeSourceLine();
+		CToken tokenb = new CToken();
+		nextToken(token);
+		reg1 = regNr(token);
+		if (reg1 == -1) {
+			error("Expected register");
+			return;
+		}
+		nextToken(token);
+		Token compareToken = token.token;
+		if (token.token == Token.key) {
+			compareToken = Token.key;
+		} else if (token.token == Token.minus) {
+			expect(Token.key);
+			compareToken = Token.notkey;
+			token.token = Token.notkey;
+		} else {
+			expr(token);
+		}
+		nextToken(tokenb);
+
+		beginEndData = null;
+		switch (tokenb.token) {
+		case octobegin:
+			mLevel++;
+			beginEndData = new CBeginEndData();
+		//	mBeginEndStack.push(beginEndData);
+			break;
+		case octothen:
+			break;
+		default:
+			error("Expcted begin or then");
+
+		}
+		compileCompare(reg1, token, compareToken, beginEndData);
+		
+		if (tokenb.token == Token.octobegin) {
+			while (mTokenizer.hasData()) {
+				nextNonWhiteToken(token);
+				if (token.token == Token.octoelse) {
+					if (!mOptAnnotateAllLines)
+						writeSourceLine();
+					int pc2 = pc;
+					writeCode(0x1, 0);
+					patch(beginEndData.patchAdr, pc);
+					beginEndData.patchAdr = pc2;
+				} else if (token.token == Token.octoend) {
+					patch(beginEndData.patchAdr, pc);	
+					break;
+				} else {
+					assembleStatement(token);
+				}
+			}
+		}
+		
+
+	}
 
 	private void compileCompare(int reg1, CToken token, Token compareToken, CBeginEndData beginEndData) {
 		int reg2 = regNr(token);
@@ -2248,6 +2314,9 @@ public class CChip8Assembler {
 			forData.forStepNr = 1;
 		}
 		forData.pc = pc;
+		compileBlock(token);
+		compileForEnd(forData);
+		/*
 		nextToken(token);
 		if (token.token == Token.octobegin) {
 			mBeginEndStack.push(forData);
@@ -2256,6 +2325,7 @@ public class CChip8Assembler {
 			assembleStatement(token);
 			compileForEnd(forData);
 		}
+		*/
 
 	}
 

@@ -30,8 +30,8 @@ public class CTokenizer {
 
 	public String toString() {
 		try {
-			int start = mPos - 20;
-			int end = mPos + 20;
+			int start = mPos - 40;
+			int end = mPos + 50;
 			if (start < 0)
 				start = 0;
 			if (end > mEnd)

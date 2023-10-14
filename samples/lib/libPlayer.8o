@@ -133,20 +133,21 @@
               moveFlag := 0                                           # v1 = Flag if miner moved
               xdir1 := xdir                                           # save direction flag
               x1 := 9                                                 # we use x1 as temp variable for keyboard check
-              if x1 key begin                                         # left
-                xdir := 1
-                moveFlag := 1
+              switch key begin
+                case 9 begin
+                  xdir := 1
+                  moveFlag := 1
+                end
+                case 7 begin
+                  xdir := 0xff
+                  moveFlag := 1
+                end
               end
 
-              x1 := 7
-              if x1 key begin                                         # right
-                xdir := 0xff
-                moveFlag := 1
-              end
 
               if jumping == 0 begin                                   # only start a new jump if not jumping
-                x1 := 5
-                if x1 key then jumping := 1                           # jump
+                vf := 5
+                if vf key then jumping := 1                           # jump
               else
                 moveFlag := 1
               end
