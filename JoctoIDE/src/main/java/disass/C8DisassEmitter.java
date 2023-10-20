@@ -9,6 +9,8 @@ public class C8DisassEmitter extends C8Emitter {
 	public String line;
 	public boolean disassFormat = true;
 	public boolean hexadecimal = false;
+	
+	
 
 	@Override
 	public int emitOpcode(byte[] code, int pos) {
@@ -299,7 +301,7 @@ public class C8DisassEmitter extends C8Emitter {
 					 strComment = String.format("#%s %c", bin(data),chr(data));
 				 } else {
 					 strCmd = String.format("0x%02x", data);
-					 strComment = String.format("\t;%c",chr(data));
+					 strComment = String.format("\t#%c",chr(data));
 					 for (int i=1;i<itemsPerRow;i++) {
 						 CC8Label lbl2 = mLabels.get(pc);
 						 if (lbl2 != null) break;
@@ -315,19 +317,19 @@ public class C8DisassEmitter extends C8Emitter {
 			case SPRITE8:
 				checkLineSpace(label);
 				strCmd = String.format(" 0x%02x", data);
-				strComment = String.format("#%s", bin(data));
+				strComment = String.format("\t#%s", bin(data));
 				break;
 			case SPRITE16:
 				checkLineSpace(label);
 				data2 = chip8Memory[pc] & 0xff;
 				pc++;
 				strCmd = String.format("0x%02x 0x%02x", data,data2);
-				strComment = String.format("#%s%s", bin(data),bin(data2));
+				strComment = String.format("\t#%s%s", bin(data),bin(data2));
 				break;
 			default:
 				mLastType = type;
 				 strCmd = String.format("0x%02x", data);
-				 strComment = String.format("#%s %c", bin(data),chr(data));
+				 strComment = String.format("\t#%s %c", bin(data),chr(data));
 				 break;
 		}
 		line += strCmd+"\t"+strComment;
@@ -346,7 +348,8 @@ public class C8DisassEmitter extends C8Emitter {
 
 
 	String bin(int data) {
-		String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", String.format("%c", 0x2588));
+		//String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", String.format("%c", 0x2588));
+		String comment=Integer.toBinaryString(data).replaceAll("0", " ").replaceAll("1", String.format("%c", '#'));
 		while (comment.length() < 8) comment = " "+comment;
 		return comment;
 	}

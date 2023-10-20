@@ -16,6 +16,9 @@ public abstract class C8Emitter {
 	private StringBuilder mSB = new StringBuilder();
 	C8DebugSource		  mDebugSource = null;
 	
+	public void writeSourcecode() {
+		
+	}
 	public void createDebugSource() {
 		mDebugSource = new C8DebugSource();
 	}

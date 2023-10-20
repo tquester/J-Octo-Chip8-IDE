@@ -127,6 +127,7 @@ public class CC8Decoder {
 		//System.out.println(String.format("Add data Label %4x %d",adr,adr));
 			
 		lbl	= new CC8Label(C8LabelType.DATA);
+		lbl.mItemsPerRow = 16;
 		mLabels.put(adr, lbl);
 
 	}
@@ -269,9 +270,8 @@ public class CC8Decoder {
 					lastLabel = label;
 				pc = emitter.emitdb(chip8Memory, pc, lastLabel);
 			}
-			
-			
 		}
+		emitter.writeSourcecode();
 	}
 
 	int loadGame(String filename) {

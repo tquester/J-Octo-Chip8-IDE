@@ -6,14 +6,14 @@ import assembler.Token;
 
 public class CC8Label {
 	static int labelNr=0;
-	public C8LabelType 		mLabelType = C8LabelType.NONE;
+	public C8LabelType 		mLabelType = C8LabelType.DATA;
 	public int 				mNr;
 	public String			mName = null;
 	public String			mAlphabet = null;
 	public int				mTarget=0;
 	public Double			mValue=null;
 	public int				mEnd=0;
-	public int 				mItemsPerRow=1;
+	public int 				mItemsPerRow=16;
 	public String			mMacro=null;
 	public ArrayList<String>		mVariables=null;
 	
