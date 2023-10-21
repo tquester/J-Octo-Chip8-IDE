@@ -1,453 +1,222 @@
+# Stack library
+#   there is only one register (v2v3)
+#   operations are
+#   push
+#   drop
+#   add
+#   sub
+#   mult
+#   div
+#   mod
+#   print
 
-#########################################################################################################
-## Chip8 16bit Math library
-## (C) Thomas Quester, 21.10.2023
-##
-## v0v1 = register 1
-## v2v3 = register 2
-## v4v5 = register 3
-##
-## Functions:
-##   add16bit
-##            v0v1 := v0v1 + v2v3
-##   sub16bit
-##            v0v1 := v0v1 - v2v3
-##   mul16bit
-##            v0v1 := v0v1 * v2v3   Destroys register
-##   mul16bitClean
-##            v0v1 := v0v1 * v2v3   Preserves registers (slower)
-##   div16bit
-##            v0v1 := v0v1 / v2v3   Destroys register
-##   div16bitClean
-##            v0v1 := v0v1 / v2v3   Preserves registers (slower)
-##
-##   dezBufToInt16
-##            Reads a decimal number from a buffer. The buffer is 5 bytes long and contains numbers 0..9
-##            Result in v0v1
-##   printDez
-##            prints the number in v0v1 in decimal at v4/v5 and avances the corrdinates
-##
-##   printhexv0v1
-##            prints the number in v0v1 in hexadecimnal at v4/v5 and avances the corrdinates
-##   printhexv0
-##            prints the number in v0 in hexadecimal and advanced the position at v4/v5 and avances the corrdinates
-#########################################################################################################
+            jump startTestLibStack
+:include "lib/libMath.8o"
+
+:macro printStackEntry num {
+              v0 := num
+              call printEntry
+            }
 
 
-
-
-
-:const TestLibMath 1
-
-:alias a1 v0
-:alias a2 v1
-:alias b1 v2
-:alias b2 v3
-:alias c1 v4
-:alias c2 v5
-:alias counter v6
-:alias temp v7
-:alias temp2 v8
-:alias index v9
-:alias d1 va
-:alias d2 vb
-:alias x v4
-:alias y v5
-
-:if TestLibMath
-: unittest
+: startTestLibStack
             hires
 
-            i := dezsample
-            dezBufToInt16
-
-            x := 0
-            y := 0
-            printhexv0v1
-
-            x := 30
-            y := 0
-            printDez
+            v0 := 0x3
+            v1 := 0xe8
+            stackPush
 
 
+            v0 := 0x00
+            v1 := 20
+            stackPush
 
-            y += 8
-            x := 0
-            printhexv2v3
+            v0 := 0x00
+            v1 := 120
+            stackPush
 
-            div16bit
-            y = 16
-            x := 0
-            printhexv0v1
+
+            v0 := 0x00
+            v1 := 80
+            stackPush
+
+            print
+            v0 := key
+            printStackEntry 0
+            printStackEntry 1
+            stackSub
+            printStackEntry 0
+
+
+            v0 := key
+
+
+            printStackEntry 0
+            printStackEntry 1
+            stackAdd
+            printStackEntry 0
+
+            v0 := key
+            printStackEntry 0
+            printStackEntry 1
+            stackMul
+            printStackEntry 0
+
+
+
+
 
             loop
             again
 
-: dezsample
-            1 2 3 4 5
+: print
+            v4 := 0
+            v5 := 0
+            stackPrint
+            return
+
+: printEntry
+            v4 := 0
+            v5 := 0
+            stackPrintBottom
+            return
 
 
-:stringmode textdigits "0123456789" {
-:byte { 48 + VALUE }
-            }
-: testnum
-            textdigits "1234"
+: stackdata
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+
+: stackptr
             0
 
-
-:end
-
-######################################################################################
-# sub16bit
-# v0v1 := v0v1 + v2v3
-######################################################################################
-: add16bit
-            v1 += v3
-            v0 += vf
-            v0 += v2
-            return
-
-######################################################################################
-# sub16bit
-# v0v1 := v0v1 - v2v3
-######################################################################################
-
-: sub16bit
-            v1 -= v3
-            if vf == 0 then v0 -= 1
-            v0 -= v2
-            return
-
-
-######################################################################################
-# printhexnib   print hex nibble in v0
-# printhexv0    print hex in v0
-# printhexv0v1  print hex register a (v0v1)
-# printhexv0v1  print hex register b (v2v3)
-######################################################################################
-
-: printhexnib
-            i := hex v0
-            sprite x y 5
-            x += 5
-            return
-
-
-# Prints the hex value v0 at x,y
-: printhexv0
-            i := printhexv0save
-            save v1
-            v0 >>= v0
-            v0 >>= v0
-            v0 >>= v0
-            v0 >>= v0
-
-            printhexnib
-            i := printhexv0save
-            load v1
-            v1 := 0xf
-            v0 &= v1
-            printhexnib
-            i := printhexv0save
-            load v1
-            return
-
-: saveprinthexv0v1
-            0
-: printhexv0v1
-            i := saveprinthexv0v1
-            save v0
-            printhexv0
-            v0 := v1
-            printhexv0
-            i := saveprinthexv0v1
+: stackPush
+            v3 := v0                                                  # save variable
+            i := stackptr
             load v0
-            return
-
-: printhexv2v3
-            i := saveprinthexv0v1
-            save v0
-            v0 := v2
-            printhexv0
+            v4 := v0
             v0 := v3
-            printhexv0
-            i := saveprinthexv0v1
-            load v0
-            return
-
-
-: dez16
-            d1 := a1
-            d2 := a2
-            index := 4                                                # set Index to last digit
-            loop
-              if a1 == 0 begin
-                if a2 == 0 then jump dez16exit
-              end
-              b1 := 0
-              b2 := 10
-              div16bit
-              temp := v0
-              v0 := c2
-              i := printbuf
-              i += index
-              index -= 1
-              save v0
-              v0 := temp
-            again
-: dez16exit
-            return
-
-: printDezBuf
-            i := printbuf
-            v1 := 0
-            v2 := 0
-            loop
-              i := printbuf
-              i += v1
-              v1 += 1
-              load v0
-              if v0 != 0 then v2 := 1
-              if v2 == 1 begin
-                i := hex v0
-                sprite x y 5
-                x += 5
-              end
-
-              if v1 != 5 then
-            again
-            return
-
-: printDez
-            i := mathsave
-            save ve
-            dez16
-            i := mathsave
-            load ve
-            printDezBuf
-            i := mathsave
-            load ve
-            return
-
-
-######################################################################################
-# stringToInt16
-#  Reads a decimal (ascii) encoded text
-######################################################################################
-: dezBufToInt16Mem
-: dezBufToInt16
-            load v4
-            i := dezBufToInt16Mem
-            save v4
-
-            counter := 0
-            a1 := 0
-            a2 := 0
-            loop
-              b1 := 0
-              b2 := 10
-              mul16bitClean
-              temp := v0
-              i := dezBufToInt16Mem
-              i += counter
-              load v0
-              b1 := 0
-              b2 := v0
-              v0 := temp
-              add16bit
-              counter += 1
-              if counter != 5 then
-            again
-            return
-
-
-
-
-
-
-
-
-######################################################################################
-# mul8bit  Multply
-#     v0 := v0 * v1
-#     Destroys v1, vd, ve
-#
-# mul8bitClean
-#   v0 := v0 * v1
-#   Preserves all variables
-######################################################################################
-
-: mul8bitClean
-            i := mathsave
-            save v3
-            mul8bit
-            i := mathsave
-            save v0
-            i := mathsave
-            load v3
-            return
-
-: mul8bit
-            v2 := 0
-            v3 := 8
-            loop
-              v2 += v2
-              v1 <<= v1
-              if vf == 1 begin
-                vd += v0
-                v1 += 1
-              end
-              v3 -= 1
-              if v3 != 0 then
-            again
-            v0 := v2
-            return
-
-######################################################################################
-# mul16bit
-#     v1v2 := v1v2 * v2v3
-#   Destroys v4 v5 v6 v7 v8
-#
-# mul16bitClean
-#    v1v2 := v1v2 * v2v3
-#    Preserves all other registers
-######################################################################################
-
-
-: mul16bitClean
-            i := mathsave
-            save v8
-            mul16bit
-            i := mathsave
+            i := stackdata
+            i += v4
+            v4 += 2
             save v1
-            i := mathsave
-            load v8
-            return
-
-: mul16bit
-            c1 := 0
-            c2 := 0
-            counter := 16
-            loop
-              b2 <<= b2                                               # shift 1 bit out at the left side
-              temp := vf
-              b1 <<= b1
-              temp2 := vf
-              b1 += temp
-              c2 <<= c2
-              temp := vf
-              c1 <<= c1
-              c1 += temp
-
-              if temp2 == 1 begin
-                c2 += a2
-                c1 += vf
-                c1 += a1
-              end
-              counter -= 1
-              if counter > 0 then
-            again
-            a1 := c1
-            a2 := c2
-            return
-
-######################################################################################
-# div8bit
-#    v0 := v0 / v1
-#    Destroys v3 v4
-#
-# div8bitclean
-#    v0 := v0 / v1
-#    Preserves all registers
-#
-# div16bit
-#  v0v1 := v0v1 / v2v3
-#  v3v4 := v0v1 mod v2v3
-#  Destroys: v4 v5 v6 v7 v8
-######################################################################################
-
-: div8clean
-            i := mathsave
-            save v3
-            div8bit
-            i := mathsave
+            i := stackptr
+            v0 := v4
             save v0
-            i := mathsave
-            load v3
             return
 
+: stackDrop
+            i := stackptr
+            load v0
+            if v0 >= 2 begin
+              v0 -= 2
+              i := stackptr
+              save v0
+            end
+            return
 
+: stackAdd
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              add16bit
+              stackPush
+            end
+            return
 
-: div8bit
-            v2 := 0                                                   # xor a
-            v3 := 8                                                   # ld b,8
+: stackSub
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              sub16bit
+              stackPush
+            end
+            return
 
+: stackMul
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              mul16bitClean
+              stackPush
+            end
+            return
+
+: stackDiv
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              div16bit
+              stackPush
+            end
+            return
+: stackPrint
+            i := stackptr
+            load v0
+            v2 := v0
+            v3 := 0
             loop
-              v2 += v2                                                # add hl, hl, rla,
-              v0 <<= v0
-              v2 += vf
-              if v2 >= v1 begin                                       # if v1 fits into vd
-                v2 -= v1                                              # subtract
-                v0 += 1                                               # and set the leftmost bit in vd
-              end
-              v3 -= 1
-              if v3 != 0 then
+              i := stackdata
+              i += v3
+              load v1
+              printDez
+              v3 += 2
+              v5 += 6
+              if v2 != v3 then
             again
             return
 
-# v0v1 := v0v1 / v2v3
-# v4v5 := v0v1 mod v2v3
-: div16bit
-            c1 := 0
-            c2 := 0
-            counter = 16
-            loop
-              c2 <<= c2                                               # shift left c
-              temp := vf
-              c1 <<= c1
-              c1 += temp
-
-              a2 <<= a2                                               # shift left a, store carry bit in temp2
-              temp := vf
-              a1 <<= a1
-              temp2 := vf
-              a1 += temp
-
-              c2 += temp2                                             # add carry bit to c
-
-# if c > b
-              if c1 > b1 begin
-                div16bitsub
-              else
-                if c1 == b1 begin
-                  if c2 >= b2 then div16bitsub
-                end
-              end
-              counter -= 1
-              if counter != 0 then
-            again
+: stackPrintBottom
+# prints the item last - v0 (v0 = 0 for last element, 1 for second last etc.)
+            v0 += v0
+            v1 := v0
+            i := stackptr
+            load v0
+            v0 -= 2
+            v0 -= v1
+            v6 := v0
+            v1 := 3
+            mul8bit
+            v5 += v0
+            i := stackdata
+            i += v6
+            load v1
+            printDez
             return
-
-: div16bitsub
-            c2 -= b2
-            if vf == 0 then c1 -= 1
-            c1 -= b1
-            a2 += 1
-            return
-
-
-: mathsave
-            0 0 0 0
-            0 0 0 0
-            0 0 0 0
-            0 0 0
-
-
-: printhexv0save
-            0 0
-: mul16bitsave
-            0 0
-
-: printbuf 0 0 0 0 0
-
-:unalias a1 a2 b1 b2 c1 c2 counter temp temp2 x y

@@ -1,6 +1,7 @@
 
             jump start
 :include "lib/libText.8o"
+:include "lib/libMath.8o"
 
 : textbase
 : txtCellPhones2  tinytext8 "cell phones!#"
@@ -568,11 +569,11 @@
 :breakpoint
             v1 := 7
             v0 := 6
-            mulv0v1
+            mul8bit
 
             v0 = 100
             v1 := 5
-            divv0v1
+            div8bit
 
 
 

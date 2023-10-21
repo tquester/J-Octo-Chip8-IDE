@@ -177,6 +177,16 @@
 
 
 : dez16
+            temp := v0
+            v0 := 0
+            i := printbuf
+            save v0
+            save v0
+            save v0
+            save v0
+            save v0
+            v0 := temp
+
             d1 := a1
             d2 := a2
             index := 4                                                # set Index to last digit
@@ -214,7 +224,7 @@
                 x += 5
               end
 
-              if v1 != 6 then
+              if v1 != 5 then
             again
             return
 
@@ -294,7 +304,7 @@
               v2 += v2
               v1 <<= v1
               if vf == 1 begin
-                vd += v0
+                v2 += v0
                 v1 += 1
               end
               v3 -= 1
@@ -448,6 +458,5 @@
 : mul16bitsave
             0 0
 
-: printbuf 0 0 0 0 0
-
+: printbuf 0 0 0 0 0 0 0
 :unalias a1 a2 b1 b2 c1 c2 counter temp temp2 x y

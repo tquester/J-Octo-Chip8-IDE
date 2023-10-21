@@ -1,0 +1,222 @@
+# Stack library
+#   there is only one register (v2v3)
+#   operations are
+#   push
+#   drop
+#   add
+#   sub
+#   mult
+#   div
+#   mod
+#   print
+
+            jump startTestLibStack
+:include "lib/libMath.8o"
+
+:macro printStackEntry num {
+              v0 := num
+              call printEntry
+            }
+
+
+: startTestLibStack
+            hires
+
+            v0 := 0x3
+            v1 := 0xe8
+            stackPush
+
+
+            v0 := 0x00
+            v1 := 20
+            stackPush
+
+            v0 := 0x00
+            v1 := 120
+            stackPush
+
+
+            v0 := 0x00
+            v1 := 80
+            stackPush
+
+            print
+            v0 := key
+            printStackEntry 0
+            printStackEntry 1
+            stackSub
+            printStackEntry 0
+
+
+            v0 := key
+
+
+            printStackEntry 0
+            printStackEntry 1
+            stackAdd
+            printStackEntry 0
+
+            v0 := key
+            printStackEntry 0
+            printStackEntry 1
+            stackMul
+            printStackEntry 0
+
+
+
+
+
+            loop
+            again
+
+: print
+            v4 := 0
+            v5 := 0
+            stackPrint
+            return
+
+: printEntry
+            v4 := 0
+            v5 := 0
+            stackPrintBottom
+            return
+
+
+: stackdata
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+            0 0
+
+: stackptr
+            0
+
+: stackPush
+            v3 := v0                                                  # save variable
+            i := stackptr
+            load v0
+            v4 := v0
+            v0 := v3
+            i := stackdata
+            i += v4
+            v4 += 2
+            save v1
+            i := stackptr
+            v0 := v4
+            save v0
+            return
+
+: stackDrop
+            i := stackptr
+            load v0
+            if v0 >= 2 begin
+              v0 -= 2
+              i := stackptr
+              save v0
+            end
+            return
+
+: stackAdd
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              add16bit
+              stackPush
+            end
+            return
+
+: stackSub
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              sub16bit
+              stackPush
+            end
+            return
+
+: stackMul
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              mul16bitClean
+              stackPush
+            end
+            return
+
+: stackDiv
+            i := stackptr
+            load v0
+            if v0 >= 4 begin
+              v0 -= 4
+              i := stackptr
+              save v0
+              i := stackdata
+              i += v0
+              load v3
+              div16bit
+              stackPush
+            end
+            return
+: stackPrint
+            i := stackptr
+            load v0
+            v2 := v0
+            v3 := 0
+            loop
+              i := stackdata
+              i += v3
+              load v1
+              printDez
+              v3 += 2
+              v5 += 6
+              if v2 != v3 then
+            again
+            return
+
+: stackPrintBottom
+# prints the item last - v0 (v0 = 0 for last element, 1 for second last etc.)
+            v0 += v0
+            v1 := v0
+            i := stackptr
+            load v0
+            v0 -= 2
+            v0 -= v1
+            v6 := v0
+            v1 := 3
+            mul8bit
+            v5 += v0
+            i := stackdata
+            i += v6
+            load v1
+            printDez
+            return

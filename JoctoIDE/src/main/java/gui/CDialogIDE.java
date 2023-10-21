@@ -583,7 +583,7 @@ public class CDialogIDE extends Dialog {
 			onEditAutocomplete();
 		if (e.stateMask == state_mask_hyperjump && e.keyCode == key_hyperjump)
 			onEditHyperjump();
-		if (e.character == 13) {
+		if (e.character == 13 && (e.stateMask & SWT.SHIFT) != 0) {
 			if (mEditorDirty)
 				onAutoformat();
 		}
@@ -1016,7 +1016,7 @@ public class CDialogIDE extends Dialog {
 
 		getTextSource().setSelection(selection);
 		getTextSource().setTopIndex(topIndex);
-		getTextSource().setCaretOffset(caret);
+		getTextSource().setCaretOffset(caret+1);
 
 	}
 
