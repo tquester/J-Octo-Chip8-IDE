@@ -15,7 +15,8 @@ public enum C8LabelType {
 	CONST,
 	TILES,
 	SPRITES,
-	TILESET
+	TILESET,
+	ALIAS
 	;
 };
 

@@ -139,7 +139,11 @@
                   moveFlag := 1
                 end
                 case 7 begin
-                  xdir := 0xff
+                  if x > 1 begin
+                    xdir := 0xff
+                  else
+                    xdir := 0
+                  end
                   moveFlag := 1
                 end
               end

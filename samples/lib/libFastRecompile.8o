@@ -1,0 +1,35 @@
+#####################################################################################################
+## Init ZX Spectrum specitic Opcodes
+## The ZX Emulator stores the bytes "ZX" in memory lodation 0 and 1
+## This library only works on zx chip8 on all other emulators it simply does nothing
+##
+## Double buffereing is done with three commands
+## 0xF0E0 = Fast - Disable all Screen drawing (like in ZX81)
+## 0xF1E0 = Slow - Back to normal. All sprites are drawn
+## 0xF2E0 = Update - Force Screen update in fast mode
+##
+## Now we can re-arrange the scene, move all sprites etc. then call redraw to force a redraw.
+## Flickering is impossible because you never see a sprite beeing removed
+##
+## Warning:
+## This file version enables the function alwys. If you compile with this version, your game will
+## most likly not run on any other emulator. It is used for the z80 recompiled version of the game
+##
+#####################################################################################################
+
+
+
+: initfast
+            return
+
+: fast
+            0xf0 0xe0
+            return
+
+: slow
+            0xf1 0xe0
+            return
+
+: redraw
+            0xf2 0xe0
+            return

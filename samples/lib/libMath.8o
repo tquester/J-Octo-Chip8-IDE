@@ -214,7 +214,7 @@
                 x += 5
               end
 
-              if v1 != 5 then
+              if v1 != 6 then
             again
             return
 

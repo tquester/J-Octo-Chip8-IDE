@@ -2,20 +2,33 @@ package disass;
 
 import java.util.ArrayList;
 
+import org.w3c.dom.ranges.Range;
+
 import assembler.Token;
 
 public class CC8Label {
+	
+	class Range {
+		int start;
+		int end;
+	}
+	
 	static int labelNr=0;
-	public C8LabelType 		mLabelType = C8LabelType.DATA;
-	public int 				mNr;
-	public String			mName = null;
-	public String			mAlphabet = null;
-	public int				mTarget=0;
-	public Double			mValue=null;
-	public int				mEnd=0;
-	public int 				mItemsPerRow=16;
-	public String			mMacro=null;
-	public ArrayList<String>		mVariables=null;
+	public C8LabelType 			mLabelType = C8LabelType.DATA;
+	public int 					mNr;
+	public String				mName = null;
+	public String				mAlphabet = null;
+	public int					mTarget=0;
+	public Double				mValue=null;
+	public int					mEnd=0;
+	public int 					mItemsPerRow=1;
+	public String				mMacro=null;
+	public ArrayList<String>	mVariables=null;
+	public ArrayList<Range>		mValidInRange = null;
+	
+	private Range 				mCurrentRange = null;
+	public String               mRegister = null;				// for alias: the register
+	public String               mPackage=null;					// inside a include, if a package is defined, the label is package private
 	
 	public void addVar(String var) {
 		if (mVariables == null) mVariables = new ArrayList<>();
@@ -24,6 +37,32 @@ public class CC8Label {
 		}
 			
 	}
+	
+	public void startRange(int pc) {
+		saveRange();
+		mCurrentRange = new Range();
+		mCurrentRange.start = pc;
+	}
+	
+	public void endRange(int pc) {
+		if (mCurrentRange != null) {
+			mCurrentRange.end = pc;
+			saveRange();
+		}
+	}
+	
+	private void saveRange() {
+		if (mCurrentRange != null) {
+			if (mCurrentRange.start != 0 && mCurrentRange.end != 0) {
+				if (mValidInRange == null) mValidInRange = new ArrayList<>();
+				mValidInRange.add(mCurrentRange);
+				mCurrentRange = null;
+			}
+		}
+
+	}
+	
+	
 	
 	public int regFromVar(String var) {
 		if (mVariables == null) return -1;

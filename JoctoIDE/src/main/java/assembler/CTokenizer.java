@@ -27,6 +27,8 @@ public class CTokenizer {
 	private Stack<CC8Label> mStackStruct = new Stack<>();
 	public String mFilename = null;
 	public String mHint=null;
+	public String mPackage;
+	public boolean mPublic;
 
 	public String toString() {
 		try {

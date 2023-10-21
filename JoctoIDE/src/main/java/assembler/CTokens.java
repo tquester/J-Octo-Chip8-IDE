@@ -130,6 +130,7 @@ public class CTokens {
 	        {":breakpoint", Token.breakpoint},
 	        {":proto", Token.proto},
 	        {":alias", Token.alias},
+	        {":unalias", Token.unalias},
 	        {":const", Token.octoconst},
 	        {":org", Token.org},
 	        {";", Token.semikolon},
@@ -214,6 +215,8 @@ public class CTokens {
 	        {"switch", Token.octoswitch },
 	        {"case", Token.octocase },
 	        {"break", Token.octobreak },
+	        {"package",Token.octoPackage },
+	        {"public", Token.octoPublic }
 	        
 	        
 	        

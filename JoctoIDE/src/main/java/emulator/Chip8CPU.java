@@ -469,8 +469,22 @@ public class Chip8CPU {
 				break;
 			case 0x0A:
 				a = getKeyPressed();
-				if (a != -1)
+				if (a != -1) {
+					System.out.println(String.format("Key Pressed %d",a));
 					vx[highnib] = a;
+					while (true) {
+						a = getKeyPressed();
+						if (a == -1) break;
+						try {
+							Thread.sleep(10);
+						}
+						catch(Exception ex) {
+							
+						}
+					
+					}
+					System.out.println("Key Released");
+				}
 				else
 					pc -= 2;
 				break;
@@ -503,11 +517,16 @@ public class Chip8CPU {
 					regI = a;
 				break;
 			case 0x65:
+				try {
 				a = regI;
 				for (i = 0; i <= highnib; i++)
 					vx[i] = memory[a++];
 				if (mNewLoad == false)
 					regI = a;
+				}
+				catch(Exception ex) {
+					ex.printStackTrace();
+				}
 				break;
 			}
 			break;
@@ -602,13 +621,15 @@ public class Chip8CPU {
 
 	public void addKey(char character) {
 		int octoKey = getOctoKey(character);
-		if (octoKey != -1)
+		if (octoKey != -1) {
+			System.out.println(String.format("Octokey %d",octoKey));
 			keyPressed[octoKey] = 1;
+		}
 	}
 
 	public void addRemoveKey(char character) {
 		int octoKey = getOctoKey(character);
-		for (int i=0;i<15;i++) //if (octoKey != -1)
+		for (int i=0;i<=15;i++) //if (octoKey != -1)
 			keyPressed[i] = 0;
 
 	}

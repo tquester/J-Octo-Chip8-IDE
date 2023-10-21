@@ -7,13 +7,20 @@ import disass.COpcodeTable.Dialect;
 public class C8EmitterZ80 extends C8DisassEmitter {
 
 	static final boolean newFormat = true;
+	COpcodeTable mOpcodeTable = new COpcodeTable();
+	static boolean vfIsB = true; // optimization: uses b register instead of (ix+reg_vf)
+	static boolean v0isC = true;
+	public boolean newShift = true;
+	public boolean newAddI = false;
+
+	ArrayList<CZ80Command> mZ80Commands = new ArrayList<>();
 
 	class CZ80Command {
 		String label = null;
 		String command = null;
 		String par1 = null;
 		String par2 = null;
-		String comment = null;
+		String comment = null;	
 		public int pos;
 
 		public CZ80Command(int pos, String label, String command, String par1, String par2, String comment) {
@@ -42,13 +49,6 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 
 	}
 
-	COpcodeTable mOpcodeTable = new COpcodeTable();
-	static boolean vfIsB = true; // optimization: uses b register instead of (ix+reg_vf)
-	static boolean v0isC = true;
-	public boolean newShift = true;
-	public boolean newAddI = false;
-
-	ArrayList<CZ80Command> mZ80Commands = new ArrayList<>();
 
 	CZ80Command addCmd(int pos, String command, String par1, String par2) {
 		
@@ -477,14 +477,14 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			case 0x15:
 
 				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"ld", "(ix+reg_delay", "a");
+				addCmd(pos,"ld", "(ix+reg_delay)", "a");
 
 				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
 				listCmds.add(String.format("ld  (ix+reg_delay),a"));
 				break;
 			case 0x18:
 				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"ld", "(ix+reg_sound", "a");
+				addCmd(pos,"ld", "(ix+reg_sound)", "a");
 
 				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
 				listCmds.add(String.format("ld  (ix+reg_sound),a"));
@@ -625,7 +625,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 						listCmds.add("inc   iy");
 
 					} else {
-						addCmd(pos,"ld", "a", "(iy");
+						addCmd(pos,"ld", "a", "(iy)");
 						addCmd(pos,"ld", ixreg(0), "a");
 						addCmd(pos,"inc", "iy");
 

@@ -1,0 +1,595 @@
+
+            jump start
+:include "lib/libText.8o"
+
+: textbase
+: txtCellPhones2  tinytext8 "cell phones!#"
+: txtline0 tinytext8 "UPN-Calculator#"
+: txtline1 tinytext8 "1=1 2=2 3=3 4=+#"
+: txtline2 tinytext8 "Q=4 W=5 E=6 R=-#"
+: txtline3 tinytext8 "A=7 S=8 D=9#"
+: txtline4 tinytext8 "Z=* X=0 C=/#"
+: txtline5 tinytext8 "F=Enter#"
+: txtline6 tinytext8 "V=Clear#"
+: txtstack tinytext8 "Stack#"
+
+:const digits 8
+
+:struct bnvars {
+              accu
+              stackptr
+
+            }
+
+
+: inputdata 0 0 0 0 0 0 0 0
+: inputpos  0
+
+
+: mathdata  0 0 0 0 1 4 2 7
+            0 0 0 0 0 3 4 1
+            0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0
+            0 0 0 0 0 0 0 0
+
+
+# v0 = v0 * v1
+: multsave 0 0 0
+: multv0v1
+            if v1 == 0 begin
+              v0 := 0
+              return
+            end
+            if v0 == 0 then return
+            if v1 == 1 then return
+            i := multsave
+            save v2
+            v2 := v0
+            loop
+              while v1 != 1
+              v0 += v2
+              v1 -= 1
+            again
+            vf := v0
+            i := multsave
+            load v2
+            v0 := vf
+            return
+
+
+
+
+
+
+
+
+
+: stackptr 8
+
+: printNumber
+:struct PrintNumberVars {
+              digit
+              x
+              y
+              count
+              ofs
+            }
+
+# prints the number from the stack. v0 = stackpointer 0 = top, 8 = first entry etc.
+# v1 = x
+# v2 = y
+
+            i := printNumberSaveData
+            save PrintNumberVars
+            with PrintNumberVars begin
+              ofs = v0
+              for count = 0 to 8 begin
+                i := mathdata
+                i += ofs
+                i += count
+                load digit
+                i := hex digit
+                sprite x y 5
+                v1 += 5
+              end
+              i := printNumberSaveData
+              load PrintNumberVars
+              y += 8
+            end
+            return
+: printNumberSaveData
+            PrintNumberVars.byte
+
+: printScreen
+            clear
+            printStack
+            title
+            showCursor
+            return
+
+: printstacksave
+            0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+: printStack
+            i := printstacksave
+            save ve
+
+            i := stackptr
+            load v0
+            if v0 == -8 then return
+
+            v6 := v0
+            v5 := 0
+            v1 := 0
+            v2 := 16
+            loop
+              v0 := v5
+              printNumber
+              v0 := v5
+
+              v5 += 8
+              if v0 != v6 then
+            again
+            i := printstacksave
+            load ve
+            return
+
+:struct ShowCursorVar {
+              digit
+              x
+              y
+              pos
+              cursorpos
+            }
+
+: showCursor
+            with ShowCursorVar begin
+              x = 0
+              y = 0
+              i := inputpos
+              load v0
+              cursorpos := v0
+              for pos = 0 to 8 begin
+                i := inputdata
+                i += pos
+                load digit
+                if v0 == 15 begin
+                  if pos == cursorpos begin
+                    i := spriteBlock
+                  else
+                    i := spriteEmpty
+                  end
+                else
+                  i := hex v0
+                end
+                sprite x y 5
+                x += 5
+              end
+            end
+            return
+
+
+
+:struct BigAddVars {
+              akku                                                    # v0
+              akku2                                                   # v1
+              stack                                                   # v2
+              stack2                                                  # v3
+              carryflag                                               # v4
+              idigit                                                  # v5
+            }
+
+:struct BigMultVars {
+              akku                                                    # v0
+              akku2                                                   # v1
+              stack                                                   # v2
+              stack2                                                  # v3
+              carryflag                                               # v4
+              idigit                                                  # v5
+              idigit2                                                 # v6
+              stack3                                                  # v7
+              akku3                                                   # v8
+              writepos                                                # v9
+              addcount                                                # v10
+              numdigits2                                              # v11
+            }
+
+# Drop. Remove top most entry from stack
+: drop
+            i := stackptr
+            load v0
+            v0 -= 8
+            i := stackptr
+            save v0
+            ret
+
+# copy topmost stack entry to previous stack entry and drop
+# if we the stack is "a b c" it will be "a c"
+: copybacksave
+            0 0 0 0 0 0 0 0 0 0
+: copyback
+            i := copybacksave
+            save v9
+            i := stackptr
+            load v0
+            v8 := v0
+            i := mathdata
+            i += v8
+            load v7
+            v8 -= 8
+            i := mathdata
+            i += v8
+            save v7
+            i := stackptr
+            load v0
+            v0 -= 8
+            i := stackptr
+            save v0
+            i := copybacksave
+            load v9
+            ret
+
+
+
+: bigadd
+            i := bigaddSave
+            save BigAddVars
+            with BigAddVars begin
+
+
+              i := stackptr
+              load v0                                                 # v0 := akku
+              if v0 < 8 then jump bigAddExit
+
+              stack := v0                                             # v4 = stackptr
+              stack2 := v0                                            # v5 = stackptr+8
+              stack2 -= 8
+              carryflag := 0                                          # v6 = carry flag
+
+
+              for idigit := 7 to 0 step 255 begin                     # v3 = Schleifenvariable
+                i := mathdata
+                i += stack
+                i += idigit
+                load akku
+                akku2 = akku                                          # load digit from first number
+                i := mathdata
+                i += stack2
+                i += idigit
+                load akku                                             # load digit from second number
+
+                akku += carryflag
+                akku += akku2
+                carryflag := 0
+                loop
+                  while akku > 9
+                  carryflag += 1
+                  akku -= 10
+                again
+                i := mathdata
+                i += stack2
+                i += idigit
+
+                save v0
+              end
+              bigPop
+: bigAddExit
+              i := bigaddSave
+              load BigAddVars
+            end
+
+            return
+
+: bigsub
+            i := bigMultSave
+            save BigAddVars
+            with BigAddVars begin
+
+
+              i := stackptr
+              load v0                                                 # v0 := akku
+              if v0 < 8 then jump bigSubExit
+
+              stack := v0                                             # v4 = stackptr
+              stack2 := v0                                            # v5 = stackptr+8
+              stack2 -= 8
+              carryflag := 0                                          # v6 = carry flag
+
+
+              for idigit := 7 to 0 step 255 begin                     # v3 = Schleifenvariable
+                i := mathdata
+                i += stack
+                i += idigit
+                load akku
+                akku2 = akku                                          # load digit from first number
+                i := mathdata
+                i += stack2
+                i += idigit
+                load akku                                             # load digit from second number
+
+                akku -= carryflag
+                akku -= akku2
+                carryflag := 0
+                loop
+                  while akku < 0
+                  carryflag += 1
+                  akku += 10
+                again
+                i := mathdata
+                i += stack2
+                i += idigit
+
+                save v0
+              end
+              bigPop
+: bigSubExit
+              i := bigaddSave
+              load BigAddVars
+            end
+
+            return
+
+: push0
+            i := stackptr
+            load v0
+            v0 += 8
+            i := stackptr
+            save v0
+            i := mathdata
+            i += v0
+            v0 := 0
+            save v0
+            save v0
+            save v0
+            save v0
+            save v0
+            save v0
+            save v0
+            save v0
+            ret
+
+
+: bigmult
+
+            i := bigMultSave
+            save BigMultVars
+            with BigMultVars begin
+              addcount := 0
+              i := stackptr
+              load v0                                                 # v0 := akku
+              if v0 < 8 then jump bigAddExit
+
+              stack := v0                                             # v4 = stackptr
+              stack2 := v0                                            # v5 = stackptr+8
+              stack3 := v0
+              stack2 -= 8
+              stack3 += 8
+              v0 += 8
+              i := stackptr
+              save v0
+              numdigits2 := 0
+
+
+              for idigit = 7 to 0 step 255 begin
+                i := mathdata
+                i += idigit
+                i += stack
+                load v0
+                if v0 != 0 begin
+                  akku3 = v0
+                  writepos := stack3
+                  writepos += idigit
+
+                  carryflag := 0
+                  for idigit2 = 7 to numdigits2 step 255 begin
+                    i := mathdata
+                    i += idigit2
+                    i += stack2
+                    load v0
+                    akku2 := akku3
+                    multv0v1
+                    v0 += carryflag
+                    carryflag := 0
+                    loop
+                      while v0 > 9
+                      carryflag += 1
+                      v0 -= 10
+                    again
+                    i := mathdata
+                    i += writepos
+                    writepos -= 1
+                    save v0
+                  end
+                  numdigits2 += 1
+                  if addcount == 1 begin
+                    bigadd
+                  else
+                    addcount += 1
+                  end
+                  push0
+                  i := stackptr
+                  load v0
+                  stack3 := v0
+                end
+              end
+            end
+            drop
+            copyback
+            copyback
+
+: bigMultExit
+            i := bigMultSave
+            load BigMultVars
+
+
+            return
+
+
+: bigaddSave
+            BigAddVars.byte
+: bigMultSave
+            BigMultVars.byte
+
+
+
+
+: title
+            Tinytext 54 0 txtline0
+            Tinytext 54 8 txtline1
+            Tinytext 54 16 txtline2
+            Tinytext 54 24 txtline3
+            Tinytext 54 32 txtline4
+            Tinytext 54 40 txtline5
+            Tinytext 54 48 txtline6
+            Tinytext 0  8  txtstack
+            return
+
+
+
+# Pops a value from the stack.
+# this means, reduce the stack pointer by 8
+
+: bigPop
+            i := stackptr
+            load v0
+            i := stackptr
+            v0 -= 8
+            save v0
+            return
+
+: addDigit
+            v9 := v0
+            showCursor
+            i := inputdata
+            load v7
+            v0 := v1
+            v1 := v2
+            v2 := v3
+            v3 := v4
+            v4 := v5
+            v5 := v6
+            v6 := v7
+            v7 := v9
+            i := inputdata
+            save v7
+            showCursor
+            ret
+
+: pushInput
+            i := stackptr
+            load v0
+            v0 += 8
+            i := stackptr
+            save v0
+            v9 := v0
+
+            i := inputdata
+            load v8
+            i := mathdata
+            i += v9
+            save v7
+            clearInput
+            ret
+
+: clearInput
+            v0 := 0
+            v1 := 0
+            v2 := 0
+            v3 := 0
+            v4 := 0
+            v5 := 0
+            v6 := 0
+            v7 := 0
+            i := inputdata
+            save v7
+            return
+
+
+
+
+: processKeyboard
+            loop
+: nextkey
+              v0 := key
+
+              if v0 < 10 begin
+                addDigit
+                jump nextkey
+              end
+              switch v0 begin
+                case 0xC begin                                        # 4 = plus
+                  printStack
+                  bigadd
+                  printStack
+                end
+                case 0xd begin                                        # D = minus
+                  printStack
+                  bigsub
+                  printStack
+                end
+                case 0xa begin                                        # D = mult
+                  printStack
+                  bigmult
+                  printStack
+                end
+                case 0xe begin                                        # e = enter
+                  printStack
+                  showCursor
+                  pushInput
+                  printStack
+                  showCursor
+                end
+                case 0xf begin                                        # f = clear
+
+                  printStack
+                  showCursor
+                  v0 := -8
+                  i := stackptr
+                  save v0
+                  clearInput
+                  printStack
+                  showCursor
+
+                end
+
+
+
+              end
+
+            again
+
+
+
+: start
+            hires
+:breakpoint
+            v1 := 7
+            v0 := 6
+            mulv0v1
+
+            v0 = 100
+            v1 := 5
+            divv0v1
+
+
+
+            printScreen
+            processKeyboard
+
+            v0 := key
+            bigsub
+            printStack
+
+
+            loop
+            again
+
+:sprites images, 8,5 {
+: spriteBlock
+              0xf8 0x88 0x88 0x88 0xf8
+: spriteEmpty
+              0x00 0x00 0x00 0x00 0xf8
+            }

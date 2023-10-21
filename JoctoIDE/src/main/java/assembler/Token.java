@@ -32,8 +32,8 @@ package assembler;
             Fx15 - LD DT, Vx
             Fx18 - LD ST, Vx
             Fx1E - ADD I, Vx
-            Fx29 - LD F, Vx
             Fx33 - LD B, Vx
+            Fx29 - LD F, Vx
             Fx55 - LD [I], Vx
             Fx65 - LD Vx, [I]
       3.2 - Super Chip-48 Instructions
@@ -115,7 +115,7 @@ public enum Token {
 	loadflags, saveflags, audio, plane, macro, calc, octobyte, stringmode, octoassert, monitor, octopointer, pitch, comment, curlybracketopen, curlybracketclose, newline, exit, invalid, bracketopen, bracketclose, plus, minus, divide, mult, mod,
 	
 	tilde, exclamation, sin, cos, tan, exp, log, abs, sqrt, sign, ceil, floor, atsym, pow, min, max, strlen, none, notkey, 
-	dotif, dotelse, dotend, dotunless, dotinclude, dotsegment, data, code, dotlog, dodumpoptions, dotconst, octofor, octoto, octostep, dotStruct, dot, internaldefs, whitespace, octowith, dotTileset, dotTiles, dotSprites, octoswitch, octocase, octobreak, 
+	dotif, dotelse, dotend, dotunless, dotinclude, dotsegment, data, code, dotlog, dodumpoptions, dotconst, octofor, octoto, octostep, dotStruct, dot, internaldefs, whitespace, octowith, dotTileset, dotTiles, dotSprites, octoswitch, octocase, octobreak, octoPackage, octoPublic, unalias, 
 
 	
 };

@@ -526,6 +526,9 @@ public class CChip8Assembler {
 				label = new CC8Label();
 				label.mName = token.literal;
 				label.mTarget = pc;
+				if (mTokenizer.mPublic == false)
+					label.mPackage = mTokenizer.mPackage;
+				mTokenizer.mPublic = false;
 				System.out.println(String.format("Label %s = %04x", token.literal, pc));
 				mLabels.put(token.literal, label);
 			}
@@ -1110,8 +1113,6 @@ public class CChip8Assembler {
 			break;
 		case alias: {
 			String strA;
-			if (mPass == 2)
-				System.out.println("break");
 
 			mTokenizer.getToken(token, false);
 			if (!check(token, Token.literal, "literal"))
@@ -1119,9 +1120,37 @@ public class CChip8Assembler {
 			strA = token.literal;
 			mTokenizer.getToken(token, false);
 			mTokenizer.setAlias(strA, token.literal);
+			if (mPass == 2) {
+				String name = "label_"+token.literal;
+				CC8Label clabel = mLabels.get(name);
+				if (clabel == null) {
+					clabel = new CC8Label();
+					clabel.mName = name;
+					clabel.mRegister = strA;
+					clabel.startRange(pc);
+				}
+				
+			}
+
 //		mTokenizer.addAlias(strA, token.literal);
 		}
 			break;
+		case unalias: {
+			while (mTokenizer.hasData()) {
+				mTokenizer.getToken(token);
+				if (token.token == Token.newline || token.token == Token.semikolon) break;
+				unalias(token.literal);
+			}
+		}
+		case octoPackage: {
+			nextToken(token);
+			mTokenizer.mPackage = token.literal;
+			break;
+		}
+		
+		case octoPublic: {
+			mTokenizer.mPublic = true;
+		}
 		case stringmode:
 			compileStringmode();
 			break;
@@ -1235,6 +1264,15 @@ public class CChip8Assembler {
 			error("Undef token " + token.toString());
 		}
 
+	}
+
+	private void unalias(String literal) {
+		mTokenizer.mMapAlias.remove(literal);
+		if (mPass == 2) {
+			CC8Label label = mLabels.get("alias_"+token.literal);
+			if (label != null) 
+				label.endRange(pc);
+		}
 	}
 
 	private void compileSwitch(CToken token) {

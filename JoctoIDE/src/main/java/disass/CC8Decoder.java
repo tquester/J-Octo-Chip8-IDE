@@ -127,7 +127,7 @@ public class CC8Decoder {
 		//System.out.println(String.format("Add data Label %4x %d",adr,adr));
 			
 		lbl	= new CC8Label(C8LabelType.DATA);
-		lbl.mItemsPerRow = 16;
+		lbl.mItemsPerRow = 1;
 		mLabels.put(adr, lbl);
 
 	}

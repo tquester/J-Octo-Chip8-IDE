@@ -231,6 +231,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	}
 
 	protected void onKeyDown(char character, int keyCode) {
+		System.out.println(String.format("Key pressed: %c",character));
 		mCPU.addKey(character);
 
 	}
@@ -675,6 +676,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		int adr = mCPU.regI;
 		String key;
 		for (i = 0; i < 20; i++) {
+			try {
 			byte data = (byte) (mCPU.getMemory()[adr++] & 0xff);
 			if (i <= 15) {
 				key = String.format("Key %01x=%d", i, mCPU.keyPressed[i]);
@@ -683,6 +685,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 			String str = String.format("%04x %02x %04d %s %s\n", adr, data, data, int2bin(data), key);
 			sb.append(str);
+			}
+			catch(Exception ex) {
+				sb.append(ex.getLocalizedMessage());
+			}
 		}
 		mLblData.setText(sb.toString());
 
