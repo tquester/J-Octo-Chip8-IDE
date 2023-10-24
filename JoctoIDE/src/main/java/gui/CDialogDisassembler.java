@@ -515,6 +515,10 @@ public class CDialogDisassembler extends Dialog {
 		try {
 		String strEmitter = mComboCode.getText();
 		C8Emitter emitter = mMapEmitters.get(strEmitter);
+		if (mDebugSource != null) {
+			emitter.mDebugSource = mDebugSource;
+			emitter.commenAlias = true;
+		}
 		if (emitter == null) 
 			emitter = mDisassEmiter;
 		mDecoder.emitter = emitter;
@@ -548,6 +552,12 @@ public class CDialogDisassembler extends Dialog {
 		C8Emitter emitter = mMapEmitters.get(strEmitter);
 		if (emitter == null) 
 			emitter = mDisassEmiter;
+		
+		if (mDebugSource != null) {
+			emitter.mSourceHints = mDebugSource;
+			emitter.commenAlias = true;
+		}
+		
 		mDecoder.emitter = emitter;
 		mDecoder.start(memory, codesize);
 		mText.setText(mDecoder.emitter.getText());
@@ -570,8 +580,8 @@ public class CDialogDisassembler extends Dialog {
 		
 	}
 
-	public void setDebugSource(C8DebugSource mDebugSource2) {
-		// TODO Auto-generated method stub
+	public void setDebugSource(C8DebugSource debugSource) {
+		mDebugSource = debugSource;
 		
 	}
 

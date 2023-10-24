@@ -2,6 +2,8 @@ package disass;
 
 import java.util.TreeMap;
 
+import emulator.C8DebugSource;
+
 
 
 public class C8DisassEmitter extends C8Emitter {
@@ -9,18 +11,19 @@ public class C8DisassEmitter extends C8Emitter {
 	public String line;
 	public boolean disassFormat = true;
 	public boolean hexadecimal = false;
+	String autocomment;
 	
 	
 
 	@Override
 	public int emitOpcode(byte[] code, int pos) {
+		autocomment = null;
 		mLastType = C8LabelType.CODE;
 		try {
 		String cmd = "";
 		int startpos = pos;
 		int high = code[pos] & 0xff;
 		int low = code[pos + 1] & 0xff;
-		pos += 2;
 		byte highnib = (byte) (high >>> 4);
 		byte lownib1 = (byte) (low >> 4);
 		byte lownib2 = (byte) (low & 0x0f);
@@ -67,53 +70,53 @@ public class C8DisassEmitter extends C8Emitter {
 			break;
 		}
 		case 0x03:
-			cmd = String.format("if %s != %s then", reg(high2), number(low));
+			cmd = String.format("if %s != %s then", reg(pos,high2), number(low));
 			break;
 		case 0x04:
-			cmd = String.format("if %s == %s then", reg(high2), number(low));
+			cmd = String.format("if %s == %s then", reg(pos,high2), number(low));
 			break;
 		case 0x05:
-			cmd = String.format("if %s != %s then", reg(high2), reg(lownib1));
+			cmd = String.format("if %s != %s then", reg(pos,high2), reg(pos,lownib1));
 			break;
 		case 0x06:
-			cmd = String.format("%s := %s", reg(high2), number(low));
+			cmd = String.format("%s := %s", reg(pos,high2), number(low));
 			break;
 		case 0x07:
-			cmd = String.format("%s += %s", reg(high2), number(low));
+			cmd = String.format("%s += %s", reg(pos,high2), number(low));
 			break;
 		case 0x08:
 			switch (lownib2) {
 			case 0x00:
-				cmd = String.format("%s := %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s := %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x01:
-				cmd = String.format("%s |= %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s |= %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x02:
-				cmd = String.format("%s &= %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s &= %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x03:
-				cmd = String.format("%s ^= %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s ^= %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x04:
-				cmd = String.format("%s += %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s += %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x05:
-				cmd = String.format("%s -= %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s -= %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x06:
-				cmd = String.format("%s >>= %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s >>= %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x07:
-				cmd = String.format("%s =- %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s =- %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			case 0x0E:
-				cmd = String.format("%s <<= %s", reg(high2), reg(lownib1));
+				cmd = String.format("%s <<= %s", reg(pos,high2), reg(pos,lownib1));
 				break;
 			}
 			break;
 		case 0x09:
-			cmd = String.format("if %s != %s then", reg(high2), reg(lownib1));
+			cmd = String.format("if %s != %s then", reg(pos,high2), reg(pos,lownib1));
 			break;
 		case 0x0A: {
 			int adr = high2 * 256 + low;
@@ -127,51 +130,51 @@ public class C8DisassEmitter extends C8Emitter {
 			break;
 		}
 		case 0x0C:
-			cmd = String.format("%s := random %s", reg(high2), number(low));
+			cmd = String.format("%s := random %s", reg(pos,high2), number(low));
 			break;
 		case 0x0D:
-			cmd = String.format("sprite %s %s %d", reg(high2), reg(lownib1), lownib2);
+			cmd = String.format("sprite %s %s %d", reg(pos,high2), reg(pos,lownib1), lownib2);
 			break;
 		case 0x0E:
 			switch (low) {
 			case 0x9e:
-				cmd = String.format("if %s -key then", reg(high2));
+				cmd = String.format("if %s -key then", reg(pos,high2));
 				break;
 
 			case 0xa1:
-				cmd = String.format("if %s key then", reg(high2));
+				cmd = String.format("if %s key then", reg(pos,high2));
 				break;
 			}
 			break;
 		case 0x0F:
 			switch (low) {
 			case 0x07:
-				cmd = String.format("%s := delay", reg(high2));
+				cmd = String.format("%s := delay", reg(pos,high2));
 				break;
 			case 0x0a:
-				cmd = String.format("%s := key", reg(high2));
+				cmd = String.format("%s := key", reg(pos,high2));
 				break;
 			case 0x15:
-				cmd = String.format("delay := %s", reg(high2));
+				cmd = String.format("delay := %s", reg(pos,high2));
 				break;
 			case 0x18:
-				cmd = String.format("buzzer := %s", reg(high2));
+				cmd = String.format("buzzer := %s", reg(pos,high2));
 				break;
 			case 0x1e:
-				cmd = String.format("i += %s", reg(high2));
+				cmd = String.format("i += %s", reg(pos,high2));
 				break;
 			case 0x29:
-				cmd = String.format("i := hex %s", reg(high2));
+				cmd = String.format("i := hex %s", reg(pos,high2));
 				break;
 			case 0x33:
-				cmd = String.format("bcd %s", reg(high2));
+				cmd = String.format("bcd %s", reg(pos,high2));
 				break;
 
 			case 0x55:
-				cmd = String.format("save   %s", reg(high2));
+				cmd = String.format("save   %s", reg(pos,high2));
 				break;
 			case 0x65:
-				cmd = String.format("load   %s", reg(high2));
+				cmd = String.format("load   %s", reg(pos,high2));
 				break;
 
 				
@@ -204,6 +207,11 @@ public class C8DisassEmitter extends C8Emitter {
 			}
 				
 		}
+		
+		if (autocomment != null) {
+			while(line.length() < 60) line += " ";
+			line += " # "+autocomment;
+		}
 			
 	//	System.out.println(line);
 		emitLine(pos, line);
@@ -213,14 +221,37 @@ public class C8DisassEmitter extends C8Emitter {
 				ex.printStackTrace();
 		}
 
+		pos += 2;
+
 		return pos;
 	}
 
-	String reg(int reg) {
+	String reg(int pc, int reg) {
+		String alias = null;
+		String result = null;
 		if (reg < 10)
-			return String.format("v%d", reg);
+			result = String.format("v%d", reg);
 		else
-			return String.format("v%c", reg + 'a'-10);
+			result = String.format("v%c", reg + 'a'-10);
+
+		if (mSourceHints != null) {
+			String strAlias = mSourceHints.getRegisterAlias(pc, reg);
+		    if (strAlias != null) {
+				if (showAlias) 
+					alias = strAlias;
+				if (commenAlias) {
+					String str = String.format("%s=%s", result, strAlias);
+					if (autocomment == null) 
+						autocomment = str;
+					 else
+						autocomment += ", "+str;
+				}
+		    }
+		}
+		
+		
+		if (alias != null) result = String.format("%s (%s)", alias, result);
+		return result;
 	}
 	
 	String lbladr(int adr) {

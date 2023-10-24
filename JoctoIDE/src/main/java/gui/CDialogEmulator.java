@@ -157,10 +157,13 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		initDoubleBuffer();
 
 		if (mDebugSource != null) {
+			mDisassEmitter.mSourceHints = mDebugSource;
+			mDisassEmitter.showAlias = true;
+		}
 			disassAndInitDebugger(null);
 			// initListDebugSource();
 			displayDebug();
-		}
+		
 		if (startRunning)
 			run();
 		mCPU.gpu.mIEmulator = this;
@@ -286,8 +289,8 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		int x = 10;
 		int y = 10;
 		int h = 21;
-		int w1 = 25;
-		int w2 = mCompositeRegister.getBounds().width - 30;
+		int w2 = 120;
+		int w1 = mCompositeRegister.getBounds().width - w2;
 		int pos = 0;
 		for (String lbl : titles) {
 			registerLabelTitles[pos] = new Label(mCompositeRegister, SWT.NONE);
@@ -295,7 +298,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			registerLabelTitles[pos].setBounds(x, y, w1, h);
 			registerLabelTitles[pos].setText(lbl);
 			registerLabels[pos].setText("$00");
-			registerLabels[pos].setBounds(x + 30, y, w2, h);
+			registerLabels[pos].setBounds(x + w1 + 10, y, w2, h);
 			y += h + 2;
 			pos++;
 		}
@@ -334,7 +337,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onResize();
 			}
 		});
-		shlChipsuperChipxoChip.setSize(886, 594);
+		shlChipsuperChipxoChip.setSize(986, 594);
 		shlChipsuperChipxoChip.setText("Chip8/Super Chip8/XO Chip8");
 		shlChipsuperChipxoChip.addFocusListener(new FocusListener() {
 
@@ -366,7 +369,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		mCanvasScreen.setBounds(10, 71, 576, 278);
 
 		mCompositeRegister = new Composite(shlChipsuperChipxoChip, SWT.BORDER);
-		mCompositeRegister.setBounds(737, 10, 125, 465);
+		mCompositeRegister.setBounds(737, 10, 224, 465);
 
 		Composite composite_2 = new Composite(shlChipsuperChipxoChip, SWT.NONE);
 		composite_2.setBounds(10, 10, 576, 40);
@@ -468,7 +471,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mLblData = new Label(shlChipsuperChipxoChip, SWT.BORDER | SWT.WRAP);
 		mLblData.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mLblData.setBounds(650, 10, 137, 339);
+		mLblData.setBounds(592, 29, 137, 339);
 		mLblData.setText("0000 00 ");
 
 		mTabFolder = new TabFolder(shlChipsuperChipxoChip, SWT.NONE);
@@ -656,6 +659,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		for (i = 0; i <= 15; i++) {
 			value = mCPU.vx[i] & 0xff;
 			strValue = String.format("$%02x %d", value, value);
+			registerLabelTitles[i].setText(mDisassEmitter.mSourceHints.getRegisterAliases(mCPU.pc, i));
 			registerLabels[i].setText(strValue);
 		}
 		value = mCPU.regDelay;
@@ -667,7 +671,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		String command = mDisassEmitter.disassLine(mCPU.getMemory(), mCPU.pc);
 		mLblDisass.setText(command);
 		if (mDebugSource != null) {
-			int line = mDebugSource.getLineForCode(mCPU.pc);
+			int line = mDebugSource.getLineForCode(mCPU.pc-2);
 			if (line != -1) {
 				mListSource.setSelection(line);
 			}
@@ -734,6 +738,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mFilename = filename;
 		C8DebugSource sourceHints = mDebugSource;
+		
 		mDisassEmitter.createDebugSource();
 		if (filename != null) {
 			mDisassembler.loadHints(filename + ".hints");

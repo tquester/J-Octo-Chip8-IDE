@@ -174,8 +174,8 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			break;
 		}
 		case 0x03:
-			addCmd(pos,"ld", "a", ixreg(high2));
-			listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+			addCmd(pos,"ld", "a", ixreg(pos, high2));
+			listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 			emitCp(pos, listCmds, low);
 
 			addCmd(pos,"jr", "z", z80lbl(lbladr(skip(pos, code))));
@@ -183,201 +183,201 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			break;
 		case 0x04:
 
-			addCmd(pos,"ld", "a", ixreg(high2));
-			listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+			addCmd(pos,"ld", "a", ixreg(pos, high2));
+			listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 			emitCp(pos, listCmds, low);
 			addCmd(pos,"jr", "nz", z80lbl(lbladr(skip(pos, code))));
 			listCmds.add(String.format("jr  nz,%s", z80lbl(lbladr(skip(pos, code)))));
 			break;
 		case 0x05:
-			addCmd(pos,"ld", "a", ixreg(high2));
-			addCmd(pos,"cp", ixreg(lownib1));
+			addCmd(pos,"ld", "a", ixreg(pos, high2));
+			addCmd(pos,"cp", ixreg(pos, lownib1));
 			addCmd(pos,"jr", "z", z80lbl(lbladr(skip(pos, code))));
 
-			listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-			listCmds.add(String.format("cp %s", ixreg(lownib1)));
+			listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+			listCmds.add(String.format("cp %s", ixreg(pos, lownib1)));
 			listCmds.add(String.format("jr  z,%s", z80lbl(lbladr(skip(pos, code)))));
 			break;
 		case 0x06:
-			addCmd(pos,"ld", ixreg(high2), number(low));
+			addCmd(pos,"ld", ixreg(pos, high2), number(low));
 
-			listCmds.add(String.format("ld  %s,%s", ixreg(high2), number(low)));
+			listCmds.add(String.format("ld  %s,%s", ixreg(pos, high2), number(low)));
 			break;
 		case 0x07:
 			if (low == 1) {
-				addCmd(pos,"inc", ixreg(high2));
+				addCmd(pos,"inc", ixreg(pos, high2));
 			} else if (low == 255) {
-				addCmd(pos,"dec", ixreg(high2));
+				addCmd(pos,"dec", ixreg(pos, high2));
 			} else {
 				addCmd(pos,"ld", "a", number(low));
-				addCmd(pos,"add", ixreg(high2));
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"add", ixreg(pos, high2));
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 			}
 
 			listCmds.add(String.format("ld  a, %s", number(low)));
-			listCmds.add(String.format("add %s", ixreg(high2)));
-			listCmds.add(String.format("ld	%s,a", ixreg(high2)));
+			listCmds.add(String.format("add %s", ixreg(pos, high2)));
+			listCmds.add(String.format("ld	%s,a", ixreg(pos, high2)));
 			break;
 		case 0x08:
 			switch (lownib2) {
 			case 0x00: // 0x8xy0
 				if ((v0isC && lownib1 == 0) || (vfIsB && lownib1 == 15)) {
-					addCmd(pos,"ld", ixreg(high2), ixreg(lownib1));
-					listCmds.add(String.format("ld  %s,%s", ixreg(high2), ixreg(lownib1)));
+					addCmd(pos,"ld", ixreg(pos, high2), ixreg(pos, lownib1));
+					listCmds.add(String.format("ld  %s,%s", ixreg(pos, high2), ixreg(pos, lownib1)));
 
 				} else {
-					addCmd(pos,"ld", "a", ixreg(lownib1)); // vx := vy
-					addCmd(pos,"ld", ixreg(high2), "a");
+					addCmd(pos,"ld", "a", ixreg(pos, lownib1)); // vx := vy
+					addCmd(pos,"ld", ixreg(pos, high2), "a");
 
-					listCmds.add(String.format("ld  a, %s", ixreg(lownib1)));
-					listCmds.add(String.format("ld  %s,a", ixreg(high2)));
+					listCmds.add(String.format("ld  a, %s", ixreg(pos, lownib1)));
+					listCmds.add(String.format("ld  %s,a", ixreg(pos, high2)));
 				}
 				break;
 			case 0x01: // 0x8xy1 vx := vx or vy
 
-				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"or", ixreg(lownib1));
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
+				addCmd(pos,"or", ixreg(pos, lownib1));
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-				listCmds.add(String.format("or  %s", ixreg(lownib1)));
-				listCmds.add(String.format("ld  %s,a", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+				listCmds.add(String.format("or  %s", ixreg(pos, lownib1)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, high2)));
 				break;
 			case 0x02: // 0x8xy2 vx := vx and vy
-				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"and", ixreg(lownib1));
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
+				addCmd(pos,"and", ixreg(pos, lownib1));
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-				listCmds.add(String.format("and %s", ixreg(lownib1)));
-				listCmds.add(String.format("ld  %s,a", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+				listCmds.add(String.format("and %s", ixreg(pos, lownib1)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, high2)));
 				break;
 			case 0x03: // 0x8xy3 vx := vx xor vy
-				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"xor", ixreg(lownib1));
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
+				addCmd(pos,"xor", ixreg(pos, lownib1));
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-				listCmds.add(String.format("xor %s", ixreg(lownib1)));
-				listCmds.add(String.format("ld  %s,a", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+				listCmds.add(String.format("xor %s", ixreg(pos, lownib1)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, high2)));
 				break;
 			case 0x04: // 0x8xy3 vx := vx add vy
-				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"add", ixreg(lownib1));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
+				addCmd(pos,"add", ixreg(pos, lownib1));
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-				listCmds.add(String.format("add %s", ixreg(lownib1)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+				listCmds.add(String.format("add %s", ixreg(pos, lownib1)));
 				if (high2 != 15) { // Do not store the result if it is vf,
-					addCmd(pos,"ld", ixreg(high2), "a");
-					listCmds.add(String.format("ld	%s,a", ixreg(high2))); // because it will be overwritten by flag
+					addCmd(pos,"ld", ixreg(pos, high2), "a");
+					listCmds.add(String.format("ld	%s,a", ixreg(pos, high2))); // because it will be overwritten by flag
 																			// calculation
 				}
 
 				addCmd(pos,"ld", "a", "0");
 				addCmd(pos,"adc", "a");
-				addCmd(pos,"ld", ixreg(15), "a");
+				addCmd(pos,"ld", ixreg(pos, 15), "a");
 
 				listCmds.add(String.format("ld  a,0"));
 				listCmds.add(String.format("adc a"));
-				listCmds.add(String.format("ld  %s,a", ixreg(15)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, 15)));
 				break;
 			case 0x05: // 0x8xy3 vx := vx sub vy
-				addCmd(pos,"ld", "a", ixreg(high2));
-				addCmd(pos,"sub", ixreg(lownib1));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
+				addCmd(pos,"sub", ixreg(pos, lownib1));
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-				listCmds.add(String.format("sub %s", ixreg(lownib1)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+				listCmds.add(String.format("sub %s", ixreg(pos, lownib1)));
 				if (high2 != 15) { // Do not store the result if it is vf,
-					addCmd(pos,"ld", ixreg(high2), "a");
-					listCmds.add(String.format("ld	%s,a", ixreg(high2))); // because it will be overwritten by flag
+					addCmd(pos,"ld", ixreg(pos, high2), "a");
+					listCmds.add(String.format("ld	%s,a", ixreg(pos, high2))); // because it will be overwritten by flag
 																			// calculation
 				}
 
 				addCmd(pos,"ld", "a", "0");
 				addCmd(pos,"adc", "a");
 				addCmd(pos,"xor", "1");
-				addCmd(pos,"ld", ixreg(15), "a");
+				addCmd(pos,"ld", ixreg(pos, 15), "a");
 
 				listCmds.add(String.format("ld  a,0"));
 				listCmds.add(String.format("adc a"));
 				listCmds.add(String.format("xor 1"));
-				listCmds.add(String.format("ld  %s,a", ixreg(15)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, 15)));
 				break;
 			case 0x06: // 0x8xy3 vx := vx >> vy
 				if (newShift) {
-					addCmd(pos,"ld", "a", ixreg(high2));
-					listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+					addCmd(pos,"ld", "a", ixreg(pos, high2));
+					listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				} else {
-					addCmd(pos,"ld", "a", ixreg(lownib1));
-					listCmds.add(String.format("ld  a, %s", ixreg(lownib1)));
+					addCmd(pos,"ld", "a", ixreg(pos, lownib1));
+					listCmds.add(String.format("ld  a, %s", ixreg(pos, lownib1)));
 				}
 
 				addCmd(pos,"sra", "a");
 				listCmds.add(String.format("sra a"));
 				if (high2 != 15) { // Do not store the result if it is vf,
-					addCmd(pos,"ld", ixreg(high2), "a");
-					listCmds.add(String.format("ld	%s,a", ixreg(high2)));
+					addCmd(pos,"ld", ixreg(pos, high2), "a");
+					listCmds.add(String.format("ld	%s,a", ixreg(pos, high2)));
 				}
 
 				addCmd(pos,"ld", "a", "0");
 				addCmd(pos,"adc", "a");
-				addCmd(pos,"ld", ixreg(15), "a");
+				addCmd(pos,"ld", ixreg(pos, 15), "a");
 
 				listCmds.add(String.format("ld  a,0"));
 				listCmds.add(String.format("adc a"));
-				listCmds.add(String.format("ld  %s,a", ixreg(15)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, 15)));
 				break;
 			case 0x07: // 0x8xy7 vx := vx << vy
 
-				addCmd(pos,"ld", "a", ixreg(lownib1));
-				addCmd(pos,"sub", ixreg(high2));
-				listCmds.add(String.format("ld  a, %s", ixreg(lownib1)));
-				listCmds.add(String.format("sub %s", ixreg(high2)));
+				addCmd(pos,"ld", "a", ixreg(pos, lownib1));
+				addCmd(pos,"sub", ixreg(pos, high2));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, lownib1)));
+				listCmds.add(String.format("sub %s", ixreg(pos, high2)));
 				if (high2 != 15) { // Do not store the result if it is vf,
-					addCmd(pos,"ld", ixreg(high2), "a");
-					listCmds.add(String.format("ld	%s,a", ixreg(high2)));
+					addCmd(pos,"ld", ixreg(pos, high2), "a");
+					listCmds.add(String.format("ld	%s,a", ixreg(pos, high2)));
 				}
 				addCmd(pos,"ld", "a", "0");
 				addCmd(pos,"adc", "a");
 				addCmd(pos,"xor", "1");
-				addCmd(pos,"ld", ixreg(15), "a");
+				addCmd(pos,"ld", ixreg(pos, 15), "a");
 
 				listCmds.add(String.format("ld  a,0"));
 				listCmds.add(String.format("adc a"));
 				listCmds.add(String.format("xor 1"));
-				listCmds.add(String.format("ld  %s,a", ixreg(15)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, 15)));
 				break;
 			case 0x0E:
 				if (newShift) {
-					addCmd(pos,"ld", "a", ixreg(high2));
-					listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+					addCmd(pos,"ld", "a", ixreg(pos, high2));
+					listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				} else {
-					addCmd(pos,"ld", "a", ixreg(lownib1));
-					listCmds.add(String.format("ld  a, %s", ixreg(lownib1)));
+					addCmd(pos,"ld", "a", ixreg(pos, lownib1));
+					listCmds.add(String.format("ld  a, %s", ixreg(pos, lownib1)));
 				}
 				listCmds.add(String.format("sla a"));
 
 				addCmd(pos,"sla", "a");
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 				addCmd(pos,"ld", "a", "0");
 				addCmd(pos,"adc", "a");
-				addCmd(pos,"ld", ixreg(15), "a");
+				addCmd(pos,"ld", ixreg(pos, 15), "a");
 
-				listCmds.add(String.format("ld	%s,a", ixreg(high2)));
+				listCmds.add(String.format("ld	%s,a", ixreg(pos, high2)));
 				listCmds.add(String.format("ld  a,0"));
 				listCmds.add(String.format("adc a"));
-				listCmds.add(String.format("ld  %s,a", ixreg(15)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, 15)));
 				break;
 			}
 			break;
 		case 0x09: // 9xy0 SNE Vx, Vy
 
-			addCmd(pos,"ld", "a", ixreg(high2));
-			addCmd(pos,"cp", ixreg(lownib1));
+			addCmd(pos,"ld", "a", ixreg(pos, high2));
+			addCmd(pos,"cp", ixreg(pos, lownib1));
 			addCmd(pos,"jr", "nz", z80lbl(lbladr(skip(pos, code))));
 
-			listCmds.add(String.format("ld  a, %s", ixreg(high2)));
-			listCmds.add(String.format("cp  %s", ixreg(lownib1)));
+			listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
+			listCmds.add(String.format("cp  %s", ixreg(pos, lownib1)));
 			listCmds.add(String.format("jr  nz,%s", z80lbl(lbladr(skip(pos, code)))));
 			break;
 		case 0x0A: { // Annn - LD I, addr
@@ -398,13 +398,13 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			addCmd(pos,"call", "xrnd");
 			addCmd(pos,"ld", "a", "l");
 			addCmd(pos,"and", number(low));
-			addCmd(pos,"ld", ixreg(high2), "a");
+			addCmd(pos,"ld", ixreg(pos, high2), "a");
 
 			// listCmds.add(String.format("ld a, r"));
 			listCmds.add(String.format("call xrnd"));
 			listCmds.add(String.format("ld  a, l"));
 			listCmds.add(String.format("and %s", number(low)));
-			listCmds.add(String.format("ld	%s,a", ixreg(high2)));
+			listCmds.add(String.format("ld	%s,a", ixreg(pos, high2)));
 			break;
 		case 0x0D:
 			if (v0isC) {
@@ -413,14 +413,14 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			}
 
 			addCmd(pos,"ld", "a", String.format("%d", lownib2));
-			addCmd(pos,"ld", "b", ixreg(high2));
-			addCmd(pos,"ld", "c", ixreg(lownib1));
+			addCmd(pos,"ld", "b", ixreg(pos, high2));
+			addCmd(pos,"ld", "c", ixreg(pos, lownib1));
 			addCmd(pos,"ld", "hl", "iy");
 			addCmd(pos,"call", "chip8sprite");
 
 			listCmds.add(String.format("ld  a, %d", lownib2));
-			listCmds.add(String.format("ld  b, %s", ixreg(high2)));
-			listCmds.add(String.format("ld  c, %s", ixreg(lownib1)));
+			listCmds.add(String.format("ld  b, %s", ixreg(pos, high2)));
+			listCmds.add(String.format("ld  c, %s", ixreg(pos, lownib1)));
 			listCmds.add(String.format("ld	hl, iy"));
 			listCmds.add(String.format("call  chip8sprite"));
 
@@ -436,21 +436,21 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 		case 0x0E:
 			switch (low) {
 			case 0x9e:
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"call", "checkKey");
 				addCmd(pos,"jr", "z", z80lbl(lbladr(skip(pos, code))));
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("call checkKey"));
 				listCmds.add(String.format("jr  z,%s", z80lbl(lbladr(skip(pos, code)))));
 				break;
 
 			case 0xa1:
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"call", "checkKey");
 				addCmd(pos,"jr", "nz", z80lbl(lbladr(skip(pos, code))));
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("call checkKey"));
 				listCmds.add(String.format("jr  nz,%s", z80lbl(lbladr(skip(pos, code)))));
 				break;
@@ -461,46 +461,46 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			case 0x07:
 				addCmd(pos,"call", "vinterrupt");
 				addCmd(pos,"ld", "a", "(ix+reg_delay)");
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 
 				listCmds.add(String.format("call vinterrupt"));
 				listCmds.add(String.format("ld  a,(ix+reg_delay)"));
-				listCmds.add(String.format("ld  %s,a", ixreg(high2)));
+				listCmds.add(String.format("ld  %s,a", ixreg(pos, high2)));
 				break;
 			case 0x0a:
 				addCmd(pos,"call", "GetKey");
-				addCmd(pos,"ld", ixreg(high2), "a");
+				addCmd(pos,"ld", ixreg(pos, high2), "a");
 
 				listCmds.add(String.format("call  GetKey"));
-				listCmds.add(String.format("ld	%s,a", ixreg(high2)));
+				listCmds.add(String.format("ld	%s,a", ixreg(pos, high2)));
 				break;
 			case 0x15:
 
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"ld", "(ix+reg_delay)", "a");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("ld  (ix+reg_delay),a"));
 				break;
 			case 0x18:
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"ld", "(ix+reg_sound)", "a");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("ld  (ix+reg_sound),a"));
 				break;
 			case 0x1e: // Fx1E - ADD I, Vx
 				addCmd(pos,"ld", "d", "0");
-				addCmd(pos,"ld", "e", ixreg(high2));
+				addCmd(pos,"ld", "e", ixreg(pos, high2));
 				addCmd(pos,"add", "iy", "de");
 
 				listCmds.add(String.format("ld  d,0"));
-				listCmds.add(String.format("ld  e,%s", ixreg(high2)));
+				listCmds.add(String.format("ld  e,%s", ixreg(pos, high2)));
 				listCmds.add(String.format("add iy,de"));
-				comment = String.format("i += %s", ixreg(high2));
+				comment = String.format("i += %s", ixreg(pos, high2));
 				break;
 			case 0x29: // Fx29 - LD F, Vx
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"push", "bc");
 				addCmd(pos,"ld", "b", "a");
 				addCmd(pos,"add", "a");
@@ -513,7 +513,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				addCmd(pos,"ld", "iy", "hl");
 				addCmd(pos,"pop", "bc");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("ld  b,a"));
 				listCmds.add(String.format("add a; *2"));
 				listCmds.add(String.format("add a; *4"));
@@ -523,10 +523,10 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				listCmds.add(String.format("ld  hl,chip8Font"));
 				listCmds.add(String.format("add  hl,de"));
 				listCmds.add(String.format("ld  iy,hl"));
-				comment = String.format("i := char %s", ixreg(high2));
+				comment = String.format("i := char %s", ixreg(pos, high2));
 				break;
 			case 0x30:
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"push", "bc");
 				addCmd(pos,"add", "a");
 				addCmd(pos,"ld", "b", "a");
@@ -540,7 +540,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				addCmd(pos,"ld", "iy", "hl");
 				addCmd(pos,"pop", "bc");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("add a; *2"));
 				listCmds.add(String.format("ld  b,a"));
 				listCmds.add(String.format("add a; *4"));
@@ -551,18 +551,18 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 				listCmds.add(String.format("ld  hl,bigfont"));
 				listCmds.add(String.format("add  hl,de"));
 				listCmds.add(String.format("ld  iy,hl"));
-				comment = String.format("i := char %s", ixreg(high2));
+				comment = String.format("i := char %s", ixreg(pos, high2));
 				break;
 			case 0x33:
-				addCmd(pos,"ld", "a", ixreg(high2));
+				addCmd(pos,"ld", "a", ixreg(pos, high2));
 				addCmd(pos,"ld", "hl", "iy");
 				addCmd(pos,"call", "bcd");
 
-				listCmds.add(String.format("ld  a, %s", ixreg(high2)));
+				listCmds.add(String.format("ld  a, %s", ixreg(pos, high2)));
 				listCmds.add(String.format("ld  hl, iy"));
 				listCmds.add(String.format("call bcd"));
 
-				comment = String.format("bcd    %s", ixreg(high2));
+				comment = String.format("bcd    %s", ixreg(pos, high2));
 				break;
 
 			case 0x55:
@@ -574,11 +574,11 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 						listCmds.add("ld  (iy),c");
 						listCmds.add("inc   iy");
 					} else {
-						addCmd(pos,"ld", "a", ixreg(0));
+						addCmd(pos,"ld", "a", ixreg(pos, 0));
 						addCmd(pos,"ld", "(iy)", "a");
 						addCmd(pos,"inc", "iy");
 
-						listCmds.add(String.format("ld  a,%s", ixreg(0)));
+						listCmds.add(String.format("ld  a,%s", ixreg(pos, 0)));
 						listCmds.add(String.format("ld  (iy),a"));
 						listCmds.add(String.format("inc  iy"));
 					}
@@ -613,7 +613,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 						listCmds.add("pop  bc");
 					}
 				}
-				comment = String.format("save   %s", ixreg(high2));
+				comment = String.format("save   %s", ixreg(pos, high2));
 				break;
 			case 0x65:
 				if (high2 == 0) {
@@ -626,11 +626,11 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 
 					} else {
 						addCmd(pos,"ld", "a", "(iy)");
-						addCmd(pos,"ld", ixreg(0), "a");
+						addCmd(pos,"ld", ixreg(pos, 0), "a");
 						addCmd(pos,"inc", "iy");
 
 						listCmds.add(String.format("ld  a,(iy)"));
-						listCmds.add(String.format("ld  %s,a", ixreg(0)));
+						listCmds.add(String.format("ld  %s,a", ixreg(pos, 0)));
 						listCmds.add(String.format("inc  iy"));
 					}
 
@@ -665,7 +665,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 						listCmds.add("ld  c,(ix+reg_v0)");
 					}
 				}
-				comment = String.format("load   %s", ixreg(high2));
+				comment = String.format("load   %s", ixreg(pos, high2));
 				break;
 			case 0xE0:
 				switch (high2) {
@@ -745,9 +745,9 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 		
 	}
 
-	String ixreg(int regnr) {
+	String ixreg(int pc, int regnr) {
 		String result;
-		result = String.format(" (ix+reg_%s)", reg(regnr));
+		result = String.format(" (ix+reg_%s)", reg(pc, regnr));
 		if (regnr == 15 && vfIsB)
 			result = "b";
 		if (regnr == 0 && v0isC)

@@ -1,5 +1,7 @@
 package assembler;
 
+import java.util.TreeMap;
+
 public class CToken {
 	public Token token;
 	public char cliteral;
@@ -9,6 +11,8 @@ public class CToken {
 	public int register; // 0..15 after expr
 	public int posinline;
 	public int pos;
+	String replacement=null;
+	int    replacementReg=0;
 	public CToken copy() {
 		CToken r = new CToken();
 		r.token = token;
@@ -29,6 +33,11 @@ public class CToken {
 		posinline = r.posinline;
 		register = r.register;
 		
+	}
+	
+	public void addReplacement(int register, String alias) {
+		replacement=alias;
+		replacementReg = register;
 	}
 	
 	public String toString() {

@@ -367,6 +367,9 @@ public class CChip8Assembler {
 					if (token2.token == Token.dot) {
 						r = mTokenizer.getToken(token, false);
 						int regnr = label.regFromVar(token.literal);
+						if (regnr != -1) {
+							token.addReplacement(regnr, String.format("%s.%s", label.mName,token.literal));
+						}
 						if (regnr == -1) {
 							if (token.token == Token.octobyte && label.mVariables != null) {
 								token.token = Token.internaldefs;
@@ -510,6 +513,8 @@ public class CChip8Assembler {
 		int reg1;
 		int reg2;
 		int nr;
+		if (pc == 556)
+			System.out.println("stop");
 
 		String astr;
 		CBeginEndData beginEndData;
@@ -1121,6 +1126,7 @@ public class CChip8Assembler {
 			mTokenizer.getToken(token, false);
 			mTokenizer.setAlias(strA, token.literal);
 			if (mPass == 2) {
+				mDebugSource.startAlias(pc, regNr(token), strA);
 				String name = "label_"+token.literal;
 				CC8Label clabel = mLabels.get(name);
 				if (clabel == null) {
@@ -1139,7 +1145,7 @@ public class CChip8Assembler {
 			while (mTokenizer.hasData()) {
 				mTokenizer.getToken(token);
 				if (token.token == Token.newline || token.token == Token.semikolon) break;
-				unalias(token.literal);
+				unalias(pc,token.literal);
 			}
 		}
 		case octoPackage: {
@@ -1266,12 +1272,13 @@ public class CChip8Assembler {
 
 	}
 
-	private void unalias(String literal) {
+	private void unalias(int pc, String literal) {
 		mTokenizer.mMapAlias.remove(literal);
 		if (mPass == 2) {
 			CC8Label label = mLabels.get("alias_"+token.literal);
 			if (label != null) 
 				label.endRange(pc);
+			mDebugSource.stopAlias(pc, literal);
 		}
 	}
 
@@ -2718,6 +2725,7 @@ public class CChip8Assembler {
 	private int regNr(CToken token) {
 		int r = -1;
 		CC8Label label;
+	
 		switch (token.token) {
 		case v0:
 			r = 0;
@@ -2773,6 +2781,11 @@ public class CChip8Assembler {
 				if (label.mLabelType == C8LabelType.STRUCT) {
 					return label.mVariables.size() - 1;
 				}
+			}
+		}
+		if (r != -1 && mPass == 2) {
+			if (token.replacement != null) {
+				mDebugSource.addRegisterAlias(pc, r, token.replacement);
 			}
 		}
 		return r;

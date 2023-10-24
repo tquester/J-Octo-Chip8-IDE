@@ -6,6 +6,7 @@ import java.util.concurrent.Flow.Subscriber;
 
 import org.eclipse.swt.graphics.Point;
 
+import disass.C8LabelType;
 import disass.CC8Label;
 
 public class CTokenizer {
@@ -83,6 +84,7 @@ public class CTokenizer {
 		return r;
 	}
 	public boolean getToken(CToken token, boolean replaceTokens) {
+		token.replacement = null;
 		mLastLine = mLine;
 		mPrevPos = mPos;
 		token.token = Token.none;
@@ -248,8 +250,14 @@ public class CTokenizer {
 			}
 			if (replaceTokens) {
 				String strAlias = mMapAlias.get(token.literal.toLowerCase());
-				if (strAlias != null)
+				if (strAlias != null) {
+					int regnr = regNr(strAlias);
+					if (regnr != -1) {
+						token.addReplacement(regnr, token.literal);
+					}
 					token.literal = strAlias;
+					
+				}
 			}
 			token.token = mTokens.getToken(token.literal.toLowerCase());
 			if (token.token == null) {
@@ -276,6 +284,28 @@ public class CTokenizer {
 		}
 		myassert(token.token != null);
 		return false;
+	}
+
+	private int regNr(String literal) {
+		int r = -1;
+		literal = literal.toLowerCase();
+		if (literal.compareTo("v0") == 0)  r = 0;
+		else if (literal.compareTo("v1") == 0)  r = 1;
+		else if (literal.compareTo("v2") == 0)  r = 2;
+		else if (literal.compareTo("v3") == 0)  r = 3;
+		else if (literal.compareTo("v4") == 0)  r = 4;
+		else if (literal.compareTo("v5") == 0)  r = 5;
+		else if (literal.compareTo("v6") == 0)  r = 6;
+		else if (literal.compareTo("v7") == 0)  r = 7;
+		else if (literal.compareTo("v8") == 0)  r = 8;
+		else if (literal.compareTo("v9") == 0)  r = 9;
+		else if (literal.compareTo("va") == 0)  r = 10;
+		else if (literal.compareTo("vb") == 0)  r = 11;
+		else if (literal.compareTo("vc") == 0)  r = 12;
+		else if (literal.compareTo("vd") == 0)  r = 13;
+		else if (literal.compareTo("ve") == 0)  r = 14;
+		else if (literal.compareTo("vf") == 0)  r = 15;
+		return r;
 	}
 
 	private void myassert(boolean b) {
@@ -433,6 +463,7 @@ public class CTokenizer {
 			CC8Label structlabel = mStackStruct.get(i);
 			int reg = structlabel.regFromVar(token.literal);
 			if (reg != -1) {
+				token.addReplacement(reg, String.format("%s.%s", structlabel.mName,token.literal));
 				token.token = structlabel.TokenForReg(reg);
 				return true;
 			}

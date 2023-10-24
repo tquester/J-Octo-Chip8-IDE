@@ -14,16 +14,22 @@ public abstract class C8Emitter {
 	private int miRow;
 	private int miRows;
 	private StringBuilder mSB = new StringBuilder();
-	C8DebugSource		  mDebugSource = null;
+	public boolean showAlias = false;
+	public boolean commenAlias = false;
+	public C8DebugSource mDebugSource=null;
+	public C8DebugSource mSourceHints=null;
+
 	
 	public void writeSourcecode() {
 		
 	}
 	public void createDebugSource() {
 		mDebugSource = new C8DebugSource();
+			
 	}
 	
 	public C8DebugSource getDebugSource(C8DebugSource sourceHints) {
+		
 		if (sourceHints != null) {
 			for (C8DebugSourceLine hint : sourceHints) {
 				for (C8DebugSourceLine disass: mDebugSource) {
