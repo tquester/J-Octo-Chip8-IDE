@@ -1,0 +1,82 @@
+
+
+######################################################################################
+# mul8bit  Multply
+#     v0 := v0 * v1
+#     Destroys v1, vd, ve
+#
+# mul8bitClean
+#   v0 := v0 * v1
+#   Preserves all variables
+######################################################################################
+
+: mul8bitClean
+            i := mathsave
+            save v3
+            mul8bit
+            i := mathsave
+            save v0
+            i := mathsave
+            load v3
+            return
+
+: mul8bit
+            v2 := 0
+            v3 := 8
+            loop
+              v2 += v2
+              v1 <<= v1
+              if vf == 1 begin
+                v2 += v0
+                v1 += 1
+              end
+              v3 -= 1
+              if v3 != 0 then
+            again
+            v0 := v2
+            return
+
+
+######################################################################################
+# div8bit
+#    v0 := v0 / v1
+#    Destroys v3 v4
+#
+# div8bitclean
+#    v0 := v0 / v1
+#    Preserves all registers
+#
+# div16bit
+#  v0v1 := v0v1 / v2v3
+#  v3v4 := v0v1 mod v2v3
+#  Destroys: v4 v5 v6 v7 v8
+######################################################################################
+
+: div8clean
+            i := mathsave
+            save v3
+            div8bit
+            i := mathsave
+            save v0
+            i := mathsave
+            load v3
+            return
+
+
+
+: div8bit
+            v2 := 0                                                   # xor a
+            v3 := 8                                                   # ld b,8
+
+            loop
+              v2 += v2                                                # add hl, hl, rla,
+              v0 <<= v0
+              v2 += vf
+              if v2 >= v1 begin                                       # if v1 fits into vd
+                v2 -= v1                                              # subtract
+                v0 += 1                                               # and set the leftmost bit in vd
+              end
+              v3 -= 1
+              if v3 != 0 then
+            again
+            return

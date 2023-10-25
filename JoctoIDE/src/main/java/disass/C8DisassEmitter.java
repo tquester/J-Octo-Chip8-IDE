@@ -1,8 +1,10 @@
 package disass;
 
+import java.util.List;
 import java.util.TreeMap;
 
 import emulator.C8DebugSource;
+import emulator.C8DebugSource.CAliasRange;
 
 
 
@@ -13,10 +15,22 @@ public class C8DisassEmitter extends C8Emitter {
 	public boolean hexadecimal = false;
 	String autocomment;
 	
-	
+	void emitAliase(int pos) {
+		if (mSourceHints != null) {
+			List<CAliasRange> aliase = mSourceHints.getAliasesAtAddress(pos);
+			if (aliase != null) {
+				for (CAliasRange range: aliase) {
+						emitLine(pos, String.format("\t:alias %s v%s", range.name, Integer.toHexString(range.register)));
+				}
+			}
+		}
+
+	}
 
 	@Override
 	public int emitOpcode(byte[] code, int pos) {
+		
+		emitAliase(pos);
 		autocomment = null;
 		mLastType = C8LabelType.CODE;
 		try {
@@ -237,7 +251,7 @@ public class C8DisassEmitter extends C8Emitter {
 		if (mSourceHints != null) {
 			String strAlias = mSourceHints.getRegisterAlias(pc, reg);
 		    if (strAlias != null) {
-				if (showAlias) 
+				if (showAlias || replaceAlias) 
 					alias = strAlias;
 				if (commenAlias) {
 					String str = String.format("%s=%s", result, strAlias);
@@ -250,7 +264,14 @@ public class C8DisassEmitter extends C8Emitter {
 		}
 		
 		
-		if (alias != null) result = String.format("%s (%s)", alias, result);
+		if (alias != null) {
+			if (showAlias)
+				result = String.format("%s (%s)", alias, result);
+			else
+				result = alias;
+		}
+		
+			
 		return result;
 	}
 	
@@ -286,6 +307,7 @@ public class C8DisassEmitter extends C8Emitter {
 		int data = chip8Memory[pc] & 0xff;
 		int data2;
 		int itemsPerRow=1;
+		emitAliase(pc);
 		CC8Label lbl = mLabels.get(pc);
 		pc++;
 		String strlbl = "";

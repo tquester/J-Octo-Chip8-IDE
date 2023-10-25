@@ -1,0 +1,534 @@
+alien:
+	DB 0x18
+	DB 0x3C
+	DB 0x7E
+	DB 0xDB
+	DB 0xFF
+	DB 0x24
+	DB 0x5A
+	DB 0xA5
+;alien = { 0x18, 0x3C, 0x7E, 0xDB, 0xFF, 0x24, 0x5A, 0xA5, };
+;
+gun:
+	DB 0x10
+	DB 0x38
+;gun = { 0x10, 0x38, };
+;
+bullet:
+	DB 0x10
+;bullet = { 0x10 };
+;
+move_gun:
+;move_gun(x)
+;{
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	CALL getchar
+	LD V1,VF
+;    auto dir = getchar();
+	LD V2,0x07
+;    auto left = 7;
+	LD V3,0x09
+;    auto right = 9;
+	LD V4,V1
+	LD V5,V2
+	LD VF,0x01
+	SE V4,V5
+	LD VF,0x00
+	LD V4,VF
+	SNE V4,0x00
+	JP ELSE3
+;    if(dir == left)
+;    {
+	LD V4,V0
+	LD V5,0x01
+	SUB V4,V5
+	LD V0,V4
+;        return x -= 1;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V4
+	LD F,VE
+	LD VE,[I]
+	RET
+;    }
+	JP END3
+ELSE3:
+	LD V4,V1
+	LD V5,V3
+	LD VF,0x01
+	SE V4,V5
+	LD VF,0x00
+	LD V4,VF
+	SNE V4,0x00
+	JP ELSE8
+;    else if(dir == right)
+;    {
+	LD V4,V0
+	LD V5,0x01
+	ADD V4,V5
+	LD V0,V4
+;        return x += 1;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V4
+	LD F,VE
+	LD VE,[I]
+	RET
+;    }
+	JP END8
+ELSE8:
+;    else
+;    {
+	LD V4,V0
+	LD V5,0x00
+	ADD V4,V5
+	LD V0,V4
+;        return x += 0;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V4
+	LD F,VE
+	LD VE,[I]
+	RET
+;    }
+END8:
+END3:
+;}
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V1
+	LD F,VE
+	LD VE,[I]
+	RET
+;
+shoot_gun:
+;shoot_gun()
+;{
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	CALL getchar
+	LD V0,VF
+	LD V1,0x05
+	LD VF,0x01
+	SE V0,V1
+	LD VF,0x00
+	LD V0,VF
+;    return getchar() == 5;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V0
+	LD F,VE
+	LD VE,[I]
+	RET
+;}
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V0
+	LD F,VE
+	LD VE,[I]
+	RET
+;
+draw_aliens:
+;draw_aliens()
+;{
+	LD V0,0x03
+;    auto start = 3;
+	LD V1,0x32
+;    auto x = 50;
+WHILE19:
+	LD V2,V1
+	SNE V2,0x00
+	JP END19
+;    while(x)
+;    {
+	LD V2,V0
+	LD V3,V1
+	ADD V2,V3
+	LD V3,0x00
+	LD I,alien
+	DRW V2,V3,0x8
+	LD V2,VF
+;        draw(start + x, 0, alien);
+	LD V2,V1
+	LD V3,0x0A
+	SUB V2,V3
+	LD V1,V2
+;        x -= 10;
+;    }
+	JP WHILE19
+END19:
+	LD V2,V0
+	LD V3,0x00
+	LD I,alien
+	DRW V2,V3,0x8
+	LD V2,VF
+;    draw(start, 0, alien);
+;}
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V0
+	LD F,VE
+	LD VE,[I]
+	RET
+;
+draw_gun:
+;draw_gun(x, ymax, init)
+;{
+	LD V3,V1
+	LD VF,0x02
+	LD V4,VF
+	SUB V3,V4
+;    auto y = ymax - sizeof(gun);
+	LD V4,V2
+	SNE V4,0x00
+	JP ELSE30
+;    if(init)
+;    {
+	LD V4,V0
+	LD V5,V3
+	LD I,gun
+	DRW V4,V5,0x2
+	LD V4,VF
+;        draw(x, y, gun);
+;    }
+	JP END30
+ELSE30:
+END30:
+	LD V4,V0
+	LD V5,V3
+	LD I,gun
+	DRW V4,V5,0x2
+	LD V4,VF
+;    draw(x, y, gun);
+	LD V4,V0
+	LD V5,V0
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	LD V0,V5
+	CALL move_gun
+	LD V5,VF
+	LD V4,V5
+	LD V0,V4
+;    x = move_gun(x);
+	LD V4,V0
+	LD V5,V3
+	LD I,gun
+	DRW V4,V5,0x2
+	LD V4,VF
+;    draw(x, y, gun);
+	LD V4,V0
+;    return x;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V4
+	LD F,VE
+	LD VE,[I]
+	RET
+;}
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V3
+	LD F,VE
+	LD VE,[I]
+	RET
+;
+draw_bullet:
+;draw_bullet(x, y, tip)
+;{
+	LD V3,V1
+	LD V4,V2
+	LD VF,0x01
+	SE V3,V4
+	LD VF,0x00
+	LD V3,VF
+	SNE V3,0x00
+	JP ELSE45
+;    if(y == tip)
+;    {
+	LD V3,V0
+	LD V4,V1
+	LD I,bullet
+	DRW V3,V4,0x1
+	LD V3,VF
+;        draw(x, y, bullet);
+;    }
+	JP END45
+ELSE45:
+END45:
+	LD V3,V0
+	LD V4,V1
+	LD I,bullet
+	DRW V3,V4,0x1
+	LD V3,VF
+;    draw(x, y, bullet);
+	LD V3,V0
+	LD V4,V1
+	LD V5,0x01
+	SUB V4,V5
+	LD I,bullet
+	DRW V3,V4,0x1
+	LD V3,VF
+	SNE V3,0x00
+	JP ELSE54
+;    if(draw(x, y - 1, bullet))
+;    {
+	LD V3,0x00
+;        return 0;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V3
+	LD F,VE
+	LD VE,[I]
+	RET
+;    }
+	JP END54
+ELSE54:
+;    else
+;    {
+	LD V3,V1
+	LD V4,0x01
+	SUB V3,V4
+	LD V1,V3
+;        return y -= 1;
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V3
+	LD F,VE
+	LD VE,[I]
+	RET
+;    }
+END54:
+;}
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V3
+	LD F,VE
+	LD VE,[I]
+	RET
+;
+main:
+;main()
+	LD VE,0x10
+;{
+	LD V0,0x00
+;    auto x = 0;
+	LD V1,0x20
+;    auto ymax = 32;
+	LD V2,V1
+	LD VF,0x02
+	LD V3,VF
+	SUB V2,V3
+;    auto tip = ymax - sizeof(gun);
+	LD V3,0x00
+;    auto bx = 0;
+	LD V4,0x00
+;    auto by = 0;
+	LD V5,0x00
+;    auto shooting = 0;
+	LD V6,0x01
+;    auto init = 1;
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	CALL draw_aliens
+	LD V7,VF
+;    draw_aliens();
+WHILE69:
+	LD V7,0x01
+	SNE V7,0x00
+	JP END69
+;    while(1)
+;    {
+	LD V7,V0
+	LD V8,V0
+	LD V9,V1
+	LD VA,V6
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	LD V0,V8
+	LD V1,V9
+	LD V2,VA
+	CALL draw_gun
+	LD V8,VF
+	LD V7,V8
+	LD V0,V7
+;        x = draw_gun(x, ymax, init);
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	CALL shoot_gun
+	LD V7,VF
+	SNE V7,0x00
+	JP ELSE76
+;        if(shoot_gun())
+;        {
+	LD V7,V3
+	LD V8,V0
+	LD V7,V8
+	LD V3,V7
+;            bx = x;
+	LD V7,V4
+	LD V8,V2
+	LD V7,V8
+	LD V4,V7
+;            by = tip;
+	LD V7,V5
+	LD V8,0x01
+	LD V7,V8
+	LD V5,V7
+;            shooting = 1;
+;        }
+	JP END76
+ELSE76:
+END76:
+	LD V7,V4
+	LD V8,0x00
+	LD VF,0x01
+	SE V7,V8
+	LD VF,0x00
+	LD V7,VF
+	SNE V7,0x00
+	JP ELSE84
+;        if(by == 0)
+;        {
+	LD V7,V5
+	LD V8,0x00
+	LD V7,V8
+	LD V5,V7
+;            shooting = 0;
+;        }
+	JP END84
+ELSE84:
+END84:
+	LD V7,V5
+	SNE V7,0x00
+	JP ELSE89
+;        if(shooting)
+;        {
+	LD V7,V4
+	LD V8,V3
+	LD V9,V4
+	LD VA,V2
+	LD F,VE
+	LD [I],VE
+	LD VF,0x03
+	ADD VE,VF
+	LD V0,V8
+	LD V1,V9
+	LD V2,VA
+	CALL draw_bullet
+	LD V8,VF
+	LD V7,V8
+	LD V4,V7
+;            by = draw_bullet(bx, by, tip);
+;        }
+	JP END89
+ELSE89:
+END89:
+	LD V7,V6
+	LD V8,0x00
+	LD V7,V8
+	LD V6,V7
+;        init = 0;
+;    }
+	JP WHILE69
+END69:
+;}
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V0
+	LD F,VE
+	LD VE,[I]
+	RET
+;stdio: Standard Input and Output library
+getchar:
+	LD V0,0xFF
+	LD V1,0x00
+	SKNP V1
+	LD V0,0x00
+	LD V1,0x01
+	SKNP V1
+	LD V0,0x01
+	LD V1,0x02
+	SKNP V1
+	LD V0,0x02
+	LD V1,0x03
+	SKNP V1
+	LD V0,0x03
+	LD V1,0x04
+	SKNP V1
+	LD V0,0x04
+	LD V1,0x05
+	SKNP V1
+	LD V0,0x05
+	LD V1,0x06
+	SKNP V1
+	LD V0,0x06
+	LD V1,0x07
+	SKNP V1
+	LD V0,0x07
+	LD V1,0x08
+	SKNP V1
+	LD V0,0x08
+	LD V1,0x09
+	SKNP V1
+	LD V0,0x09
+	LD V1,0x0A
+	SKNP V1
+	LD V0,0x0A
+	LD V1,0x0B
+	SKNP V1
+	LD V0,0x0B
+	LD V1,0x0C
+	SKNP V1
+	LD V0,0x0C
+	LD V1,0x0D
+	SKNP V1
+	LD V0,0x0D
+	LD V1,0x0E
+	SKNP V1
+	LD V0,0x0E
+	LD V1,0x0F
+	SKNP V1
+	LD V0,0x0F
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V0
+	LD F,VE
+	LD VE,[I]
+	RET
+putchar:
+	LD V5,V2
+	LD V4,V1
+	LD V3,V0
+	LD V6,0x00
+	LD B,V5
+	LD V2,[I]
+	LD F,V0
+	DRW V3,V4,0x5
+	OR V6,VF
+	LD F,V1
+	ADD V3,0x05
+	DRW V3,V4,0x5
+	OR V6,VF
+	LD F,V2
+	ADD V3,0x05
+	DRW V3,V4,0x5
+	OR V6,VF
+	LD VF,0x03
+	SUB VE,VF
+	LD VF,V6
+	LD F,VE
+	LD VE,[I]
+	RET

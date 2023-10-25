@@ -1,6 +1,7 @@
 package emulator;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 import javax.xml.transform.dom.DOMSource;
@@ -8,10 +9,10 @@ import javax.xml.transform.dom.DOMSource;
 public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 	
 	public class CAliasRange {
-		int start;
-		int end=0xffff;
-		int register;
-		String name;
+		public int start;
+		public int end=0xffff;
+		public int register;
+		public String name;
 	}
 	
 	public class CRegisterAlias {
@@ -26,6 +27,7 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 	
 	public ArrayList<CAliasRange> mAliasRanges = new ArrayList<>();
 	public TreeMap<Integer, CRegisterAliase> mRegisterAliase = new TreeMap<>();
+	public TreeMap<Integer, List<CAliasRange>> mMapAliasRanges = null;
 	TreeMap<String, CAliasRange> mMapOpenAliases = new TreeMap<>();			// stores Aliases which have start but no end.
 	TreeMap<Integer, Integer> mAddressMap = new TreeMap<>();				// Stores maps op code address to array index
 
@@ -51,6 +53,26 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 			range.end = end;
 			mMapOpenAliases.remove(name);
 		}
+	}
+	
+	public List<CAliasRange> getAliasesAtAddress(int pc) {
+		if (mMapAliasRanges == null) {
+			mMapAliasRanges = new TreeMap<>();
+			for (CAliasRange range: mAliasRanges) {
+				System.out.println(String.format("Alias %04x-%04x %s -> %d",range.start, range.end, range.name, range.register, null));
+				List<CAliasRange> list = mMapAliasRanges.get(range.start);
+				if (list == null) {
+					list = new ArrayList<>();
+					mMapAliasRanges.put(range.start, list);
+				}
+				list.add(range);
+			}
+			System.out.println("-----------------------------");
+		}
+		if (pc == 0x40c) 
+			System.out.println("Stop");
+		return mMapAliasRanges.get(pc);
+
 	}
 	
 	public String getRegisterAlias(int pc, int register) {

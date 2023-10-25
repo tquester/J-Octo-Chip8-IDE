@@ -516,8 +516,8 @@ public class CDialogDisassembler extends Dialog {
 		String strEmitter = mComboCode.getText();
 		C8Emitter emitter = mMapEmitters.get(strEmitter);
 		if (mDebugSource != null) {
-			emitter.mDebugSource = mDebugSource;
-			emitter.commenAlias = true;
+			emitter.mSourceHints = mDebugSource;
+			emitter.replaceAlias = true;
 		}
 		if (emitter == null) 
 			emitter = mDisassEmiter;
@@ -581,6 +581,7 @@ public class CDialogDisassembler extends Dialog {
 	}
 
 	public void setDebugSource(C8DebugSource debugSource) {
+		
 		mDebugSource = debugSource;
 		
 	}

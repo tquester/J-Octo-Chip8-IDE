@@ -1544,6 +1544,7 @@ public class CChip8Assembler {
 				break;
 			if (token.token == Token.literal) {
 				label.addVar(token.literal);
+				mDebugSource.startAlias(pc, label.mVariables.size()-1, String.format("%s.%s", label.mName, token.literal));
 			} else if (!(token.token == Token.comment || token.token == Token.newline)) {
 				error("Expected name");
 				return;

@@ -11,7 +11,7 @@
 #   print
 
             jump startTestLibStack
-:include "lib/libMath.8o"
+
 
 :macro printStackEntry num {
               v0 := num
@@ -24,20 +24,25 @@
 
             v0 := 0x3
             v1 := 0xe8
+            v2 := 0x0
             stackPush
 
 
             v0 := 0x00
             v1 := 20
+            v2 := 0
+
             stackPush
 
             v0 := 0x00
             v1 := 120
+            v2 := 0
             stackPush
 
 
             v0 := 0x00
             v1 := 80
+            v2 := 0
             stackPush
 
             print
@@ -83,22 +88,20 @@
 
 
 : stackdata
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
-            0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
+            0 0 0
 
 : stackptr
             0
@@ -116,10 +119,11 @@
             load v0
             v4 := v0
             v0 := v3
+
             i := stackdata
             i += v4
-            v4 += 2
-            save v1
+            v4 += 3
+            save v2
             i := stackptr
             v0 := v4
             save v0
@@ -128,8 +132,8 @@
 : stackDrop
             i := stackptr
             load v0
-            if v0 >= 2 begin
-              v0 -= 2
+            if v0 >= 3 begin
+              v0 -= 3
               i := stackptr
               save v0
             end
@@ -138,14 +142,14 @@
 : stackAdd
             i := stackptr
             load v0
-            if v0 >= 4 begin
-              v0 -= 4
+            if v0 >= 6 begin
+              v0 -= 6
               i := stackptr
               save v0
               i := stackdata
               i += v0
-              load v3
-              add16bit
+              load v5
+              add24bit
               stackPush
             end
             return
@@ -153,14 +157,14 @@
 : stackSub
             i := stackptr
             load v0
-            if v0 >= 4 begin
-              v0 -= 4
+            if v0 >= 6 begin
+              v0 -= 6
               i := stackptr
               save v0
               i := stackdata
               i += v0
-              load v3
-              sub16bit
+              load v5
+              sub24bit
               stackPush
             end
             return
@@ -168,14 +172,14 @@
 : stackMul
             i := stackptr
             load v0
-            if v0 >= 4 begin
-              v0 -= 4
+            if v0 >= 6 begin
+              v0 -= 6
               i := stackptr
               save v0
               i := stackdata
               i += v0
-              load v3
-              mul16bitClean
+              load v5
+              mul24bitClean
               stackPush
             end
             return
@@ -183,14 +187,14 @@
 : stackDiv
             i := stackptr
             load v0
-            if v0 >= 4 begin
-              v0 -= 4
+            if v0 >= 6 begin
+              v0 -= 6
               i := stackptr
               save v0
               i := stackdata
               i += v0
-              load v3
-              div16bit
+              load v5
+              div24bit
               stackPush
             end
             return
@@ -198,26 +202,28 @@
             i := stackptr
             load v0
             if v0 == 0 then return
-            v2 := v0
+            v4 := v0
             v3 := 0
             loop
               i := stackdata
               i += v3
-              load v1
-              printDez
-              v3 += 2
+              load v2
+              printDez24
+              v3 += 3
               v5 += 6
-              if v2 != v3 then
+              if v4 != v3 then
             again
             return
 
 : stackPrintBottom
 # prints the item last - v0 (v0 = 0 for last element, 1 for second last etc.)
+            v1 := v0
             v0 += v0
+            v0 += v1	# * 3
             v1 := v0
             i := stackptr
             load v0
-            v0 -= 2
+            v0 -= 3
             v0 -= v1
             v6 := v0
             v1 := 3
@@ -225,6 +231,6 @@
             v5 += v0
             i := stackdata
             i += v6
-            load v1
-            printDez
+            load v2
+            printDez24
             return

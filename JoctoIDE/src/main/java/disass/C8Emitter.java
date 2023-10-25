@@ -16,6 +16,8 @@ public abstract class C8Emitter {
 	private StringBuilder mSB = new StringBuilder();
 	public boolean showAlias = false;
 	public boolean commenAlias = false;
+	public boolean replaceAlias = false;
+
 	public C8DebugSource mDebugSource=null;
 	public C8DebugSource mSourceHints=null;
 

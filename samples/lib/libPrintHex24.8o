@@ -1,0 +1,113 @@
+
+######################################################################################
+# printhexnib   print hex nibble in v0
+# printhexv0    print hex in v0
+# printhexv0v1  print hex register a (v0v1)
+# printhexv0v1  print hex register b (v2v3)
+######################################################################################
+
+: math24coords
+            0 0
+
+: printhexnibsave
+            0 0 0
+
+: printhexv0save
+            0 0
+
+: printhexnib
+            i := printhexnibsave
+            save v2
+            v2 := v0
+            i := math24coords
+            load v1
+            i := hex v2
+            sprite v0 v1 5
+            v0 += 5
+            i := math24coords
+            save v1
+            i := printhexnibsave
+            load v2
+            return
+
+
+# Prints the hex value v0 at x,y
+: printhexv0
+            i := printhexv0save
+            save v1
+            v0 >>= v0
+            v0 >>= v0
+            v0 >>= v0
+            v0 >>= v0
+
+            printhexnib
+            i := printhexv0save
+            load v1
+            v1 := 0xf
+            v0 &= v1
+            printhexnib
+            i := printhexv0save
+            load v1
+            return
+
+: saveprinthexv0v1
+            0
+: printhexv0v1v2
+            i := saveprinthexv0v1
+            save v0
+            printhexv0
+            v0 := v1
+            printhexv0
+            v0 := v2
+            printhexv0
+            i := saveprinthexv0v1
+            load v0
+            return
+
+: printhexv3v4v5
+            i := saveprinthexv0v1
+            save v0
+            v0 := v3
+            printhexv0
+            v0 := v4
+            printhexv0
+            v0 := v5
+            printhexv0
+            i := saveprinthexv0v1
+            load v0
+            return
+
+: printhexv0v1
+            i := saveprinthexv0v1
+            save v0
+            printhexv0
+            v0 := v1
+            printhexv0
+            i := saveprinthexv0v1
+            load v0
+            return
+
+: printhexv2v3
+            i := saveprinthexv0v1
+            save v0
+            v0 := v2
+            printhexv0
+            v0 := v3
+            printhexv0
+            i := saveprinthexv0v1
+            load v0
+            return
+
+
+: printhexnewline
+            i := printhexnibsave
+            save v1
+            i := math24coords
+            load v1
+            v0 := 0
+            v1 += 6
+            i := math24coords
+            save v1
+            i := printhexnibsave
+            load v1
+            return
