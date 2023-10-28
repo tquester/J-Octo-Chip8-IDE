@@ -151,6 +151,7 @@ public class CDialogDisassembler extends Dialog {
 		String text = null;
 		for (String key: mMapEmitters.keySet()) {
 			if (text == null) text = key;
+			if (key.compareTo("Octo Assembly") == 0) text = key;
 			mComboCode.add(key);
 		}
 		mComboCode.setText(text);

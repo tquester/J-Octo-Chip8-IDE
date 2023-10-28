@@ -20,6 +20,8 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 		int pc;
 		String name;
 	}
+	
+	
 
 	public class CRegisterAliase extends ArrayList<CRegisterAlias> {
 		
@@ -30,6 +32,7 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 	public TreeMap<Integer, List<CAliasRange>> mMapAliasRanges = null;
 	TreeMap<String, CAliasRange> mMapOpenAliases = new TreeMap<>();			// stores Aliases which have start but no end.
 	TreeMap<Integer, Integer> mAddressMap = new TreeMap<>();				// Stores maps op code address to array index
+	TreeMap<Integer, List<String>> mMapComments = new TreeMap<>();
 
 	// The debugger shoud show registers with their alias names.
 	// All aliases are removed from the symbol tables (the tokenizer holds it) at the end of an include
@@ -45,6 +48,15 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 			mMapOpenAliases.put(name, range);
 			mAliasRanges.add(range);
 		}
+	}
+	
+	public void addComment(int pc, String comment) {
+		List<String> lcomment = mMapComments.get(pc);
+		if (lcomment == null) {
+			lcomment = new ArrayList<String>();
+			mMapComments.put(pc,  lcomment);
+		}
+		lcomment.add(comment);
 	}
 	
 	public void stopAlias(int end, String name) {
@@ -147,6 +159,10 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 			return obj.org;
 		}
 		return 0;
+	}
+
+	public List<String> getComments(int pos) {
+		return mMapComments.get(pos);
 	}
 
 }

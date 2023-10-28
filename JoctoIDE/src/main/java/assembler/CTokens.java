@@ -216,7 +216,8 @@ public class CTokens {
 	        {"case", Token.octocase },
 	        {"break", Token.octobreak },
 	        {"package",Token.octoPackage },
-	        {"public", Token.octoPublic }
+	        {"public", Token.octoPublic },
+	        {"length", Token.length }
 	        
 	        
 	        

@@ -1,237 +1,28 @@
+:alias x v0
+:alias y v1
 
-            jump start
-:include "lib/libMath8.8o"
-:include "lib/libText.8o"
-:include "lib/libMath24.8o"
-:include "lib/libStack24.8o"
+            x := 20
+            y := 20
+            i := cross
+            sprite x y 8
 
-: textbase
-: txtCellPhones2  tinytext8 "cell phones!#"
-: txtline0 tinytext8 "UPN-Calculator#"
-: txtline1 tinytext8 "1=1 2=2 3=3 4=+#"
-: txtline2 tinytext8 "Q=4 W=5 E=6 R=-#"
-: txtline3 tinytext8 "A=7 S=8 D=9#"
-: txtline4 tinytext8 "Z=* X=0 C=/#"
-: txtline5 tinytext8 "F=Enter#"
-: txtline6 tinytext8 "V=Clear#"
-: txtstack tinytext8 "Stack#"
-
-:const digits 8
-
-:struct bnvars {
-              accu
-              stackptr
-
-            }
-
-
-: inputdata 0 0 0 0 0 0 0 0
-: inputpos  0
-
-
-
-: stackptr 8
-
-
-:struct PrintNumberVars {
-              digit
-              x
-              y
-              count
-              ofs
-            }
-
-
-
-
-
-: title
-            Tinytext 54 0 txtline0
-            Tinytext 54 8 txtline1
-            Tinytext 54 16 txtline2
-            Tinytext 54 24 txtline3
-            Tinytext 54 32 txtline4
-            Tinytext 54 40 txtline5
-            Tinytext 54 48 txtline6
-            Tinytext 0  8  txtstack
-            return
-
-
-
-
-: clearInput
-            v0 := 0
-            v1 := 0
-            v2 := 0
-            v3 := 0
-            v4 := 0
-            v5 := 0
-            v6 := 0
-            v7 := 0
-            i := inputdata
-            save v7
-            return
-
-: addDigit
-            v9 := v0
-            showCursor
-            i := inputdata
-            load v7
-            v0 := v1
-            v1 := v2
-            v2 := v3
-            v3 := v4
-
-            v4 := v5
-            v5 := v6
-            v6 := v7
-            v7 := v9
-            i := inputdata
-            save v7
-            showCursor
-            ret
-
-: clearInput
-            v0 := 0
-            v1 := 0
-            v2 := 0
-            v3 := 0
-            v4 := 0
-            v5 := 0
-            v6 := 0
-            v7 := 0
-            i := inputdata
-            save v7
-            return
-
-:struct ShowCursorVar {
-              digit
-              x
-              y
-              pos
-              cursorpos
-            }
-: showCursor
-            with ShowCursorVar begin
-              x = 0
-              y = 0
-              i := inputpos
-              load v0
-              cursorpos := v0
-              for pos = 0 to 8 begin
-                i := inputdata
-                i += pos
-                load digit
-                i := hex v0
-                sprite x y 5
-                x += 5
-              end
-            end
-            return
-            return
-
-:macro printStackEntry num {
-              v0 := num
-              call printUpnEntry
-            }
-
-: printUpnEntry
-            v4 := 0
-            v5 := 16
-            call stackPrintBottom
-            return
-
-
-: processKeyboard
             loop
-: nextkey
-              v0 := key
+              while y > 0
+              i := crossxor
+              sprite x y 8
+              y -= 1
+for v2 := 0 to 100
+v2 += 0
 
-              if v0 < 10 begin
-                addDigit
-                jump nextkey
-              end
-              switch v0 begin
-                case 0xC begin                                        # 4 = plus
-                  i := stackptr
-                  load v0
-                  if v0 > 3 begin
-                    printStackEntry 0
-                    printStackEntry 1
-                    stackAdd
-                    printStackEntry 0
-                  end
-                end
-                case 0xd begin                                        # D = minus
-                  i := stackptr
-                  load v0
-                  if v0 > 3 begin
-                    printStackEntry 0
-                    printStackEntry 1
-                    stackSub
-                    printStackEntry 0
-                  end
-                end
-                case 0xa begin                                        # D = mult
-                  i := stackptr
-                  load v0
-                  if v0 > 3 begin
-                    printStackEntry 0
-                    printStackEntry 1
-                    stackMul
-                    printStackEntry 0
-                  end
-                end
-                case 0xb begin                                        # D = mult
-                  i := stackptr
-                  load v0
-                  if v0 > 3 begin
-
-                    printStackEntry 0
-                    printStackEntry 1
-
-                    stackDiv
-                    printStackEntry 0
-                  end
-                end
-                case 0xe begin                                        # e = enter
-
-                  i := inputdata
-                  dezBufToInt24
-
-                  stackPush
-                  showCursor
-                  clearInput
-                  showCursor
-                  printStackEntry 0
-                end
-                case 0xf begin                                        # f = clear
-                  clearInput
-                  stackClear
-                  printScreen
-                end
-              end
-
+            again
+            loop
             again
 
 
 
-: start
-            hires
-            stackClear
 
-            printScreen
-            processKeyboard
+: cross
+            0x00 0x10 0x10 0x38 0x10 0x10 0x10 0x00
 
-
-
-: printScreen
-            clear
-            v4 := 0
-            v5 := 16
-            stackPrint
-            title
-            showCursor
-            return
-
-
+: crossxor
+            0x10 0x00 0x28 0x28 0x00 0x00 0x10 0x00

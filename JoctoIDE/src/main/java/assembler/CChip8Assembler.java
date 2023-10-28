@@ -371,13 +371,20 @@ public class CChip8Assembler {
 							token.addReplacement(regnr, String.format("%s.%s", label.mName,token.literal));
 						}
 						if (regnr == -1) {
-							if (token.token == Token.octobyte && label.mVariables != null) {
+							if (token.token == Token.length) {
+								token.token = Token.number;
+								token.iliteral = label.mVariables.size();
+								token.literal = String.format("%d", token.iliteral);
+							} else if (token.token == Token.octobyte && label.mVariables != null) {
 								token.token = Token.internaldefs;
 								token.literal = label.mName;
 								token.iliteral = label.mVariables.size();
 
-							} else
+							} else {
 								error("Undefined " + token.literal + " in struct " + label.mName);
+							}
+										
+							
 						} else {
 							token.token = regFromNr(regnr);
 						}
@@ -1053,6 +1060,8 @@ public class CChip8Assembler {
 			break;
 
 		case comment:
+			if (mPass == 2) 
+				mDebugSource.addComment(pc, token.literal);
 			break;
 		case calc:
 			compileCalc(token);
@@ -2807,6 +2816,11 @@ public class CChip8Assembler {
 				mSBErrors.append(mTokenizer.toString() + "\n");
 
 			}
+		}
+		CToken token = new CToken();
+		while (mTokenizer.hasData()) {
+			mTokenizer.getToken(token);
+			if (token.token == Token.newline) break;
 		}
 
 	}

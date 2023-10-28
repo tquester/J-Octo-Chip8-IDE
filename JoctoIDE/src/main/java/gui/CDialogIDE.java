@@ -885,12 +885,22 @@ public class CDialogIDE extends Dialog {
 			public void callback() {
 
 			}
-		}).add("&Emulator", new CCallback() {
+		})
+		.add("&Emulator", new CCallback() {
 			@Override
 			public void callback() {
 
 			}
-		});
+		})
+		.add("&XOR Sprite Generator", new CCallback() {
+			@Override
+			public void callback() {
+				CDialogXorSprite dlg = new CDialogXorSprite(shlJoctoIde, SWT.CLOSE | SWT.TITLE);
+				dlg.open();
+			}
+		})
+		
+		;
 
 	}
 

@@ -16,7 +16,19 @@ public class C8DisassEmitter extends C8Emitter {
 	String autocomment;
 	
 	void emitAliase(int pos) {
+		
+		
+		
 		if (mSourceHints != null) {
+			List<String> lcomment = mSourceHints.getComments(pos);
+			if (lcomment != null) {
+				for (String str: lcomment) {
+					emitLine(pos, "# "+str);
+				}
+			}
+			
+			
+			
 			List<CAliasRange> aliase = mSourceHints.getAliasesAtAddress(pos);
 			if (aliase != null) {
 				for (CAliasRange range: aliase) {
@@ -24,6 +36,7 @@ public class C8DisassEmitter extends C8Emitter {
 				}
 			}
 		}
+		
 
 	}
 
@@ -130,7 +143,7 @@ public class C8DisassEmitter extends C8Emitter {
 			}
 			break;
 		case 0x09:
-			cmd = String.format("if %s != %s then", reg(pos,high2), reg(pos,lownib1));
+			cmd = String.format("if %s == %s then", reg(pos,high2), reg(pos,lownib1));
 			break;
 		case 0x0A: {
 			int adr = high2 * 256 + low;

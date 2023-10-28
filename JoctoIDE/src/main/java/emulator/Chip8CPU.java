@@ -397,9 +397,12 @@ public class Chip8CPU {
 			break;
 
 		// Cxnn set vx to a random value masked (bitwise AND) with NN
-		case 0xC0:
-			vx[highnib] = ((int) (Math.random() * 256)) & low;
+		case 0xC0: {
+			int temp = (int) (Math.random() * 256);
+			vx[highnib] = temp & low;
+			//System.out.println(String.format("Random %d & %d = %d", temp, low, vx[highnib]));
 			break;
+		}
 
 		// Dxyn draw 8xN pixel sprite at position vX, vY with data starting at the
 		// address in I, I is not changed [Quirk 6] [Quirk 7] [Quirk 8]

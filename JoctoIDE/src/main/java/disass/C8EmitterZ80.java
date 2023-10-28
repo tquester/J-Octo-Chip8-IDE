@@ -1,6 +1,7 @@
 package disass;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import disass.COpcodeTable.Dialect;
 
@@ -126,6 +127,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 	@Override
 	public int emitOpcode(byte[] code, int pos) {
 
+		emitComments(pos);
 		int startpos = pos;
 		int high = code[pos] & 0xff;
 		int low = code[pos + 1] & 0xff;
@@ -736,6 +738,17 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 		return pos;
 	}
 	
+	private void emitComments(int pos) {
+		if (mSourceHints != null) {
+			List<String> lcomment = mSourceHints.getComments(pos);
+			if (lcomment != null) {
+				for (String str: lcomment) {
+					addCmd(pos,"; "+str);
+				}
+			}
+		}
+	}
+
 	public void writeSourcecode() {
 		for (int i = 0; i < mZ80Commands.size(); i++) {
 			CZ80Command cmd = mZ80Commands.get(i);
@@ -752,6 +765,18 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			result = "b";
 		if (regnr == 0 && v0isC)
 			result = "c";
+		return result;
+	}
+	
+	String reg(int pc, int reg) {
+		String alias = null;
+		String result = null;
+		if (reg < 10)
+			result = String.format("v%d", reg);
+		else
+			result = String.format("v%c", reg + 'a'-10);
+
+			
 		return result;
 	}
 
@@ -797,6 +822,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 	@Override
 	protected int emitdb(byte[] chip8Memory, int pc, CC8Label label) {
 		try {
+			emitComments(pc);
 			int data = chip8Memory[pc] & 0xff;
 			int data2;
 			int itemsPerRow = 1;
