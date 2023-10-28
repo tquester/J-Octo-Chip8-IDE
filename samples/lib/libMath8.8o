@@ -80,3 +80,9 @@
               if v3 != 0 then
             again
             return
+
+: mathsave
+            0 0 0 0
+            0 0 0 0
+            0 0 0 0
+            0 0 0

@@ -1,0 +1,595 @@
+:const nothing 0
+:const badItem 1
+:const goodItem 2
+:const bullet 3
+:const blaster 4
+
+:const cannonstep 4
+:const maxtick 20
+
+            jump StartGame
+:include "lib/libMath8.8o"
+:include "lib/libText.8o"
+:include "lib/libPrintDez8.8o"
+:include "lib/libFast.8o"
+
+: textbase
+: txtLives tinytext8 "Lives#"
+: txtSweeties tinytext8 "Sweeties#"
+: txtTitle tinytext8 "Blast halloween items with#"
+: txtTitle2 tinytext8 "your mobile grave cannon#"
+: txtTitle3 tinytext8 "Do not hit the sweeties#"
+: txtTitle4 tinytext8 "Press any key#"
+: txtLastScore tinytext8 "Last score#"
+
+
+
+# Data used for sprite movement
+:struct SpriteData {
+              x                                                       # coordinate
+              y                                                       # coordinate
+              drawx                                                   # used during draw
+              drawy                                                   # used during draw
+              typ                                                     # one of the constants badItem etc.
+              index                                                   # Sprite Number * Bytes, used to draw the sprite
+            }
+
+# local variables used in working with sprites
+:struct SpriteVar  {
+              x                                                       # v0 coordinate
+              y                                                       # v1 coordinate
+              drawx                                                   # v2 used during draw
+              drawy                                                   # v3 used during draw
+              typ                                                     # v4 one of the constants badItem etc.
+              index                                                   # v5 Sprite Number * Bytes, used to draw the sprite
+              forindex                                                # v6 For loop index
+              newx                                                    # v7 coordinates for new object
+              newy                                                    # v8
+              newtyp                                                  # v9 typ for new object
+              newindex                                                # va
+              cannonlock                                              # vb Set this to 1 on fire, reset to zero on move. Only fire if zero
+              tickcount                                               # vc counts from 0 to maxtick, then a new enemy appears
+
+            }
+
+: goodCounter 0
+: badCounter 0
+: slotsAvailable 0
+
+: goodCounter2 0
+: badCounter2 0
+: slotsAvailable2 0
+
+
+: cannonData
+            SpriteData.byte
+: cannonDataInit
+            SpriteData.byte {
+              x := 20
+              y := 55
+            }
+
+
+: spriteDataArray
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+            SpriteData.byte
+: spriteDataArrayEnd
+
+: clearSpriteData
+            v0 := 0
+            for SpriteVar.forindex = 0 to spriteDataArrayEnd - spriteDataArray begin
+              i := spriteDataArray
+              i+= SpriteVar.forindex
+              save v0
+            end
+            return
+
+: moveSprites
+            for SpriteVar.forindex = 0 to spriteDataArrayEnd - spriteDataArray step SpriteData.length begin
+              i := spriteDataArray
+              i += SpriteVar.forindex
+              load SpriteData
+              i := spriteDataArray
+              i += SpriteVar.forindex
+              SpriteData.drawx := SpriteData.x
+              SpriteData.drawy := SpriteData.y
+              switch SpriteData.typ begin
+                case badItem     moveEnemy
+                case goodItem    moveEnemy
+                case bullet      moveBullet
+              end
+            end
+            return
+
+
+# Starts a new object, place coordinates in PlayerData.x, PlayerData.y and the type PlayerData.typ
+# it seraches the array for an empty placa in our spriteDataArray, if it finds one it stores the data
+# and does the initial draw
+: startObject
+
+            with SpriteVar begin
+              newx := x
+              newy := y
+              newtyp := typ
+              newindex = index
+              for forindex = 0 to spriteDataArrayEnd - spriteDataArray step SpriteData.length begin
+                i := spriteDataArray
+                i += forindex
+                load SpriteData
+                i := spriteDataArray
+                i += forindex
+                if typ == nothing begin                               # found empty place
+                  typ := newtyp                                       # store typ and coords
+                  x := newx
+                  y := newy
+                  index := newindex
+                  switch typ begin                                    # initial draw
+                    case bullet  drawBullet
+                    case goodItem  drawEnemy
+                    case badItem  drawEnemy
+                  end
+                  i := spriteDataArray
+                  i += forindex
+                  save SpriteData
+                  return
+                end
+              end
+            end
+            return
+
+: fireBullet
+            i := cannonData
+            load SpriteData
+            SpriteData.y -= 8
+            SpriteData.typ = bullet
+            jump startObject
+
+
+
+: killObject
+            SpriteData.typ := nothing
+            return
+
+
+
+
+: moveEnemy
+            with SpriteVar {
+
+              drawx := x
+              drawy := y
+              y += 1
+              if y > 40 begin
+# since the draw function will destroy i and we can not
+# save it, SpriteData.save must be done before drawing
+# temporary save the type because it is set to nothing
+# in memory but we need the type for drawing
+                newtyp := typ
+                typ = nothing
+                save SpriteData
+                SpriteData.typ := newtyp
+                drawEnemyOldPos
+                if newtyp == goodItem begin
+                  i := goodCounter                                    # a good item arrives at the bottom
+                  load v0                                             # add a sweety
+                  v0 += 1
+                  i := goodCounter
+                  save v0
+                else
+                  i := badCounter                                     # a bad item arrives, reduce one life
+                  load v0
+                  v0 -= 1
+                  i := badCounter
+                  save v0
+                end
+              else
+                save SpriteData
+                drawEnemyOldPos
+                drawEnemy
+                if vf == 1 begin
+                  drawEnemy
+                  i := spriteDataArray
+                  i += SpriteVar.forindex
+                  newtyp = typ
+                  typ = nothing
+                  save SpriteData
+                  if SpriteData.typ == goodItem begin
+                    i := goodCounter                                  # if you shoot any good item, reduce the number of sweeties (if there any)
+                    load v0
+                    if v0 > 0 then v0 -= 1
+                    i := goodCounter
+                    save v0
+                  end
+                end
+
+                typ := nothing
+
+              end
+
+            }
+
+
+            return
+
+: moveBullet
+            with SpriteData begin
+              drawx := x
+              drawy := y
+              y -= 1
+              if y == 1 begin
+                typ := nothing
+                save SpriteData
+                drawBulletOldPos
+                return
+              end
+
+              save SpriteData
+              drawBullet
+              x := drawx
+              y := drawy
+              drawBullet
+            end
+            return
+
+
+
+: drawCannon
+
+            i := spriteCannon
+            Sprite SpriteData.x SpriteData.y 8
+            return
+
+: moveCannon
+            SpriteVar.newtyp := v0
+            i := cannonData
+            load SpriteData
+            SpriteVar.drawx := SpriteVar.x
+            SpriteVar.drawy := SpriteVar.y
+
+            with SpriteData begin
+              x += SpriteVar.newtyp
+              if x < cannonstep then x += cannonstep
+              if x > 116 then x -= cannonstep
+            end
+            i := cannonData
+            save SpriteData
+            drawCannon
+            SpriteVar.x := SpriteVar.drawx
+            SpriteVar.y := SpriteVar.drawy
+            drawCannon
+            return
+
+: createEnemy
+            SpriteVar.tickcount += 1
+            if SpriteVar.tickcount < 20 then return
+            SpriteVar.tickcount := 0
+            with SpriteData begin
+              v0 := rnd 15
+              if v0 > numBadItems begin
+                v1 := numGoodItems
+                div8bit
+                index := v2
+                typ = goodItem
+              else
+                index := v0
+                typ = badItem
+              end
+
+              index += index
+              index += index
+              index += index
+              index += index
+              index += index
+
+              x := rnd 7
+              x += x
+              x += x
+              x += x
+              x += x
+              y := 8
+
+              startObject
+            end
+            return
+
+
+
+
+: start
+            hires
+            clearSpriteData
+            i := cannonDataInit
+            load SpriteData
+            i := cannonData
+            save SpriteData
+            drawCannon
+            SpriteVar.cannonlock = 0
+            i := goodCounter
+            v0 := 0
+            v1 := 10
+            v2 := 0
+            save v2
+            Tinytext 00 0 txtSweeties
+            Tinytext 60 0 txtLives
+
+
+            printInitScore
+            loop
+              i := goodCounter
+              load v2
+              i := goodCounter2
+              save v2
+              if v1 == 0 then jump StartScreen
+              moveSprites
+              switch key begin
+                case 5 begin
+                  if SpriteVar.cannonlock == 0 then fireBullet
+                  SpriteVar.cannonlock = 10
+                end
+                case 7 begin
+                  v0 := -cannonstep
+                  moveCannon
+                end
+                case 9 begin
+                  v0 := cannonstep
+                  moveCannon
+                end
+              end
+              if SpriteVar.cannonlock > 0 then SpriteVar.cannonlock -= 1
+              createEnemy
+              printScore
+		      redraw
+            again
+
+: StartGame
+	initfast
+    fast
+
+: StartScreen
+
+            hires
+            clear
+            Tinytext 0 33 txtTitle
+            Tinytext 0 41 txtTitle2
+            Tinytext 0 49 txtTitle3
+            Tinytext 0 57 txtTitle4
+            Tinytext 65 0 txtLastScore
+            i := goodCounter
+            load v0
+            PrintDez8.number := v0
+            PrintDez8.x := 65
+            PrintDez8.y := 8
+            PrintDez8.digits := 2
+            printDez8
+
+
+
+            v1 := 0
+            v2 := 0
+            for v0 := 0 to 0x20*8 step 8 begin
+              i := title
+              i += v0
+              sprite v1 v2 8
+              v1 += 8
+              if v1 == 64 begin
+                v1 := 0
+                v2 += 8
+              end
+            end
+		    redraw
+            v0 := key
+            clear
+            jump start
+
+
+
+: drawBullet
+            with SpriteData begin
+              i := spriteBullet
+              sprite x y 8
+            end
+            return
+: drawBulletOldPos
+            with SpriteData begin
+              i := spriteBullet
+              sprite drawx drawy 8
+            end
+            return
+
+: drawEnemy
+            with SpriteData begin
+              if typ == badItem begin
+                i := spriteBadItems
+              else
+                i := spriteGoodItems
+              end
+              i += index
+              sprite x y 0
+            end
+            return
+: drawEnemyOldPos
+            with SpriteData begin
+              if typ == badItem begin
+                i := spriteBadItems
+              else
+                i := spriteGoodItems
+              end
+              i += index
+              sprite drawx drawy 0
+            end
+            return
+
+: printScore
+
+            with PrintDez8 {
+              i := goodCounter2
+              load v0
+              v4 := v0
+              i := goodCounter
+              load v0
+              if v0 != v4 begin
+                number := v0
+                x := 42
+                y := 0
+                digits := 2
+                printDez8
+                number := v4
+                printDez8
+              end
+
+
+
+              i := badCounter2
+              load v0
+              v4 := v0
+              i := badCounter
+              load v0
+              if v0 != v4 begin
+                number := v0
+                x := 87
+                y := 0
+                digits := 2
+                printDez8
+                number := v4
+                printDez8
+              end
+            }
+
+            return
+
+: printInitScore
+            with PrintDez8 {
+              i := goodCounter
+              load v0
+              number := v0
+              x := 42
+              y := 0
+              digits := 2
+              printDez8
+
+              i := badCounter
+              load v0
+              number := v0
+              x := 87
+              y := 0
+              digits := 2
+              printDez8
+            end
+            return
+
+
+
+
+
+:sprite spriteBadItems, 16,16 {
+# Sprite 1
+              0x00 0x00 0x00 0x00 0x1f 0x00 0x20 0x80 0x40 0x40 0x51 0x40 0xbb 0xa0 0xbb 0xa0
+              0x91 0x20 0x40 0x40 0x4e 0x40 0x2e 0x80 0x2e 0x80 0x11 0x00 0x1b 0x00 0x0e 0x00
+# Sprite 2
+              0x00 0x00 0x07 0xc0 0x08 0x20 0x08 0x20 0x11 0x10 0x13 0x90 0x11 0x10 0x09 0x20
+              0x09 0x20 0x09 0x20 0x05 0x40 0x05 0x40 0x04 0x40 0x04 0x40 0x03 0x80 0x00 0x00
+# Sprite 3
+              0x00 0x00 0x00 0x00 0x01 0x00 0x03 0x80 0x03 0x80 0x03 0x80 0x1f 0xf0 0x1f 0xf0
+              0x03 0x80 0x03 0x80 0x03 0x80 0x03 0x80 0x03 0x80 0x0f 0xe0 0x3f 0xf8 0x3f 0xf8
+# Sprite 4
+              0x07 0xc0 0x08 0x20 0x10 0x10 0x16 0xd0 0x0e 0xd0 0x08 0x00 0x04 0x30 0x05 0xa0
+              0x05 0xa0 0x04 0x40 0x02 0x40 0x01 0x40 0x01 0x40 0x00 0x80 0x00 0x00 0x00 0x00
+# Sprite 5
+              0x00 0x00 0xe1 0x04 0x92 0x8a 0x94 0x51 0x94 0x51 0xe4 0x51 0x94 0x51 0x92 0x8a
+              0xe1 0x04 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+# Sprite 7
+              0x00 0x00 0x00 0x00 0x02 0x40 0x11 0x88 0x11 0x88 0x13 0xc8 0x0f 0xf0 0x47 0xe0
+              0x7f 0xfe 0x07 0xe0 0x07 0xf0 0x3b 0xcc 0x62 0x26 0x44 0x20 0x04 0x10 0x04 0x10
+# Sprite 8
+              0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+              0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+# Sprite 9
+              0x07 0xc0 0x0e 0xe0 0x1e 0xf0 0x18 0x30 0x1e 0xf0 0x1e 0xf0 0x1e 0xf0 0x1e 0xf0
+              0x1e 0xf0 0x1f 0xf0 0x1f 0xf0 0x12 0x30 0x1f 0xf0 0x11 0x50 0x1f 0xf0 0x00 0x00
+
+            }
+: badItemsEnd
+
+:sprite spriteGoodItems,16,16 {
+# Sprite 5
+              0x07 0x80 0x08 0x40 0x17 0xa0 0x14 0xa0 0x17 0xa0 0x08 0x40 0x07 0x80 0x03 0x00
+              0x03 0x00 0x03 0x00 0x03 0x00 0x03 0x00 0x03 0x00 0x03 0x00 0x03 0x00 0x03 0x00
+# Sprite 6
+              0x00 0x00 0x00 0x00 0x40 0x04 0x63 0x8c 0x77 0xdc 0x7f 0xfc 0x7f 0xfc 0x77 0xdc
+              0x63 0x8c 0x40 0x04 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00 0x00
+            }
+: goodItemsEnd
+
+:const numBadItems  (badItemsEnd - spriteBadItems) / 32
+:const numGoodItems  (goodItemsEnd - spriteGoodItems) / 32
+:const numItems  numBadItems + numGoodItems
+
+:sprite spriteCannon, 8,8 {
+# Sprite 1
+              0x00 0x10 0x38 0x10 0x10 0x10 0x7c 0xfe
+            }
+
+:sprite spriteBullet, 8,8 {
+              0x00 0x00 0x10 0x38 0x10 0x10 0x10 0x00
+            }
+
+
+:tiles title, 8,8 {
+              0x00 0x00 0x00 0x04 0x04 0x08 0x08 0x0f
+              0x00 0x00 0x00 0x20 0x20 0x23 0x44 0xc0
+              0x00 0x00 0x00 0x04 0x04 0x89 0x49 0x49
+              0x00 0x00 0x00 0x80 0x80 0x1c 0x22 0x42
+              0x00 0x00 0x00 0x00 0x00 0x89 0x99 0xaa
+              0x00 0x00 0x00 0x00 0x00 0x38 0x44 0x85
+              0x00 0x00 0x00 0x00 0x00 0x71 0x89 0x09
+              0x00 0x00 0x00 0x00 0x00 0x60 0x90 0x10
+              0x08 0x08 0x10 0x10 0x00 0x00 0x00 0x00
+              0x47 0x48 0x88 0x87 0x00 0x00 0x00 0x00
+              0xc9 0x89 0x92 0x92 0x00 0x00 0x00 0x00
+              0x42 0x42 0x44 0x38 0x00 0x00 0x00 0x00
+              0xaa 0x6c 0x4c 0x48 0x00 0x00 0x00 0x00
+              0xfd 0x81 0x89 0x70 0x00 0x00 0x01 0x03
+              0xf9 0x01 0x12 0xe2 0x00 0xfc 0xfe 0xff
+              0x10 0x10 0x20 0x20 0x00 0x00 0x00 0x00
+              0x00 0x00 0x07 0x04 0x08 0x08 0x0f 0x08
+              0x00 0x00 0x84 0x44 0x48 0x49 0x88 0x49
+              0x00 0x00 0x00 0x00 0xe1 0x12 0x13 0xf0
+              0x00 0x00 0x08 0x08 0x9c 0x49 0x0a 0xd3
+              0x00 0x00 0x00 0x00 0xe2 0x13 0x12 0xf2
+              0x07 0x07 0x07 0x07 0x86 0x02 0x02 0x03
+              0xff 0xff 0xff 0xff 0x31 0x31 0x31 0xff
+              0x80 0x80 0x80 0x80 0x80 0x00 0x00 0x00
+              0x08 0x10 0x1f 0x00 0x00 0x00 0x00 0x00
+              0x4a 0x52 0x91 0x00 0x00 0x00 0x00 0x00
+              0x24 0x24 0xe3 0x00 0x00 0x00 0x00 0x00
+              0x52 0x52 0x99 0x00 0x00 0x00 0x00 0x00
+              0x04 0x24 0xc4 0x00 0x00 0x00 0x00 0x00
+              0x03 0x00 0x01 0x00 0x00 0x30 0x3c 0x00
+              0xce 0xfc 0x7c 0x84 0x78 0x30 0x00 0x00
+              0x00 0x00 0x00 0x00 0x00 0x60 0xe0 0x00
+            }
+
+:tileset titletiles, 8, 8 {
+              0x01 0x02 0x03 0x04 0x05 0x06 0x07 0x08
+              0x09 0x0a 0x0b 0x0c 0x0d 0x0e 0x0f 0x10
+              0x11 0x12 0x13 0x14 0x15 0x16 0x17 0x18
+              0x19 0x1a 0x1b 0x1c 0x1d 0x1e 0x1f 0x20
+            }

@@ -1,3 +1,5 @@
+:const TestLibStack 0
+
 # Stack library
 #   there is only one register (v2v3)
 #   operations are
@@ -11,7 +13,7 @@
 #   print
 
             jump startTestLibStack
-
+:if TestLibStack
 
 :macro printStackEntry num {
               v0 := num
@@ -85,7 +87,7 @@
             v5 := 0
             stackPrintBottom
             return
-
+:end
 
 : stackdata
             0 0 0

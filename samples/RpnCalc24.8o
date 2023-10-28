@@ -1,5 +1,18 @@
 
             jump start
+
+# ----------------------------------------------------------------------------------------------------------------
+# RPC Calculator 24bit (C) 2023 Thomas Quester, thomas@quester-hh.de
+# This calculator used reverse polish notation, like the HP calculators
+# it works with 24bit signed numbers, the maximum number you can use is 16.777.215
+# This program was written with j-octo (https://github.com/tquester/J-Octo-Chip8-IDE) a compiler
+# with some extensions to the octo language
+# There is also a compatible version which is made by disassembling and enhancing, this version contains
+# all comments, labels, aliase and struct members but if/begin, for, switch, conditional compiling, consts
+# includes and macros are not visible
+# ----------------------------------------------------------------------------------------------------------------
+
+
 :include "lib/libMath8.8o"
 :include "lib/libText.8o"
 :include "lib/libMath24.8o"

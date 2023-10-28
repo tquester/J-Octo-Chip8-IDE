@@ -37,7 +37,7 @@
 
 
 
-:const TestLibMath 1
+:const TestLibMath 0
 
 :alias a1 v0
 :alias a2 v1

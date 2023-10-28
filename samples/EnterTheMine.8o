@@ -8,13 +8,22 @@
 #:include "lib/libFast.8o"
 :include "lib/libFastRecompile.8o"
 
-# (C) 2023 Thomas Quester, thomas@quester-hh.de
+#  --------------------------------------------------------------------------------------------------------------
+#  Enter the Mine. A jump-and-run game with some memories on legendary Games of the 1980s
+#	 This game is written in j-octo (https://github.com/tquester/J-Octo-Chip8-IDE) with some language extensions
+#
+#  There is also an enhanced disassembly for the game which contains all :alias, :struct, label and comments
+#  but without Macros and include files.
+#  --------------------------------------------------------------------------------------------------------------
+
 #
 # The game uses an object oriented schema. All Enemies, the player and the levels are layed out in memory and
-# are loaded into a :struct
+# are loaded in a :struct
 # sub routines are generally starting by loading their data from memory and saving them if it got changed
 # inside any level loop the PlayerData is loaded but the x/y and moving registers are destroyed
-
+#
+# (C) 2023 Thomas Quester, thomas@quester-hh.de
+#
 # -------------------------------------------------------------------------------
 # -- data for libPlayer
 # -------------------------------------------------------------------------------
