@@ -6,6 +6,7 @@ import org.eclipse.swt.custom.StyledText;
 
 import assembler.CToken;
 import assembler.CTokenizer;
+import assembler.CWordParser;
 import assembler.Token;
 
 public class CResources {
@@ -139,27 +140,45 @@ public class CResources {
 
 
 	public boolean save(CSpriteData mCurrentTileMap) {
+		boolean result = false;
+		CWordParser wordParser = new CWordParser();
+	
 		if (mCurrentTileMap.name == null) return false;
 		String text = mCurrentEditor.getText();
-		String such = ":tileset "+mCurrentTileMap.name;
-		int p = text.indexOf(such);
-		if (p == -1) return false;
-		int p1;
-		p1 = text.indexOf('}', p+1);
-		if (p1 == -1) return false;
-		String left = text.substring(0,p);
-		String right = text.substring(p1+1);
-		text = left + String.format(":tileset %s, %d, %d {\n%s\n}\n", 
-				mCurrentTileMap.name,
-				mCurrentTileMap.w,
-				mCurrentTileMap.h,
-				mCurrentTileMap.text) + right;
-				
-		int caret = mCurrentEditor.getCaretOffset();
-		mCurrentEditor.setText(text);
-		mCurrentEditor.setCaretOffset(caret);
-		mCurrentEditor.setSelection(caret, caret+1);
-		return true;
+		wordParser.start(text);
+		while (wordParser.hasData()) {
+			String word = wordParser.getWord();
+			if (word.compareTo(":sprite") == 0 ||
+				word.compareTo(":sprites") == 0 ||
+				word.compareTo(":tiles") == 0) {
+				word = wordParser.getWord();
+				if (word.compareTo(mCurrentTileMap.name) == 0) {
+					int p = wordParser.pos;
+					p = text.indexOf("{");
+					if (p == -1) return false;
+					int p1;
+					p1 = text.indexOf('}', p+1);
+					if (p1 == -1) return false;
+					String left = text.substring(0,p);
+					String right = text.substring(p1+1);
+					text = left + "{\n"+ mCurrentTileMap.text + "\n}" + right ;
+							
+					int caret = mCurrentEditor.getCaretOffset();
+					mCurrentEditor.setText(text);
+					mCurrentEditor.setCaretOffset(caret);
+					try {
+						mCurrentEditor.setSelection(caret, caret+1);
+					}
+					catch(Exception ex) {
+						
+					}
+					result = true;
+				}
+			}
+		}
+		
+		
+		return result;
 		
 	}
 

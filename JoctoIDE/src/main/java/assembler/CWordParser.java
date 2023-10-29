@@ -35,7 +35,7 @@ public class CWordParser {
 		} else {
 			while (pos < len) {
 				c = text.charAt(pos++);
-				if (Character.isWhitespace(c)) break;
+				if (Character.isWhitespace(c) || c == ',') break;
 				word += c;
 			}
 		}

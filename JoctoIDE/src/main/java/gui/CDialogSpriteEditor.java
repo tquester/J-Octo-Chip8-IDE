@@ -31,28 +31,25 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.ControlAdapter;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Canvas;
 
 public class CDialogSpriteEditor extends Dialog {
 
 	protected Object result;
 	protected Shell shell;
-	Composite mCanvas;
-	Combo mComboRows;	
-	Button mBtnShowAs8x8;
-	Button mBtnSprite8;
-	Button mBtnSprite16;
-	Button mBtnShowBitmaps;
-	TreeMap<Integer, String> mLabels = new TreeMap<>();
-	Combo mComboTileset;
-	
+	private Composite mCanvas;
+	private Combo mComboRows;	
+	private Button mBtnShowAs8x8;
+	private Button mBtnSprite8;
+	private Button mBtnSprite16;
+	private Button mBtnShowBitmaps;
+	private CCanvasSpriteMatrix mCanvasSpriteView;
+	private TreeMap<Integer, String> mLabels = new TreeMap<>();
+	private Combo mComboTileset;
 	public CResources mResources = new CResources();
-	
 	int[] mSpriteData = new int[16];
-	
-	
 	int spriteHeight = 0;			// 0 = 16x16
 	int mBasePos=0;
-	
 	private Text mTextHex;
 	private boolean mParse = true;
 	private CSpriteData mCurSprite;
@@ -151,6 +148,44 @@ public class CDialogSpriteEditor extends Dialog {
 		lblTileset.setBounds(463, 10, 55, 15);
 		lblTileset.setText("Tileset");
 		
+		Button btnNewButton = new Button(shell, SWT.NONE);
+		btnNewButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				onSaveToEditor();
+			}
+		});
+		btnNewButton.setBounds(463, 216, 75, 25);
+		btnNewButton.setText("Save");
+		
+		mCanvasSpriteView = new CCanvasSpriteMatrix(shell, SWT.BORDER);
+		mCanvasSpriteView.setBounds(688, 30, 232, 312);
+		mCanvasSpriteView.setBackground(null);
+		mCanvasSpriteView.setTileData(new ICanvasSpriteMatrixData() {
+			
+			@Override
+			public int getTileW() {
+				return spriteHeight == 0 ? 16 : 8; 
+			}
+			
+			@Override
+			public int getTileH() {
+				return spriteHeight == 0 ? 16 : spriteHeight; 
+			}
+			
+			@Override
+			public int[] getTileData() {
+				return mSpriteData;
+			}
+
+			@Override
+			public void onSpriteSelected(int pos) {
+				mBasePos = pos;
+				mCanvas.redraw();
+				updateTitle();
+			}
+		});
+		
 		
 		
 		shell.open();
@@ -164,20 +199,31 @@ public class CDialogSpriteEditor extends Dialog {
 		return result;
 	}
 
+	protected void onSaveToEditor() {
+		if (mCurSprite != null) {
+			mCurSprite.setText(mTextHex.getText());
+			mResources.save(mCurSprite);
+			
+		}
+		// TODO Auto-generated method stub
+		
+	}
+
 	protected void onComboSpriteSetSelected() {
 		int index = mComboTileset.getSelectionIndex();
 		if (index != -1) {
 			CSpriteData data = mResources.mSprites.get(index);
+			
 			mCurSprite = data;
-			if (data.height == 16) {
+			if (data.h == 16) {
 				mBtnSprite16.setSelection(true);
 				mBtnSprite8.setSelection(false);
 				spriteHeight = 0;
 			} else {
 				mBtnSprite8.setSelection(true);
 				mBtnSprite16.setSelection(false);
-				mComboRows.setText(String.format("%s", data.height));
-				spriteHeight = data.height;
+				spriteHeight = data.h;
+				mComboRows.setText(String.format("%d", data.h));
 
 			}
 			mTextHex.setText(data.getText());
@@ -218,7 +264,7 @@ public class CDialogSpriteEditor extends Dialog {
 				onResize();
 			}
 		});
-		shell.setSize(714, 561);
+		shell.setSize(947, 561);
 		shell.setText(getText());
 		
 		mCanvas = new Composite(shell, SWT.NONE);
@@ -380,7 +426,7 @@ public class CDialogSpriteEditor extends Dialog {
 			}
 		});
 		mTextHex.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mTextHex.setBounds(10, 348, 677, 170);
+		mTextHex.setBounds(10, 348, 910, 170);
 		
 		mBtnShowBitmaps = new Button(shell, SWT.CHECK);
 		mBtnShowBitmaps.addSelectionListener(new SelectionAdapter() {
@@ -850,6 +896,7 @@ public class CDialogSpriteEditor extends Dialog {
 			}
 			mBasePos = 0;
 			mCanvas.redraw();
+			mCanvasSpriteView.redraw();
 			updateTitle();
 			//updateText();
 			
