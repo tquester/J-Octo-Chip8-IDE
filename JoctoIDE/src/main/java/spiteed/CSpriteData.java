@@ -9,6 +9,7 @@ public class CSpriteData extends CBinaryData {
 	public String name = null;
 	public boolean tiles;
 	public int w,h;
+	public boolean isNew = false;
 
 	
 	public CSpriteData(CToken token) {

@@ -1,7 +1,7 @@
 package spiteed;
 
 public class CBinaryData {
-	StringBuilder sb = new StringBuilder();
+	public StringBuilder sb = new StringBuilder();
 	int line;
 	int posinline;
 	int bytes=0;

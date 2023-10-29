@@ -163,7 +163,7 @@
             temp := v0
             v0 := 0
             i := printbuf
-            for temp2 := 0 to 8 save v0
+            for temp2 := 0 to 7 save v0
             v0 := temp
 
             d1 := a1

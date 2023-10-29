@@ -3,6 +3,7 @@ package spiteed;
 import java.util.ArrayList;
 
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.graphics.Point;
 
 import assembler.CToken;
 import assembler.CTokenizer;
@@ -145,6 +146,17 @@ public class CResources {
 	
 		if (mCurrentTileMap.name == null) return false;
 		String text = mCurrentEditor.getText();
+		
+		if (mCurrentTileMap.isNew) {
+			mCurrentTileMap.isNew = false;
+			Point sel = mCurrentEditor.getSelection();
+			text += String.format("\n:sprites %s, %d, %d {\n%s\n}\n", mCurrentTileMap.name, mCurrentTileMap.w, mCurrentTileMap.h, mCurrentTileMap.text);
+			mCurrentEditor.setText(text);
+			mCurrentEditor.setSelection(sel);
+			
+			return true;
+		}
+
 		wordParser.start(text);
 		while (wordParser.hasData()) {
 			String word = wordParser.getWord();
@@ -154,7 +166,7 @@ public class CResources {
 				word = wordParser.getWord();
 				if (word.compareTo(mCurrentTileMap.name) == 0) {
 					int p = wordParser.pos;
-					p = text.indexOf("{");
+					p = text.indexOf ("{", p+1);
 					if (p == -1) return false;
 					int p1;
 					p1 = text.indexOf('}', p+1);
@@ -181,5 +193,57 @@ public class CResources {
 		return result;
 		
 	}
+	
+	public boolean saveTileset(CSpriteData mCurrentTileMap) {
+		boolean result = false;
+		CWordParser wordParser = new CWordParser();
+	
+		if (mCurrentTileMap.name == null) return false;
+		String text = mCurrentEditor.getText();
+		
+		if (mCurrentTileMap.isNew) {
+			mCurrentTileMap.isNew = false;
+			Point sel = mCurrentEditor.getSelection();
+			text += String.format("\n:tileset %s, %d, %d {\n%s\n}\n", mCurrentTileMap.name, mCurrentTileMap.w, mCurrentTileMap.h, mCurrentTileMap.text);
+			mCurrentEditor.setText(text);
+			mCurrentEditor.setSelection(sel);
+			
+			return true;
+		}
+		
+		wordParser.start(text);
+		while (wordParser.hasData()) {
+			String word = wordParser.getWord();
+			if (word.compareTo(":tileset") == 0) {
+				word = wordParser.getWord();
+				if (word.compareTo(mCurrentTileMap.name) == 0) {
+					int p = wordParser.pos;
+					p = text.indexOf ("{", p+1);
+					if (p == -1) return false;
+					int p1;
+					p1 = text.indexOf('}', p+1);
+					if (p1 == -1) return false;
+					String left = text.substring(0,p);
+					String right = text.substring(p1+1);
+					text = left + "{\n"+ mCurrentTileMap.text + "\n}" + right ;
+							
+					Point sel = mCurrentEditor.getSelection();
+					mCurrentEditor.setText(text);
+					try {
+						mCurrentEditor.setSelection(sel);
+					}
+					catch(Exception ex) {
+						
+					}
+					result = true;
+				}
+			}
+		}
+		
+		
+		return result;
+		
+	}
+
 
 }

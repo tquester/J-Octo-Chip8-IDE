@@ -2385,17 +2385,32 @@ public class CChip8Assembler {
 	}
 
 	private void compileForEnd(CBeginEndData forData) {
+		
+		if (forData.forTargetReg >= 0) {
+			writeCode(0x9, forData.forRegister, forData.forTargetReg, 0); // 9xy0 - SNE Vx, Vy
+		} else {
+			writeCode(0x4, forData.forRegister, forData.forTargetNr); // 3xkk - SNE Vx, byte
+		}
+		int patchadr = pc;
+		writeCode(0x1, 0);
+		
+
+
 		if (forData.forStepReg != -1) {
 			writeCode(0x8, forData.forRegister, forData.forStepReg, 4); // 8xy4 - ADD Vx, Vy
 		} else {
 			writeCode(0x7, forData.forRegister, forData.forStepNr); // 7xkk - ADD Vx, byte
 		}
+		/*
 		if (forData.forTargetReg >= 0) {
 			writeCode(0x5, forData.forRegister, forData.forTargetReg, 0); // 5xy0 - SE Vx, Vy
 		} else {
 			writeCode(0x3, forData.forRegister, forData.forTargetNr); // 3xkk - SE Vx, byte
 		}
+		*/
 		writeCode(0x1, forData.pc);
+		if (mbCodegen) 
+			patch(patchadr, pc);
 	}
 
 	// Annn - LD I, addr

@@ -37,7 +37,7 @@ public class CDialogSpriteEditor extends Dialog {
 
 	protected Object result;
 	protected Shell shell;
-	private Composite mCanvas;
+	private CSpriteCanvas mCanvas;
 	private Combo mComboRows;	
 	private Button mBtnShowAs8x8;
 	private Button mBtnSprite8;
@@ -48,11 +48,12 @@ public class CDialogSpriteEditor extends Dialog {
 	private Combo mComboTileset;
 	public CResources mResources = new CResources();
 	int[] mSpriteData = new int[16];
-	int spriteHeight = 0;			// 0 = 16x16
-	int mBasePos=0;
+	//int spriteHeight = 0;			// 0 = 16x16
+	//int mBasePos=0;
 	private Text mTextHex;
 	private boolean mParse = true;
 	private CSpriteData mCurSprite;
+	private CDialogSpriteEditor mSpriteEditor;
 	
 	public void readSourcefile(StyledText editor) {
 		mResources = new CResources();
@@ -117,7 +118,7 @@ public class CDialogSpriteEditor extends Dialog {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
 				mBtnSprite8.setSelection(false);
-				spriteHeight = 0;
+				mCanvas.spriteHeight = 0;
 				mBtnShowAs8x8.setVisible(true);
 				mCanvas.redraw();
 			}
@@ -132,10 +133,10 @@ public class CDialogSpriteEditor extends Dialog {
 				mBtnSprite16.setSelection(false);
 				mBtnShowAs8x8.setVisible(false);
 				try {
-					spriteHeight = Integer.parseInt(mComboRows.getText());
+					mCanvas.spriteHeight = Integer.parseInt(mComboRows.getText());
 				}
 				catch(Exception e1) {
-					spriteHeight = 12;
+					mCanvas.spriteHeight = 12;
 					mComboRows.setText("12");
 				}
 				mCanvas.redraw();
@@ -165,12 +166,12 @@ public class CDialogSpriteEditor extends Dialog {
 			
 			@Override
 			public int getTileW() {
-				return spriteHeight == 0 ? 16 : 8; 
+				return mCanvas.spriteHeight == 0 ? 16 : 8; 
 			}
 			
 			@Override
 			public int getTileH() {
-				return spriteHeight == 0 ? 16 : spriteHeight; 
+				return mCanvas.spriteHeight == 0 ? 16 : mCanvas.spriteHeight; 
 			}
 			
 			@Override
@@ -180,7 +181,7 @@ public class CDialogSpriteEditor extends Dialog {
 
 			@Override
 			public void onSpriteSelected(int pos) {
-				mBasePos = pos;
+				mCanvas.mOffset = pos;
 				mCanvas.redraw();
 				updateTitle();
 			}
@@ -202,7 +203,11 @@ public class CDialogSpriteEditor extends Dialog {
 	protected void onSaveToEditor() {
 		if (mCurSprite != null) {
 			mCurSprite.setText(mTextHex.getText());
-			mResources.save(mCurSprite);
+			if (mResources.save(mCurSprite) == false) {
+				CDialogMessage dlg = new CDialogMessage(shell, SWT.TITLE);
+				dlg.text = "Error saving icons\nPlase update source file\nmanually";
+				dlg.open();
+			}
 			
 		}
 		// TODO Auto-generated method stub
@@ -218,11 +223,11 @@ public class CDialogSpriteEditor extends Dialog {
 			if (data.h == 16) {
 				mBtnSprite16.setSelection(true);
 				mBtnSprite8.setSelection(false);
-				spriteHeight = 0;
+				mCanvas.spriteHeight = 0;
 			} else {
 				mBtnSprite8.setSelection(true);
 				mBtnSprite16.setSelection(false);
-				spriteHeight = data.h;
+				mCanvas.spriteHeight = data.h;
 				mComboRows.setText(String.format("%d", data.h));
 
 			}
@@ -257,6 +262,7 @@ public class CDialogSpriteEditor extends Dialog {
 	 * Create contents of the dialog.
 	 */
 	private void createContents() {
+		mSpriteEditor = this;
 		shell = new Shell(getParent(), getStyle());
 		shell.addControlListener(new ControlAdapter() {
 			@Override
@@ -267,29 +273,37 @@ public class CDialogSpriteEditor extends Dialog {
 		shell.setSize(947, 561);
 		shell.setText(getText());
 		
-		mCanvas = new Composite(shell, SWT.NONE);
-		mCanvas.addPaintListener(new PaintListener() {
-			public void paintControl(PaintEvent e) {
-				paintSpriteEditor(e);
-			}
-		});
-		mCanvas.addMouseListener(new MouseListener() {
+		mCanvas = new CSpriteCanvas(shell, SWT.NONE);
+		mCanvas.mReadonly = false;
+		mCanvas.setData(new CSpriteCanvasData() {
 			
 			@Override
-			public void mouseUp(MouseEvent e) {
+			public void updateText() {
+				mSpriteEditor.updateText();
+				mCanvasSpriteView.redraw();
 				
 			}
 			
 			@Override
-			public void mouseDown(MouseEvent e) {
-				onMouseDownCanvas(e);
+			public void setSpriteWord(int bytepos, int word) {
+				mSpriteEditor.setSpriteWord(bytepos, word);
 				
 			}
 			
 			@Override
-			public void mouseDoubleClick(MouseEvent e) {
-				// TODO Auto-generated method stub
+			public void setSpriteByte(int bytepos, int newbyte) {
+				mSpriteEditor.setSpriteByte(bytepos, newbyte);
 				
+			}
+			
+			@Override
+			public int getSpriteWord(int bytepos) {
+				return mSpriteEditor.getSpriteWord(bytepos);
+			}
+			
+			@Override
+			public int getSpriteByte(int bytepos) {
+				return mSpriteEditor.getSpriteByte(bytepos);
 			}
 		});
 		mCanvas.setBounds(10, 10, 437, 332);
@@ -369,7 +383,7 @@ public class CDialogSpriteEditor extends Dialog {
 		mComboRows.addModifyListener(new ModifyListener() {
 			public void modifyText(ModifyEvent e) {
 				try {
-					spriteHeight = Integer.parseInt(mComboRows.getText());
+					mCanvas.spriteHeight = Integer.parseInt(mComboRows.getText());
 					mCanvas.redraw();
 				}
 				catch(Exception e1) {
@@ -452,13 +466,13 @@ public class CDialogSpriteEditor extends Dialog {
 	}
 
 	protected void onCopySprite() {
-		int rows = spriteHeight == 0 ? 16 : spriteHeight;
-		int bytes = spriteHeight == 0 ? 2 : 1;
+		int rows = mCanvas.spriteHeight == 0 ? 16 : mCanvas.spriteHeight;
+		int bytes = mCanvas.spriteHeight == 0 ? 2 : 1;
 		int pos = addNewBytes(rows*bytes);
 		for (int i=0;i<rows*bytes;i++) {
-			mSpriteData[pos+i] = mSpriteData[mBasePos+i];
+			mSpriteData[pos+i] = mSpriteData[mCanvas.mOffset+i];
 		}
-		mBasePos = pos;
+		mCanvas.mOffset = pos;
 		updateText();
 		mCanvas.redraw();
 		
@@ -475,91 +489,29 @@ public class CDialogSpriteEditor extends Dialog {
 	}
 
 	protected void onNewSprite() {
-		int rows = spriteHeight == 0 ? 16 : spriteHeight;
-		int bytes = spriteHeight == 0 ? 2 : 1;
+		int rows = mCanvas.spriteHeight == 0 ? 16 : mCanvas.spriteHeight;
+		int bytes = mCanvas.spriteHeight == 0 ? 2 : 1;
 		int pos = addNewBytes(rows*bytes);
-		mBasePos = pos;
+		mCanvas.mOffset = pos;
 		updateText();
 		mCanvas.redraw();
 		
 	}
 
 	protected void onShiftDown() {
-		int rows = spriteHeight == 0 ? 16 : spriteHeight;
-		int bytes = spriteHeight == 0 ? 2 : 1;
-		int pos1 = mBasePos+rows*bytes;
-		int pos = pos1-bytes;
-		pos1--;
-		pos--;
-		for (int i=0;i<rows-1;i++) {
-			for (int j=0;j<bytes;j++) {
-				mSpriteData[pos1--] = mSpriteData[pos--];
-			}
-			
-			
-		}
-		for (int i=0;i<bytes;i++) mSpriteData[mBasePos+i] = 0;
-		updateText();
-		mCanvas.redraw();
-		
+		mCanvas.onShiftDown();
 	}
 
 	protected void onShiftUp() {
-		int rows = spriteHeight == 0 ? 16 : spriteHeight;
-		int bytes = spriteHeight == 0 ? 2 : 1;
-		int pos = mBasePos;
-		int pos1 = mBasePos+bytes;
-		for (int i=0;i<rows-1;i++) {
-			for (int j=0;j<bytes;j++) {
-				mSpriteData[pos++] = mSpriteData[pos1++];
-			}
-		}
-		for (int i=0;i<bytes;i++) mSpriteData[pos++] = 0;
-		updateText();
-		mCanvas.redraw();
+		mCanvas.onShiftUp();
 	}
 
 	protected void flipW() {
-		int rows = spriteHeight == 0 ? 16 : spriteHeight;
-		int bytes = spriteHeight == 0 ? 2 : 1;
-		int temp[] = new int[bytes];
-		int pos = mBasePos;
-		for (int i=0;i<rows;i++) {
-			int d = bytes-1;
-			for (int j=0;j<bytes;j++) {
-				int v = mSpriteData[pos+j];
-				v = reverse(v);
-				temp[d] = v;
-				d--;	
-			}
-			for (int j=0;j<bytes;j++) {
-				mSpriteData[pos+j] = temp[j];
-			}
-			pos+=bytes;
-		}
-		mCanvas.redraw();
-		updateText();
-		
+		mCanvas.flipW();
 	}
 
 	protected void flipH() {
-		int rows = spriteHeight == 0 ? 16 : spriteHeight;
-		int bytes = spriteHeight == 0 ? 2 : 1;
-		int temp[] = new int[bytes];
-		int pos = mBasePos;
-		int j;
-		int pos2 = mBasePos+bytes*(rows-1);
-		for (int i=0;i<rows/2;i++) {
-			for (j=0;j<bytes;j++) temp[j] = mSpriteData[pos+j];
-			for (j=0;j<bytes;j++) mSpriteData[pos+j] = mSpriteData[pos2+j];
-			for (j=0;j<bytes;j++) mSpriteData[pos2+j] = temp[j];
-			pos+=bytes;
-			pos2-=bytes;
-			
-		}
-		mCanvas.redraw();
-		updateText();
-		
+		mCanvas.flipH();
 	}
 	
 	int reverse(int b) {
@@ -575,123 +527,46 @@ public class CDialogSpriteEditor extends Dialog {
 	}
 
 	protected void nextSprite() {
-		int ofs = spriteHeight == 0 ? 32 : spriteHeight;
-		if (mBasePos + ofs < mSpriteData.length) {
-			mBasePos += ofs;
+		int ofs = mCanvas.spriteHeight == 0 ? 32 : mCanvas.spriteHeight;
+		if (mCanvas.mOffset + ofs < mSpriteData.length) {
+			mCanvas.mOffset += ofs;
 		} else
-			mBasePos = 0;
+			mCanvas.mOffset = 0;
 		mCanvas.redraw();
 		updateTitle();
 		
 	}
 
 	private void updateTitle() {
-		int size = spriteHeight == 0 ? 32 : spriteHeight;
-		int ofs = spriteHeight == 0 ? 32 : spriteHeight;
-		int sprite = mBasePos / size;
-		String label = mLabels.get(mBasePos);
+		int size = mCanvas.spriteHeight == 0 ? 32 : mCanvas.spriteHeight;
+		int ofs = mCanvas.spriteHeight == 0 ? 32 : mCanvas.spriteHeight;
+		int sprite = mCanvas.mOffset / size;
+		String label = mLabels.get(mCanvas.mOffset);
 		if (label == null) label = "";
-		shell.setText(String.format("Sprite %d/%d pos %d %s",sprite, mSpriteData.length/ofs, mBasePos, label));
+		shell.setText(String.format("Sprite %d/%d pos %d %s",sprite, mSpriteData.length/ofs, mCanvas.mOffset, label));
 		
 		
 	}
 
 	protected void prevSprite() {
-		int ofs = spriteHeight == 0 ? 32 : spriteHeight;
-		if (mBasePos - ofs > 0) {
-			mBasePos -= ofs;
+		int ofs = mCanvas.spriteHeight == 0 ? 32 : mCanvas.spriteHeight;
+		if (mCanvas.mOffset - ofs > 0) {
+			mCanvas.mOffset -= ofs;
 		} else {
-			mBasePos = mSpriteData.length-ofs;
+			mCanvas.mOffset = mSpriteData.length-ofs;
 		}
 		mCanvas.redraw();
 		updateTitle();
 	}
 
 	protected void shiftRight() {
-		int i;
-		int word;
-		int pos = mBasePos;
-		if (spriteHeight == 0) {
-			for (i=0;i<16;i++) {
-				word = getSpriteWord(pos);
-				word >>= 1;
-				setSpriteWord(pos, word);
-				pos+=2;
-			}
-		} else {
-			for (i=0;i<spriteHeight;i++) {
-				word = getSpriteByte(pos);
-				word >>= 1;
-				setSpriteByte(pos,word);
-				pos++;
-			}
-		}
-		updateText();
-		mCanvas.redraw();		
+		mCanvas.shiftRight();
 	}
 
 	protected void shiftLeft() {
-		int i;
-		int word;
-		int pos = mBasePos;
-		if (spriteHeight == 0) {
-			for (i=0;i<16;i++) {
-				word = getSpriteWord(pos);
-				word <<= 1;
-				setSpriteWord(pos, word);
-				pos+=2;
-			}
-		} else {
-			for (i=0;i<spriteHeight;i++) {
-				word = getSpriteByte(pos);
-				word <<= 1;
-				setSpriteByte(pos,word);
-				pos++;
-			}
-		}
-		updateText();
-		mCanvas.redraw();
-		
+		mCanvas.shiftLeft();
 	}
 
-	protected void onMouseDownCanvas(MouseEvent e) {
-		Rectangle bounds = mCanvas.getBounds();
-		int pos;
-		int x = 0;
-		int y = 0;
-	    int width = spriteHeight == 0 ? 16 : 8;
-	    int height = spriteHeight == 0 ? 16 : 15;
-		int dx = bounds.width / width;
-		int dy = bounds.height / height;
-		int w = dx * 16;
-		if (height > width) {
-			dx = dy;
-			w = dx * 8;
-		}
-		x = e.x / dx;
-		y = e.y / dy;
-		if (spriteHeight == 0) {
-			pos = mBasePos + y * 2;
-			if (x > 7) {
-				pos++;
-				x -= 8;
-			}
-			int mask = 0x80 >> x;
-			setSpriteByte(pos, getSpriteByte(pos) ^ mask);
-				 
-		} else {
-			pos = mBasePos + y;
-			if (x <= 8) {
-				int mask = 0x80 >> x;
-				setSpriteByte(pos, getSpriteByte(pos) ^ mask);
-			}
-		}
-		mCanvas.redraw();
-		updateText();
-		
-		
-		System.out.println(String.format("%d/%d", x,y));
-	}
 	
 	private void setSpriteByte(int pos, int data) {
 		if (mSpriteData.length < pos+1) {
@@ -729,7 +604,7 @@ public class CDialogSpriteEditor extends Dialog {
 	
 	String createText() {
 		StringBuilder sb = new StringBuilder();
-		int spheight = spriteHeight == 0 ? 16 : spriteHeight;
+		int spheight = mCanvas.spriteHeight == 0 ? 16 : mCanvas.spriteHeight;
 		int isprite = 1;
 		int i;
 		int j;
@@ -743,7 +618,7 @@ public class CDialogSpriteEditor extends Dialog {
 				label = ": "+label;
 					
 			sb.append(label+"\n");
-			if (spriteHeight == 0) {
+			if (mCanvas.spriteHeight == 0) {
 				if (mBtnShowAs8x8.getSelection() == false) {
 					if (mBtnShowBitmaps.getSelection()) {
 						for (i=0;i<16;i++) {
@@ -778,13 +653,13 @@ public class CDialogSpriteEditor extends Dialog {
 				}
 			} else {
 				if (mBtnShowBitmaps.getSelection()) {
-					for (i=0;i<spriteHeight-1;i++) {
+					for (i=0;i<mCanvas.spriteHeight-1;i++) {
 						int b = getSpriteByte(bytepos++);
 						sb.append(String.format("  %02x\t#\t%s\n", b, hex8Bin(b)));
 					}
 					sb.append("\n");
 				} else {
-					for (i=0;i<spriteHeight-1;i++) {
+					for (i=0;i<mCanvas.spriteHeight-1;i++) {
 						sb.append(toHex(getSpriteByte(bytepos++))+" ");
 					}
 					sb.append(toHex(getSpriteByte(bytepos++))+"\n");
@@ -894,7 +769,7 @@ public class CDialogSpriteEditor extends Dialog {
 			for (int i=0;i<data.size();i++) {
 				mSpriteData[i] = data.get(i).intValue();
 			}
-			mBasePos = 0;
+			mCanvas.mOffset = 0;
 			mCanvas.redraw();
 			mCanvasSpriteView.redraw();
 			updateTitle();
@@ -927,127 +802,4 @@ public class CDialogSpriteEditor extends Dialog {
 		return r;
 	}
 
-	protected void paintSpriteEditor(PaintEvent e) {
-		Rectangle bounds = mCanvas.getBounds();
-		Display display = getParent().getDisplay();
-		
-	    Color white = display.getSystemColor(SWT.COLOR_WHITE);
-	    Color black = display.getSystemColor(SWT.COLOR_BLACK);
-	    Color gray1 = display.getSystemColor(SWT.COLOR_GRAY);
-	    Color gray2 = display.getSystemColor(SWT.COLOR_DARK_GRAY);
-	    Color red = display.getSystemColor(SWT.COLOR_RED);
-		
-	    int width = spriteHeight == 0 ? 16 : 8;
-	    int height = spriteHeight == 0 ? 16 : 15;
-		int x = 0;
-		int y = 0;
-		int dx = bounds.width / width;
-		int dy = bounds.height / height;
-		int w = dx * 16;
-		if (height > width) {
-			dx = dy;
-			w = dx * 8;
-		}
-		int h = dy * height;
-		for (int i = 0; i < width+1; i++) {
-			if (i == 8) {
-				e.gc.setForeground(black);
-			} else {
-				if ((i & 3) == 0) {
-					e.gc.setForeground(gray2);
-				} else
-					e.gc.setForeground(gray1);
-			}
-			e.gc.drawLine(x, 0, x, h);
-	
-			x += dx;
-		}
-		for (int i = 0; i < height+1; i++) {
-			if (i == 8) {
-				e.gc.setForeground(black);
-			} else {
-				if ((i & 3) == 0) {
-					e.gc.setForeground(gray2);
-				} else
-					e.gc.setForeground(gray1);
-			}			
-			e.gc.drawLine(0, y, w, y);
-			y += dy;
-		}
-		int bytepos = mBasePos;
-		
-		y = 0;
-		int spheight = spriteHeight == 0 ? 16 : spriteHeight;
-		
-		for (int iy = 0; iy < spheight; iy++) {
-			x = 0;
-			if (spriteHeight == 0) {
-				int word = getSpriteWord(bytepos);
-				bytepos += 2;
-				int mask = 0x8000;
-				for (int ix=0;ix<16;ix++) {
-					if ((word & mask) == 0) {
-						e.gc.setForeground(white);
-						e.gc.setBackground(white);
-					} else {
-						e.gc.setForeground(black);
-						e.gc.setBackground(black);
-					}
-						
-					e.gc.fillRectangle(x+2, y+2, dx-4, dy-4);
-					x += dx;
-					mask >>= 1;
-				}
-			} else {
-				int word = getSpriteByte(bytepos);
-				bytepos += 1;
-				int mask = 0x80;
-				for (int ix=0;ix<8;ix++) {
-					if ((word & mask) == 0) {
-						e.gc.setForeground(white);
-						e.gc.setBackground(white);
-					} else {
-						e.gc.setForeground(black);
-						e.gc.setBackground(black);
-					}
-						
-					e.gc.fillRectangle(x+2, y+2, dx-4, dy-4);
-					x += dx;
-					mask >>= 1;
-				}
-				
-			}
-			y += dy;
-		}
-		
-		e.gc.setForeground(red);
-		e.gc.setBackground(red);
-		for (int iy = spheight+1; iy <= height;iy++) {
-			x = 0;
-			for (int ix = 0; ix < width; ix++) {
-				e.gc.fillRectangle(x+2, y+2, dx-4, dy-4);
-				x += dx;
-			}
-			y += dy;
-		}
-		
-	}
 }
-/*
-# Sprite 1
-0x60 0x7c 0x3e 0x6e 0x3c 0x18 0x3c 0x7e 0x7f 0x3c 0x36 0x76
-# Sprite 2
-0x06 0x3e 0x7c 0x76 0x3c 0x18 0x3c 0x7c 0x7c 0x38 0x38 0x3c
-# Sprite 3
-0x06 0x3e 0x7c 0x76 0x3c 0x18 0x3c 0x7e 0x7f 0x18 0x1e 0x0e
-# Sprite 4
-0x06 0x3e 0x7c 0x76 0x3c 0x18 0x3c 0x7e 0x3f 0x78 0x66 0x66
-# Sprite 5
-0x60 0x7c 0x3e 0x6e 0x3c 0x18 0x3c 0x7e 0x7f 0x3c 0x36 0x76
-# Sprite 6
-0x60 0x7c 0x3e 0x6e 0x3c 0x18 0x3c 0x3e 0x3e 0x1c 0x1c 0x3c
-# Sprite 7
-0x60 0x7c 0x3e 0x6e 0x3c 0x18 0x3c 0x7e 0xfe 0x18 0x78 0x70
-# Sprite 8
-0x60 0x7c 0x3e 0x6e 0x3c 0x18 0x3c 0x7e 0xfc 0x1e 0x66 0x66
-*/

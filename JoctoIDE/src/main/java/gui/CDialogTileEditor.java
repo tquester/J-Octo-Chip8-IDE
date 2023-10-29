@@ -6,6 +6,7 @@ import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Composite;
 
+import java.io.File;
 import java.io.StreamTokenizer;
 import java.util.ArrayList;
 import java.util.TreeMap;
@@ -89,6 +90,7 @@ public class CDialogTileEditor extends Dialog {
 	private Combo mComboTileMap;
 	private CSpriteData mCurrentTileMap = null;
 	private CMainMenus mMainMenus;
+	private CSpriteData mSpriteSet = null;
 
 	public void readSourcefile(StyledText editor) {
 		mResources = new CResources();
@@ -426,6 +428,7 @@ public class CDialogTileEditor extends Dialog {
 		fd.setFilterExtensions(filterExt);
 		String filename = fd.open();
 		ImageData imageData = new ImageData(filename);
+		File file = new File(filename);
 		// pureWhiteIdeaImageData.transparentPixel =
 		// pureWhiteIdeaImageData.palette.getPixel(new RGB(255,255,255));
 		final Image image = new Image(shell.getDisplay(), imageData);
@@ -449,7 +452,11 @@ public class CDialogTileEditor extends Dialog {
 				for (int irow = 0; irow < 8; irow++) {
 					int spbyte = 0;
 					for (int ibit = 0; ibit < 8; ibit++) {
-						pixel = imageData.getPixel(x + ibit, y + irow);
+						try {
+							pixel = imageData.getPixel(x + ibit, y + irow);
+						} catch(Exception ex) {
+							pixel = 1;
+						}
 						RGB rgbpix = rgb[pixel];
 						if (rgbpix.red > 128 || rgbpix.blue > 128 || rgbpix.green > 128)
 							pixel = 0;
@@ -482,8 +489,25 @@ public class CDialogTileEditor extends Dialog {
 			}
 			strTileset += "\n";
 		}
+		String name = file.getName().replaceAll("\\.", "_");
 		mTextTiles.setText(strTileset);
 		mTextIcons.setText(strSpriteSet);
+		mCurrentTileMap = new CSpriteData(new CToken());
+		mCurrentTileMap.name = name+"_tiles";
+		mCurrentTileMap.w = width / 8;
+		mCurrentTileMap.h = height / 8;
+		mCurrentTileMap.sb = null;
+		mCurrentTileMap.isNew = true;
+		mSpriteSet  = new CSpriteData(new CToken());
+		mSpriteSet.name = name + "_sprite";
+		mSpriteSet.isNew = true;
+		mSpriteSet.w = 8;
+		mSpriteSet.h = 8;
+		mSpriteSet.sb = null;
+		mSpriteSet.text = strSpriteSet;
+		mComboH.setText(String.format("%d", mCurrentTileMap.h));
+		mComboW.setText(String.format("%d", mCurrentTileMap.w));
+		
 		onUpdateEditSprites();
 		onUpdateEditTiles();
 
@@ -494,7 +518,10 @@ public class CDialogTileEditor extends Dialog {
 		if (mTilesetIndex != -1) {
 		 data = mResources.mSprites.get(mTilesetIndex);
 		} else {
-			data = new CSpriteData(new CToken());
+			if (mSpriteSet == null)
+				data = new CSpriteData(new CToken());
+			else
+				data = mSpriteSet;
 		}
 		tilesetBytes = data.parse(data.getText());
 		
@@ -503,7 +530,18 @@ public class CDialogTileEditor extends Dialog {
 	protected void onSave() {
 		if (mCurrentTileMap != null) {
 			mCurrentTileMap.text = mTextTiles.getText();
-			mResources.save(mCurrentTileMap);
+			if (mResources.saveTileset(mCurrentTileMap) == false) {
+				CDialogMessage dlg = new CDialogMessage(shell, SWT.TITLE);
+				dlg.text = "Can not save tileset\nPlease update source\nmanually!";
+				dlg.open();
+			}
+		}
+		if (mSpriteSet != null) {
+			if (!mResources.save(mSpriteSet)) {
+				CDialogMessage dlg = new CDialogMessage(shell, SWT.TITLE);
+				dlg.text = "Can not save sprites\nPlease update source\nmanually!";
+				dlg.open();
+			}
 		}
 
 	}

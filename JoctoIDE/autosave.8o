@@ -10,7 +10,7 @@
 
 #  --------------------------------------------------------------------------------------------------------------
 #  Enter the Mine. A jump-and-run game with some memories on legendary Games of the 1980s
-#	 This game is written in j-octo (https://github.com/tquester/J-Octo-Chip8-IDE) with some language extensions
+#  This game is written in j-octo (https://github.com/tquester/J-Octo-Chip8-IDE) with some language extensions
 #
 #  There is also an enhanced disassembly for the game which contains all :alias, :struct, label and comments
 #  but without Macros and include files.
@@ -47,15 +47,17 @@
             return
 
 :macro copyData source target len {
-              for v1 := 0 to len begin
+              v1 := 0
+              loop
                 i := source                                           # load 14 registers
                 i += v1
                 load v0
                 i := target                                           # save them
                 i += v1
                 save v0
-              end
-
+                v1 += 1
+                if v1 != len then
+              again
             }
 : textbase
 : txtAmoebetronsRevance tinytext8 "Amoebetrons 2nd revanche!#"
