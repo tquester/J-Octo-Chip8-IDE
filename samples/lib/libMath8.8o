@@ -1,42 +1,74 @@
 
+:const testLibMath8 1
 
+:if testLibMath8
+            jump startTestMath8
+:include "lib/libPrintDez8.8o"
+
+: startTestMath8
+            v0 := 10
+            v1 := 12
+            mul8bitClean
+            with PrintDez8
+            number := v0
+            x := 10
+            y := 10
+            digits := 3
+            printDez8
+
+loop again
+
+
+:end
+
+
+:function mul8bitClean {
 ######################################################################################
-# mul8bit  Multply
-#     v0 := v0 * v1
-#     Destroys v1, vd, ve
-#
 # mul8bitClean
 #   v0 := v0 * v1
 #   Preserves all variables
 ######################################################################################
 
-: mul8bitClean
-            i := mathsave
-            save v3
-            mul8bit
-            i := mathsave
-            save v0
-            i := mathsave
-            load v3
-            return
+              i := mathsave
+              save v3
+              mul8bit
+              i := mathsave
+              save v0
+              i := mathsave
+              load v3
+              return
+            }
 
-: mul8bit
-            v2 := 0
-            v3 := 8
-            loop
-              v2 += v2
-              v1 <<= v1
-              if vf == 1 begin
-                v2 += v0
-                v1 += 1
-              end
-              v3 -= 1
-              if v3 != 0 then
-            again
-            v0 := v2
-            return
+:function mul8bit {
+######################################################################################
+# mul8bit  Multply
+#     v0 := v0 * v1
+#     Destroys v1, v2, v3
+######################################################################################
+              var result                                              # v0
+              var param                                               # v1
+              var sum                                                 # v2
+              var counter                                             # v3
+              var alsoTheCounter = counter                            # v3
+			  var anotherAliasTocounter = v3
+              sum := 0
+              counter := 8
+              loop
+                sum += sum
+                param <<= param
+                if vf == 1 begin
+                  sum += result
+                  param += 1
+                end
+                counter -= 1
+                if counter != 0 then
+              again
+              result := sum
+              return
+            }
 
 
+:function div8clean {
 ######################################################################################
 # div8bit
 #    v0 := v0 / v1
@@ -52,34 +84,35 @@
 #  Destroys: v4 v5 v6 v7 v8
 ######################################################################################
 
-: div8clean
-            i := mathsave
-            save v3
-            div8bit
-            i := mathsave
-            save v0
-            i := mathsave
-            load v3
-            return
+              i := mathsave
+              save v3
+              div8bit
+              i := mathsave
+              save v0
+              i := mathsave
+              load v3
+              return
+            }
 
 
 
-: div8bit
-            v2 := 0                                                   # xor a
-            v3 := 8                                                   # ld b,8
+:function div8bit {
+              v2 := 0                                                 # xor a
+              v3 := 8                                                 # ld b,8
 
-            loop
-              v2 += v2                                                # add hl, hl, rla,
-              v0 <<= v0
-              v2 += vf
-              if v2 >= v1 begin                                       # if v1 fits into vd
-                v2 -= v1                                              # subtract
-                v0 += 1                                               # and set the leftmost bit in vd
-              end
-              v3 -= 1
-              if v3 != 0 then
-            again
-            return
+              loop
+                v2 += v2                                              # add hl, hl, rla,
+                v0 <<= v0
+                v2 += vf
+                if v2 >= v1 begin                                     # if v1 fits into vd
+                  v2 -= v1                                            # subtract
+                  v0 += 1                                             # and set the leftmost bit in vd
+                end
+                v3 -= 1
+                if v3 != 0 then
+              again
+              return
+            }
 
 : mathsave
             0 0 0 0

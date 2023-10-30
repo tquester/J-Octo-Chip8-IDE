@@ -9,7 +9,11 @@ import assembler.CAlias;
 import assembler.Token;
 
 public class CC8Label {
-	
+
+	public class CC8SubSubFunctionLabel {
+		public int count=0;
+		public CC8Label label;
+	}
 	class Range {
 		int start;
 		int end;
@@ -29,13 +33,15 @@ public class CC8Label {
 	public ArrayList<String>	mVariables=null;
 	public TreeMap<String, CAlias> mAliase=null;
 	public ArrayList<Range>		mValidInRange = null;
-	public TreeMap<String, CC8Label>
+	public TreeMap<String, CC8SubSubFunctionLabel>
 								mMapSubFunctions = null;
 	
 	private Range 				mCurrentRange = null;
 	public String               mRegister = null;				// for alias: the register
 	public String               mPackage=null;					// inside a include, if a package is defined, the label is package private
 	public boolean              mSkipCompiling = false;			// if the compiler found out, that a function is unused, it skips it from compiling
+	public int 					mNextRegister=0;
+	
 	
 	public void addVar(String var) {
 		if (mVariables == null) mVariables = new ArrayList<>();
@@ -210,7 +216,17 @@ public class CC8Label {
 
 	public void addSubFunction(CC8Label label) {
 		if (mMapSubFunctions == null) mMapSubFunctions = new TreeMap<>();
-		mMapSubFunctions.put(label.mName, label);
+		CC8SubSubFunctionLabel sublabel;
+		sublabel = mMapSubFunctions.get(label.mName);
+		if (sublabel == null) {
+			sublabel = new CC8SubSubFunctionLabel();
+			sublabel.count = 1;
+			sublabel.label = label;
+			mMapSubFunctions.put(label.mName, sublabel);
+		}
+		else {
+			sublabel.count++;
+		}
 		
 	}
 	

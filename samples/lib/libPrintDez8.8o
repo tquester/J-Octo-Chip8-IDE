@@ -1,4 +1,4 @@
-:const TestLibPrintDez8 1
+:const TestLibPrintDez8 0
 
 :struct PrintDez8 {
               number                                                  # v0 The number to be displayed
@@ -7,7 +7,7 @@
               y                                                       # v3 y position
             }
 
-:struct PrintDezVar {
+:struct PrintDezVar extends PrintDez8 {
               number                                                  # v0 The number to be displayed
               digits                                                  # v1 The number of digits (1,2 or 3)
               x                                                       # v2 x position
@@ -40,35 +40,37 @@
 : dezsave
             PrintDezVar.byte
 
-: printDez8
-            i := dezsave
-            save PrintDezVar
+:function printDez8 {
+              with PrintDezVar begin
+                i := dezsave
+                save newdigits
 
-            with PrintDezVar {
-              newx := x
-              newy := y
-              newdigits := digits
+                newx := x
+                newy := y
+                newdigits := digits
 
-              i := dezbuf
-              bcd number
-              load v2
+                i := dezbuf
+                bcd number
+                load v2
 
-              if newdigits == 3 then printHex
-              if newdigits >= 2 begin
-                v0 := v1
+                if newdigits == 3 then printHex
+                if newdigits >= 2 begin
+                  v0 := v1
+                  printHex
+                end
+                v0 := v2
                 printHex
+                i := dezsave
+                load newdigits
+                return
               end
-              v0 := v2
-              printHex
-            end
-            i := dezsave
-            load PrintDezVar
-            return
-
-: printHex
-            with PrintDezVar {
-              i := hex v0
-              sprite newx newy 5
-              newx += 5
             }
-            return
+
+:function printHex {
+              with PrintDezVar {
+                i := hex v0
+                sprite newx newy 5
+                newx += 5
+              }
+              return
+            }

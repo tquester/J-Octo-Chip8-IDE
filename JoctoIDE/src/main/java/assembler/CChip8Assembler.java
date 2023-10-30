@@ -11,6 +11,7 @@ import assembler.CDebugEntry.CDebugElem;
 import disass.C8DisassEmitter;
 import disass.C8LabelType;
 import disass.CC8Label;
+import disass.CC8Label.CC8SubSubFunctionLabel;
 import disass.Tools;
 import emulator.C8DebugSource;
 
@@ -551,9 +552,10 @@ public class CChip8Assembler {
 	private boolean cleanUpSubSymbols(CC8Label label) {
 		boolean changed=false;
 		if (label.mMapSubFunctions != null) {
-			for (CC8Label sub: label.mMapSubFunctions.values()) {
+			for (CC8SubSubFunctionLabel sublabel: label.mMapSubFunctions.values()) {
+				CC8Label sub  = sublabel.label;
 				if (sub.mReferences > 0) {
-					sub.mReferences--;
+					sub.mReferences-=sublabel.count;
 					if (sub.mReferences == 0) changed = true;
 					boolean c = cleanUpSubSymbols(sub);
 					changed |= c;
@@ -1017,8 +1019,10 @@ public class CChip8Assembler {
 			}
 			break;
 		case number:
-			mCode[pc++] = (byte) (token.iliteral & 0xff);
-			mMemoryStatistic.sizeData++;
+			if (mbCodegen) {
+				mCode[pc++] = (byte) (token.iliteral & 0xff);
+				mMemoryStatistic.sizeData++;
+			}
 			break;
 
 		case i:
@@ -1398,7 +1402,7 @@ public class CChip8Assembler {
 		CC8Label label;
 		CAliases aliases = new CAliases();
 		mTokenizer.mStackAliases.push(aliases);
-		int register=0;
+		
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
 			if (token.token == Token.newline) break;
@@ -1409,12 +1413,12 @@ public class CChip8Assembler {
 				label = mLabels.get(token.literal);
 				if (label != null) {
 					if (label.mLabelType == C8LabelType.STRUCT) {
-						if (register != 0) {
+						if (mTokenizer.mFunctionLabel.mNextRegister != 0) {
 							error("A struct must be the first variable in a var");
 							return;
 						}
 						for (String variable : label.mVariables) {
-							aliases.addAlias(label.mName, variable, register++);
+							aliases.addAlias(label.mName, variable, mTokenizer.mFunctionLabel.mNextRegister++);
 						}
 						
 					} else {
@@ -1443,7 +1447,7 @@ public class CChip8Assembler {
  							aliases.addAlias(token.literal, regnr);
  					} else {
  						mTokenizer.ungetToken(token2);
- 						aliases.addAlias(token.literal, register++);	
+ 						aliases.addAlias(token.literal, mTokenizer.mFunctionLabel.mNextRegister++);	
  					}
  				}
 			}
@@ -1702,6 +1706,7 @@ public class CChip8Assembler {
 	}
 
 	private void compileStruct(CToken token) {
+		int register=0;
 		mTokenizer.getToken(token);
 		if (token.token != Token.literal) {
 			error("Expected name");
@@ -1714,6 +1719,7 @@ public class CChip8Assembler {
 			label.mLabelType = C8LabelType.STRUCT;
 			mLabels.put(token.literal, label);
 		}
+		
 		mTokenizer.getToken(token);
 		if (token.token == Token.octoextends) {
 			mTokenizer.getToken(token, false);
@@ -1727,8 +1733,11 @@ public class CChip8Assembler {
 				return;
 				
 			}
-			for (String var: elabel.mVariables)
+			for (String var: elabel.mVariables) {
 				label.addVar(var);
+				mDebugSource.startAlias(pc, register++, String.format("%s.%s", label.mName, var));
+			
+			}
 			mTokenizer.getToken(token);
 		}
 		
@@ -1739,7 +1748,7 @@ public class CChip8Assembler {
 		}
 
 
-		int register=0;
+		
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token, false);
 			if (token.token == Token.curlybracketclose)
@@ -1991,12 +2000,14 @@ public class CChip8Assembler {
 		
 		String functionName = token.literal;
 		CC8Label functionLabel = mLabels.get(token.literal);
+		
 		if (functionLabel == null) {
 			functionLabel = new CC8Label();
 			functionLabel.mName = token.literal;
 			functionLabel.mLabelType = C8LabelType.FUNCTION;
 		}
 		functionLabel.mTarget = pc;
+		functionLabel.mNextRegister = 0;
 		if (functionLabel.mSkipCompiling)
 			mbCodegen = false;
 		
