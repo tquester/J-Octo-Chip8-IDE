@@ -26,10 +26,15 @@ public class CTokenizer {
 	private Object mPrevPos;
 	public boolean deliverWhite=false;
 	private Stack<CC8Label> mStackStruct = new Stack<>();
+	public Stack<CAliases> mStackAliases = new Stack<>();
 	public String mFilename = null;
 	public String mHint=null;
 	public String mPackage;
 	public boolean mPublic;
+	
+	// The following are not used by tokenizer but by the compiler. But there is a local version of Tokenizer in each block
+	public CC8Label mFunctionLabel = null;					// If we compile a :function, store the pointer here
+	public String mLabelPrefix=null;						// To implement local labels
 
 	public String toString() {
 		try {
@@ -458,18 +463,59 @@ public class CTokenizer {
 	}
 	
 	private boolean findStructSymbol(CToken token) {
-		if (mStackStruct.size() == 0) return false;
-		for (int i = mStackStruct.size()-1;i>=0;i--) {
-			CC8Label structlabel = mStackStruct.get(i);
-			int reg = structlabel.regFromVar(token.literal);
-			if (reg != -1) {
-				token.addReplacement(reg, String.format("%s.%s", structlabel.mName,token.literal));
-				token.token = structlabel.TokenForReg(reg);
-				return true;
+		if (mStackStruct.size() != 0) {
+			for (int i = mStackStruct.size()-1;i>=0;i--) {
+				CC8Label structlabel = mStackStruct.get(i);
+				int reg = structlabel.regFromVar(token.literal);
+				if (reg != -1) {
+					token.addReplacement(reg, String.format("%s.%s", structlabel.mName,token.literal));
+					token.token = structlabel.TokenForReg(reg);
+					return true;
+				}
 			}
+		}
+		if (mStackAliases.size() != 0) {
+			for (int i = mStackAliases.size()-1;i>=0;i--) {
+				CAliases aliases = mStackAliases.get(i);
+				CAlias alias = aliases.get(token.literal);
+				if (alias != null) {
+					if (alias.struct != null)
+						token.addReplacement(alias.mRegister, String.format("%s.%s", alias.struct,token.literal));
+	//				else
+	//					token.addReplacement(alias.mRegister, String.format("%s", token.literal));
+						
+					token.token = TokenForReg(alias.mRegister);
+					return true;
+					
+				}
+			}
+			
 		}
 		return false;
 	}
+	
+	public Token TokenForReg(int reg) {
+		switch(reg) {
+			case 0: return Token.v0; 
+			case 1: return Token.v1; 
+			case 2: return Token.v2; 
+			case 3: return Token.v3; 
+			case 4: return Token.v4; 
+			case 5: return Token.v5; 
+			case 6: return Token.v6; 
+			case 7: return Token.v7; 
+			case 8: return Token.v8; 
+			case 9: return Token.v9; 
+			case 10: return Token.va; 
+			case 11: return Token.vb; 
+			case 12: return Token.vc; 
+			case 13: return Token.vd; 
+			case 14: return Token.ve; 
+			case 15: return Token.vf;
+			default: return Token.none;
+		}
+	}
+
 
 	public void pushStruct(CC8Label structLabel) {
 		mStackStruct.push(structLabel);

@@ -105,6 +105,7 @@ public class CC8Decoder {
 		}
 		
 		lbl	= new CC8Label(C8LabelType.CODE);
+		lbl.mReferences=1;
 		mLabels.put(adr, lbl);
 
 	}
@@ -127,6 +128,7 @@ public class CC8Decoder {
 		//System.out.println(String.format("Add data Label %4x %d",adr,adr));
 			
 		lbl	= new CC8Label(C8LabelType.DATA);
+		lbl.mReferences++;
 		lbl.mItemsPerRow = 1;
 		mLabels.put(adr, lbl);
 
@@ -202,6 +204,7 @@ public class CC8Decoder {
 				//saveSkipLabel(skipLabel, pc);
 				if (emitter.wantsSkipLabels()) {
 					skipLabel = new CC8Label(C8LabelType.SKIP);
+					skipLabel.mReferences++;
 					skipLabel.mTarget = pc+4;
 					mLabels.put(pc+4, skipLabel);
 				}
@@ -222,6 +225,7 @@ public class CC8Decoder {
 					if (emitter.wantsSkipLabels()) {
 						//saveSkipLabel(skipLabel, pc);
 						skipLabel = new CC8Label(C8LabelType.SKIP);
+						skipLabel.mReferences++;
 						skipLabel.mTarget = pc+4;
 						mLabels.put(pc+4, skipLabel);
 					}
@@ -315,6 +319,7 @@ public class CC8Decoder {
 			String lines[] = text.split("\n");
 			for (String line: lines) {
 				CC8Label label = new CC8Label();
+				label.mReferences=1;
 				label.load(line);;
 				mLabels.put(label.mTarget, label);
 			}

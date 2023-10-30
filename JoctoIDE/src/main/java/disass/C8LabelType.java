@@ -16,7 +16,8 @@ public enum C8LabelType {
 	TILES,
 	SPRITES,
 	TILESET,
-	ALIAS
+	ALIAS,
+	FUNCTION			// A function is a block of code with private internal labels
 	;
 };
 

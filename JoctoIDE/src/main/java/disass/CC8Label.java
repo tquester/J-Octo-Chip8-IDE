@@ -1,9 +1,11 @@
 package disass;
 
 import java.util.ArrayList;
+import java.util.TreeMap;
 
 import org.w3c.dom.ranges.Range;
 
+import assembler.CAlias;
 import assembler.Token;
 
 public class CC8Label {
@@ -15,20 +17,25 @@ public class CC8Label {
 	
 	static int labelNr=0;
 	public C8LabelType 			mLabelType = C8LabelType.DATA;
-	public int 					mNr;
+	public int 					mNr=-1;
 	public String				mName = null;
 	public String				mAlphabet = null;
 	public int					mTarget=0;
 	public Double				mValue=null;
 	public int					mEnd=0;
 	public int 					mItemsPerRow=1;
+	public int					mReferences=0;					// Add 1 each time the label has been used (i := xxx, jump or call)
 	public String				mMacro=null;
 	public ArrayList<String>	mVariables=null;
+	public TreeMap<String, CAlias> mAliase=null;
 	public ArrayList<Range>		mValidInRange = null;
+	public TreeMap<String, CC8Label>
+								mMapSubFunctions = null;
 	
 	private Range 				mCurrentRange = null;
 	public String               mRegister = null;				// for alias: the register
 	public String               mPackage=null;					// inside a include, if a package is defined, the label is package private
+	public boolean              mSkipCompiling = false;			// if the compiler found out, that a function is unused, it skips it from compiling
 	
 	public void addVar(String var) {
 		if (mVariables == null) mVariables = new ArrayList<>();
@@ -119,6 +126,7 @@ public class CC8Label {
 		switch(mLabelType) {
 			case CODE:	return String.format("label%04d", mNr);
 			case DATA:	return String.format("data%04d", mNr);
+			case FUNCTION: return String.format("func%04d", mNr);
 			case SKIP:	
 				return String.format("skip%04d", mNr);
 			default:
@@ -199,4 +207,11 @@ public class CC8Label {
 		if (str == null) return null;
 		return "\""+str+"\"";
 	}
+
+	public void addSubFunction(CC8Label label) {
+		if (mMapSubFunctions == null) mMapSubFunctions = new TreeMap<>();
+		mMapSubFunctions.put(label.mName, label);
+		
+	}
+	
 }

@@ -208,6 +208,7 @@ public class CTokens {
 	        {"code", Token.code},
 	        {":log", Token.dotlog },
 	        {":struct", Token.dotStruct },
+	        {"extends", Token.octoextends },
 	        {":tileset", Token.dotTileset },
 	        {":tiles", Token.dotTiles },
 	        {":sprites", Token.dotSprites },
@@ -217,7 +218,10 @@ public class CTokens {
 	        {"break", Token.octobreak },
 	        {"package",Token.octoPackage },
 	        {"public", Token.octoPublic },
-	        {"length", Token.length }
+	        {"length", Token.length },
+	        {":function", Token.dotFunction },
+	        
+	        {"var", Token.octovar },
 	        
 	        
 	        

@@ -212,6 +212,9 @@ public class C8DisassEmitter extends C8Emitter {
 		CC8Label lbl = mLabels.get(startpos);
 		String strlbl = "";
 		if (lbl != null) {
+			if (lbl.mReferences == 0) {
+				emitLine(pos, "# probably unused");
+			}
 			strlbl = ": " + lbl.toString();
 			//if (lbl.mLabelType == C8LabelType.SKIP) strlbl = "";
 		}
@@ -325,6 +328,9 @@ public class C8DisassEmitter extends C8Emitter {
 		pc++;
 		String strlbl = "";
 		if (lbl != null) {
+			if (lbl.mReferences == 0) {
+				emitLine(pc, "# probably unused");
+			}			
 			strlbl = ": "+ lbl.toString();
 			if (lbl.mLabelType == C8LabelType.SKIP) strlbl = "";
 			label = lbl;
