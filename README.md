@@ -64,8 +64,6 @@ Loops can be done with for..next..step like in Basic. for v1 := 1 to 10 begin ..
 
 Sample:
 
-
-
           :struct Player {                                            # define our local variables
               x                                                       # v0
               y                                                       # v1
@@ -131,4 +129,171 @@ Sample:
               0x18 0x3c 0x7e 0xff 0xff 0x7e 0x3c 0x18
             }
 
+# Variable management
+A struct can be extended with new variables for example
 
+ :struct Point {
+              x0
+              y0
+            }
+
+ :struct Rect extends Point {
+              x1
+              y1
+            }
+
+Rect now contains x0 y0 x1 and y1 which are assigned to the registers v0, v1, v2 and v3
+
+If we later extend our structure, for example
+
+ :struct Point {
+              color 
+              x0
+              y0
+            }
+:rect will have the members color, x0, y0, x1 and y0 assigned to registers v0, v1, v2, v3 and v4
+
+If you write a function, for example a line drawing, you assin new registers by extending the Rect
+
+ :struct LineDrawingVariables extends Rect {
+     dx 
+     dy 
+     d0 
+     d1 
+  }
+
+And which are automatically assigned to the next free register. You can assign bytes for saving your variables and save them
+
+  : buffer
+     LindeDrawingVariables.byte
+
+  : drawLine
+       i := buffer
+       save LineDrawingVariables
+
+# functions and var
+
+With :include the compiler starts to create dead code if the include file contains code which is never called, the code will be compiled to the binary.
+Code writte inside a :function will be automatically removed if it is not called.
+A :function has a public label and everything between { and } is considered private and should not be called from outside. Also the names are prefixed with the function name.
+
+
+:function plot  {
+              i := spritePixel
+              sprite Point.x0 Point.y0 1
+              return
+: spritePixel
+              0x80
+            }
+            
+:function drawLine {
+              var Rect                                              # allocate x0 y0 x1 and y1
+              var dx
+              var dy
+              var d0
+              var d1
+              var temp
+              i := buf
+              save var
+              if x0 == x1 begin
+                for y0 = y0 to y1 plot
+              else
+                dx := x1                                              # dx = x1 - x0
+                dx -= x0
+                dy := y1                                              # dy = y1 - y0
+                dy -= y0                                              # y = y0
+                d0 := dy                                              # D = 2*dy - dx
+                d0 += d0
+                d0 -= dx
+                for x0 = x0 to x1 begin
+                  plot
+                  if d1 > 0 begin
+                    y0 += 1                                           # y = y + 1
+                    temp = dx
+                    temp += temp
+                    d0 -= temp
+                    if vf == 1 then d1 -= 1
+                  end
+                  temp = dy
+                  temp += temp
+                  d0 += temp
+                  d1 += vf
+                end
+              end
+              i := buf
+              load var
+              return
+: buf         var.byte
+            }
+
+In this sample, the prite spritePixel receives the label plot_spritePixel and should only be accessed from the plot function. If you access it from outside and never call plot directly the sprite will be unavailable and there will be no error (the pointer simply points to where the sprite was, before it has been removed).
+drawLine saves its variables to drawLine_buf and restores it. Thus it is like using local variables. 
+
+The compiler creates the following code for drawLine:
+
+	:alias Rect.x0 v0
+	:alias Rect.y0 v1
+	:alias Rect.x1 v2
+	:alias Rect.y1 v3
+	:alias drawLine_dx v4
+	:alias drawLine_dy v5
+	:alias drawLine_d0 v6
+	:alias drawLine_d1 v7
+	:alias drawLine_temp v8
+
+ : plot                  i := plot_spritePixel
+                        sprite Point.x0 Point.y0 1           # v0=Point.x0, v1=Point.y0
+                        return
+: plot_spritePixel        
+                        0x80	#	#         
+
+: drawLine              i := drawLine_buf
+                        save   v8
+                        if Rect.x0 != Rect.x1 then           
+                        jump label0013
+                        Rect.y0 := Rect.y0                   
+: label0011             plot
+                        if v1 == v3 then
+                        jump label0012
+                        v1 += 1
+                        jump label0011
+: label0012             jump label0016
+: label0013             drawLine_dx := Rect.x1
+                        drawLine_dx -= Rect.x0
+                        drawLine_dy := Rect.y1
+                        drawLine_dy -= Rect.y0
+                        drawLine_d0 := drawLine_dy
+                        drawLine_d0 += drawLine_d0
+                        drawLine_d0 -= drawLine_dx
+                        Rect.x0 := Rect.x0
+: label0014             plot
+                        vf := 0
+                        vf -= v7
+                        if vf != 0 then
+                        jump label0015
+                        Rect.y0 += 1
+                        drawLine_temp := drawLine_dx
+                        drawLine_temp += drawLine_temp
+                        drawLine_d0 -= drawLine_temp
+                        if vf == 1 then
+                        drawLine_d1 += -1
+: label0015             drawLine_temp := drawLine_dy
+                        drawLine_temp += drawLine_temp
+                        drawLine_d0 += drawLine_temp
+                        drawLine_d1 += vf
+                        if v0 == v2 then
+                        jump label0016
+                        v0 += 1
+                        jump label0014
+: label0016             i := drawLine_buf
+                        load   v8
+                        return
+: drawLine_buf          0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
+                        0x00	#	          
