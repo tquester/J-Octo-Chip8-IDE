@@ -244,21 +244,21 @@ The compiler creates the following code for drawLine:
  : plot                  i := plot_spritePixel
                         sprite Point.x0 Point.y0 1           # v0=Point.x0, v1=Point.y0
                         return
-: plot_spritePixel        
+ : plot_spritePixel        
                         0x80	#	#         
 
-: drawLine              i := drawLine_buf
+ : drawLine              i := drawLine_buf
                         save   v8
                         if Rect.x0 != Rect.x1 then           
                         jump label0013
                         Rect.y0 := Rect.y0                   
-: label0011             plot
+ : label0011             plot
                         if v1 == v3 then
                         jump label0012
                         v1 += 1
                         jump label0011
-: label0012             jump label0016
-: label0013             drawLine_dx := Rect.x1
+ : label0012             jump label0016
+ : label0013             drawLine_dx := Rect.x1
                         drawLine_dx -= Rect.x0
                         drawLine_dy := Rect.y1
                         drawLine_dy -= Rect.y0
@@ -266,7 +266,7 @@ The compiler creates the following code for drawLine:
                         drawLine_d0 += drawLine_d0
                         drawLine_d0 -= drawLine_dx
                         Rect.x0 := Rect.x0
-: label0014             plot
+ : label0014             plot
                         vf := 0
                         vf -= v7
                         if vf != 0 then
@@ -277,7 +277,7 @@ The compiler creates the following code for drawLine:
                         drawLine_d0 -= drawLine_temp
                         if vf == 1 then
                         drawLine_d1 += -1
-: label0015             drawLine_temp := drawLine_dy
+ : label0015             drawLine_temp := drawLine_dy
                         drawLine_temp += drawLine_temp
                         drawLine_d0 += drawLine_temp
                         drawLine_d1 += vf
