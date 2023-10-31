@@ -21,7 +21,11 @@ public abstract class C8Emitter {
 	public C8DebugSource mDebugSource=null;
 	public C8DebugSource mSourceHints=null;
 
-	
+
+	public void startSourcecode(int pos) {
+		
+	}
+
 	public void writeSourcecode() {
 		
 	}

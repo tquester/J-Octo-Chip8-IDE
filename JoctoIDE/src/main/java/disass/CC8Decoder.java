@@ -260,6 +260,8 @@ public class CC8Decoder {
 		CC8Label lastLabel = null;
 		CC8Label label;
 		
+		emitter.startSourcecode(0x200);
+		
 		while (pc < 0x200+bytesRead ) {
 			if (mSetVisited.contains(pc)) {
 				label = mLabels.get(pc);

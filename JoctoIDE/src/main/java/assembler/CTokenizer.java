@@ -32,9 +32,6 @@ public class CTokenizer {
 	public String mPackage;
 	public boolean mPublic;
 	
-	// The following are not used by tokenizer but by the compiler. But there is a local version of Tokenizer in each block
-	public CC8Label mFunctionLabel = null;					// If we compile a :function, store the pointer here
-	public String mLabelPrefix=null;						// To implement local labels
 
 	public String toString() {
 		try {
@@ -481,8 +478,9 @@ public class CTokenizer {
 				if (alias != null) {
 					if (alias.struct != null)
 						token.addReplacement(alias.mRegister, String.format("%s.%s", alias.struct,token.literal));
-	//				else
-	//					token.addReplacement(alias.mRegister, String.format("%s", token.literal));
+					else if (alias.mFunctionName != null) {
+						token.addReplacement(alias.mRegister, String.format("%s_%s", alias.mFunctionName, token.literal));
+					}
 						
 					token.token = TokenForReg(alias.mRegister);
 					return true;

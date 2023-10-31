@@ -16,22 +16,20 @@ import disass.Tools;
 import emulator.C8DebugSource;
 
 public class CChip8Assembler {
-	
+
 	public class CMemoryStatistic {
 		public String file = "editor";
 		public int sizeCode = 0;
 		public int sizeData = 0;
 	}
-	
+
 	CMemoryStatistic mMemoryStatistic = new CMemoryStatistic();
-	public  ArrayList<CMemoryStatistic> mMemoryStatistics = new ArrayList<>();
-	
+	public ArrayList<CMemoryStatistic> mMemoryStatistics = new ArrayList<>();
+
 	public C8DebugSource mDebugSource = new C8DebugSource();
 	C8DisassEmitter mEmitter = new C8DisassEmitter();
 	public CDebugEntries mDebugEntries = new CDebugEntries();
 	int mLevel = 0;
-	
-	
 
 	StringBuilder mSBErrors = null;
 
@@ -334,6 +332,7 @@ public class CChip8Assembler {
 	String mContext = "";
 	private boolean mbCodegen = true;
 	public String mFolder;
+	private CC8Label mFunctionLabel = null;
 
 	void initData() {
 		mStackLoopData.clear();
@@ -346,12 +345,13 @@ public class CChip8Assembler {
 	public String getErrors() {
 		return mSBErrors == null ? "" : mSBErrors.toString();
 	}
-	
+
 	boolean nextNonWhiteToken(CToken token) {
-		boolean r=false;
+		boolean r = false;
 		while (mTokenizer.hasData()) {
 			r = nextToken(token);
-			if (token.token == Token.newline || token.token == Token.comment) continue;
+			if (token.token == Token.newline || token.token == Token.comment)
+				continue;
 			break;
 		}
 		return r;
@@ -361,7 +361,7 @@ public class CChip8Assembler {
 		CToken token2 = new CToken();
 		boolean r = mTokenizer.getToken(token);
 		if (token.token == Token.literal) {
-			CC8Label label = mLabels.get(token.literal);
+			CC8Label label = getLabel(token.literal);
 			if (label != null) {
 				if (label.mLabelType == C8LabelType.STRUCT) {
 					r = mTokenizer.getToken(token2);
@@ -369,7 +369,7 @@ public class CChip8Assembler {
 						r = mTokenizer.getToken(token, false);
 						int regnr = label.regFromVar(token.literal);
 						if (regnr != -1) {
-							token.addReplacement(regnr, String.format("%s.%s", label.mName,token.literal));
+							token.addReplacement(regnr, String.format("%s.%s", label.mName, token.literal));
 						}
 						if (regnr == -1) {
 							if (token.token == Token.length) {
@@ -384,8 +384,7 @@ public class CChip8Assembler {
 							} else {
 								error("Undefined " + token.literal + " in struct " + label.mName);
 							}
-										
-							
+
 						} else {
 							token.token = regFromNr(regnr);
 						}
@@ -437,7 +436,7 @@ public class CChip8Assembler {
 
 	public void Assemble(String code, String filename) {
 		try {
-			
+
 			mMemoryStatistic = new CMemoryStatistic();
 			mMemoryStatistics = new ArrayList<>();
 			mMemoryStatistics.add(mMemoryStatistic);
@@ -454,7 +453,7 @@ public class CChip8Assembler {
 			// mTokenizer.deleteAllAlias();
 			System.out.println("Pass 2");
 			compileCode(code);
-			
+
 			if (cleanupSymbols()) {
 				mDebugSource = new C8DebugSource();
 				System.out.println("Pass 2a");
@@ -463,9 +462,9 @@ public class CChip8Assembler {
 				mPass = 2;
 				compileCode(code);
 			}
-			
+
 			removeUnusedFunctionLabels();
-			
+
 			System.out.println(String.format("Length =%d", pc - 0x200));
 			if (filename != null) {
 
@@ -507,9 +506,9 @@ public class CChip8Assembler {
 
 	private boolean cleanupSymbols() {
 		boolean changed = true;
-	
+
 		changed = false;
-		for (CC8Label label: mLabels.values()) {
+		for (CC8Label label : mLabels.values()) {
 			if (label.mLabelType == C8LabelType.FUNCTION) {
 				if (label.mReferences == 0) {
 					boolean c = cleanUpSubSymbols(label);
@@ -519,7 +518,7 @@ public class CChip8Assembler {
 		}
 		System.out.println("--------- cleanup -------------");
 		changed = false;
-		for (CC8Label label: mLabels.values()) {
+		for (CC8Label label : mLabels.values()) {
 			if (label.mLabelType == C8LabelType.FUNCTION) {
 				if (label.mReferences == 0) {
 					label.mSkipCompiling = true;
@@ -530,33 +529,35 @@ public class CChip8Assembler {
 		}
 		return changed;
 	}
-	
+
 	private void removeUnusedFunctionLabels() {
 		ArrayList<String> removeList = new ArrayList<>();
-		for (String key: mLabels.keySet()) {
-			CC8Label label = mLabels.get(key);
+		for (String key : mLabels.keySet()) {
+			CC8Label label = getLabel(key);
 			if (label.mLabelType == C8LabelType.FUNCTION) {
-				System.out.println(String.format("Label: %s references:%d",label.mName, label.mReferences));
+				System.out.println(String.format("Label: %s references:%d", label.mName, label.mReferences));
 				if (label.mReferences == 0) {
 					removeList.add(key);
 				}
 			}
 		}
-		for (String key: removeList) {
+		for (String key : removeList) {
 			mLabels.remove(key);
-			System.out.println("Removing label: "+key);
+			System.out.println("Removing label: " + key);
 		}
-		
+
 	}
 
 	private boolean cleanUpSubSymbols(CC8Label label) {
-		boolean changed=false;
+		System.out.println("Cleaning up sub symbol " + label.mName);
+		boolean changed = false;
 		if (label.mMapSubFunctions != null) {
-			for (CC8SubSubFunctionLabel sublabel: label.mMapSubFunctions.values()) {
-				CC8Label sub  = sublabel.label;
+			for (CC8SubSubFunctionLabel sublabel : label.mMapSubFunctions.values()) {
+				CC8Label sub = sublabel.label;
 				if (sub.mReferences > 0) {
-					sub.mReferences-=sublabel.count;
-					if (sub.mReferences == 0) changed = true;
+					sub.mReferences -= sublabel.count;
+					if (sub.mReferences == 0)
+						changed = true;
 					boolean c = cleanUpSubSymbols(sub);
 					changed |= c;
 				}
@@ -599,15 +600,15 @@ public class CChip8Assembler {
 		if (mOptAnnotateAllLines) {
 			if (token.token != Token.comment && token.token != Token.alias && token.token != Token.macro
 					&& token.token != Token.newline)
-				 writeSourceLine();
+				writeSourceLine();
 		}
 		switch (token.token) {
 		case label:
-			label = mLabels.get(token.literal);
+			label = getLabel(token.literal);
 			if (label == null) {
 				label = new CC8Label();
-				label.mName = token.literal;
-				
+				label.mName = labelName(token.literal);
+
 				if (mTokenizer.mPublic == false)
 					label.mPackage = mTokenizer.mPackage;
 				mTokenizer.mPublic = false;
@@ -657,7 +658,8 @@ public class CChip8Assembler {
 			} else if (token1 == Token.i && token2 == Token.literal) {
 				writeCode(0x0a, labelTarget(token.literal));
 				CC8Label clabel = labelFromString(token.literal);
-				if (mbCodegen) clabel.mReferences++;
+				if (mbCodegen)
+					clabel.mReferences++;
 			} else
 				error("Unknown ld statement");
 			break;
@@ -709,23 +711,24 @@ public class CChip8Assembler {
 			} else if (token.token == Token.literal) {
 				writeCode(0x01, labelTarget(token.literal)); // 1nnn JP
 				CC8Label clabel = labelFromString(token.literal);
-				if (mTokenizer.mFunctionLabel != null) { 
+				if (mFunctionLabel != null) {
 					if (clabel.mLabelType == C8LabelType.FUNCTION) {
-						mTokenizer.mFunctionLabel.addSubFunction(clabel);
+						mFunctionLabel.addSubFunction(clabel);
 					}
-				}				
+				}
 			} else if (token.token == Token.v0) {
 				expect(Token.comma);
 				nextToken(token);
 				if (token.token == Token.literal) {
 					writeCode(0x0b, labelTarget(token.literal)); // bnnn JP nnn+V0
 					CC8Label clabel = labelFromString(token.literal);
-					if (mPass == 1 && mbCodegen) clabel.mReferences++;
-					if (mTokenizer.mFunctionLabel != null) { 
+					if (mPass == 1 && mbCodegen)
+						clabel.mReferences++;
+					if (mFunctionLabel != null) {
 						if (clabel.mLabelType == C8LabelType.FUNCTION) {
-							mTokenizer.mFunctionLabel.addSubFunction(clabel);
+							mFunctionLabel.addSubFunction(clabel);
 						}
-					}									
+					}
 				} else if (token.token == Token.number) {
 					writeCode(0x0b, token.iliteral); // bnnn JP nnn+V0
 				}
@@ -739,12 +742,13 @@ public class CChip8Assembler {
 			} else if (token.token == Token.literal) {
 				writeCode(0x0b, labelTarget(token.literal)); // 1nnn JP
 				CC8Label clabel = labelFromString(token.literal);
-				if (mPass == 1 && mbCodegen) clabel.mReferences++;
-				if (mTokenizer.mFunctionLabel != null) { 
+				if (mPass == 1 && mbCodegen)
+					clabel.mReferences++;
+				if (mFunctionLabel != null) {
 					if (clabel.mLabelType == C8LabelType.FUNCTION) {
-						mTokenizer.mFunctionLabel.addSubFunction(clabel);
+						mFunctionLabel.addSubFunction(clabel);
 					}
-				}								
+				}
 			} else
 				error("Expected label or number");
 			break;
@@ -756,12 +760,13 @@ public class CChip8Assembler {
 			} else if (token.token == Token.literal) {
 				writeCode(0x02, labelTarget(token.literal)); // 2nnn CALL
 				CC8Label clabel = labelFromString(token.literal);
-				if (mPass == 1 && mbCodegen) clabel.mReferences++;
-				if (mTokenizer.mFunctionLabel != null) { 
+				if (mPass == 1 && mbCodegen)
+					clabel.mReferences++;
+				if (mFunctionLabel != null) {
 					if (clabel.mLabelType == C8LabelType.FUNCTION) {
-						mTokenizer.mFunctionLabel.addSubFunction(clabel);
+						mFunctionLabel.addSubFunction(clabel);
 					}
-				}				
+				}
 			} else
 				error("Expected label or number");
 			break;
@@ -1118,43 +1123,20 @@ public class CChip8Assembler {
 		case octoif: {
 			compileIf(token);
 			/*
-			if (!mOptAnnotateAllLines)
-				writeSourceLine();
-			CToken tokenb = new CToken();
-			nextToken(token);
-			reg1 = regNr(token);
-			if (reg1 == -1) {
-				error("Expected register");
-				break;
-			}
-			nextToken(token);
-			Token compareToken = token.token;
-			if (token.token == Token.key) {
-				compareToken = Token.key;
-			} else if (token.token == Token.minus) {
-				expect(Token.key);
-				compareToken = Token.notkey;
-				token.token = Token.notkey;
-			} else {
-				expr(token);
-			}
-			nextToken(tokenb);
-
-			beginEndData = null;
-			switch (tokenb.token) {
-			case octobegin:
-				mLevel++;
-				beginEndData = new CBeginEndData();
-				mBeginEndStack.push(beginEndData);
-				break;
-			case octothen:
-				break;
-			default:
-				error("Expcted begin or then");
-
-			}
-			compileCompare(reg1, token, compareToken, beginEndData);
-*/
+			 * if (!mOptAnnotateAllLines) writeSourceLine(); CToken tokenb = new CToken();
+			 * nextToken(token); reg1 = regNr(token); if (reg1 == -1) {
+			 * error("Expected register"); break; } nextToken(token); Token compareToken =
+			 * token.token; if (token.token == Token.key) { compareToken = Token.key; } else
+			 * if (token.token == Token.minus) { expect(Token.key); compareToken =
+			 * Token.notkey; token.token = Token.notkey; } else { expr(token); }
+			 * nextToken(tokenb);
+			 * 
+			 * beginEndData = null; switch (tokenb.token) { case octobegin: mLevel++;
+			 * beginEndData = new CBeginEndData(); mBeginEndStack.push(beginEndData); break;
+			 * case octothen: break; default: error("Expcted begin or then");
+			 * 
+			 * } compileCompare(reg1, token, compareToken, beginEndData);
+			 */
 		}
 			break;
 		case macro:
@@ -1162,7 +1144,7 @@ public class CChip8Assembler {
 			break;
 
 		case comment:
-			if (mPass == 2 && mbCodegen) 
+			if (mPass == 2 && mbCodegen)
 				mDebugSource.addComment(pc, token.literal);
 			break;
 		case calc:
@@ -1203,7 +1185,7 @@ public class CChip8Assembler {
 			CC8Label newlabel = new CC8Label();
 			newlabel.mName = astr;
 			newlabel.mTarget = token.iliteral;
-			newlabel.mLabelType = C8LabelType.CONST; 
+			newlabel.mLabelType = C8LabelType.CONST;
 			mLabels.put(astr, newlabel);
 		}
 			break;
@@ -1238,15 +1220,15 @@ public class CChip8Assembler {
 			mTokenizer.setAlias(strA, token.literal);
 			if (mPass == 2) {
 				mDebugSource.startAlias(pc, regNr(token), strA);
-				String name = "label_"+token.literal;
-				CC8Label clabel = mLabels.get(name);
+				String name = "label_" + token.literal;
+				CC8Label clabel = getLabel(name);
 				if (clabel == null) {
 					clabel = new CC8Label();
 					clabel.mName = name;
 					clabel.mRegister = strA;
 					clabel.startRange(pc);
 				}
-				
+
 			}
 
 //		mTokenizer.addAlias(strA, token.literal);
@@ -1255,8 +1237,9 @@ public class CChip8Assembler {
 		case unalias: {
 			while (mTokenizer.hasData()) {
 				mTokenizer.getToken(token);
-				if (token.token == Token.newline || token.token == Token.semikolon) break;
-				unalias(pc,token.literal);
+				if (token.token == Token.newline || token.token == Token.semikolon)
+					break;
+				unalias(pc, token.literal);
 			}
 		}
 		case octoPackage: {
@@ -1264,7 +1247,7 @@ public class CChip8Assembler {
 			mTokenizer.mPackage = token.literal;
 			break;
 		}
-		
+
 		case octoPublic: {
 			mTokenizer.mPublic = true;
 		}
@@ -1293,7 +1276,7 @@ public class CChip8Assembler {
 				error("Expected number");
 				break;
 			}
-			label = mLabels.get(astr);
+			label = getLabel(astr);
 			if (label == null) {
 				label = new CC8Label();
 				mLabels.put(astr, label);
@@ -1362,12 +1345,12 @@ public class CChip8Assembler {
 		case dotStruct:
 			compileStruct(token);
 			break;
-		case dotTiles: 
+		case dotTiles:
 		case dotSprites:
 		case dotTileset: {
 			compileTiles(token);
 			break;
-			
+
 		}
 		case dotFunction: {
 			compileFunction(token);
@@ -1377,7 +1360,7 @@ public class CChip8Assembler {
 			compileOctoVar(token);
 			break;
 		}
-		case octoswitch: 
+		case octoswitch:
 			compileSwitch(token);
 			break;
 
@@ -1391,65 +1374,81 @@ public class CChip8Assembler {
 
 	}
 
-
+	private String labelName(String literal) {
+		if (mFunctionLabel == null)
+			return literal;
+		else
+			return String.format("%s_%s", mFunctionLabel, literal);
+	}
 
 	private void compileOctoVar(CToken token) {
-		if (mTokenizer.mFunctionLabel == null) 
-		{
+		if (mFunctionLabel == null) {
 			error("var only works inside :function");
 		}
 		CToken token2 = new CToken();
 		CC8Label label;
 		CAliases aliases = new CAliases();
 		mTokenizer.mStackAliases.push(aliases);
-		
+
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
-			if (token.token == Token.newline) break;
-			switch(token.token) {
+			if (token.token == Token.newline)
+				break;
+			switch (token.token) {
 			case comment:
 				break;
+			case dot:
+				expect(Token.octobyte);
+				if (mbCodegen) {
+					for (int i = 0; i < mFunctionLabel.mNextRegister; i++) {
+						mCode[pc++] = 0;
+					}
+				}
+				break;
 			case literal:
-				label = mLabels.get(token.literal);
+				label = getLabel(token.literal);
 				if (label != null) {
 					if (label.mLabelType == C8LabelType.STRUCT) {
-						if (mTokenizer.mFunctionLabel.mNextRegister != 0) {
+						if (mFunctionLabel.mNextRegister != 0) {
 							error("A struct must be the first variable in a var");
 							return;
 						}
 						for (String variable : label.mVariables) {
-							aliases.addAlias(label.mName, variable, mTokenizer.mFunctionLabel.mNextRegister++);
+							aliases.addAlias(label.mName, variable, mFunctionLabel.mNextRegister++);
 						}
-						
+
 					} else {
-						error("var accepts Structs or literal "+token.literal+" is a label");
+						error("var accepts Structs or literal " + token.literal + " is a label");
 						return;
 					}
- 				} else {
- 					mTokenizer.getToken(token2);
- 					if (token2.token == Token.assign) {
- 						mTokenizer.getToken(token2);
- 						
- 						if (token.token != Token.literal) {
- 							error("Var alias needs a literal");
- 							return;
- 						}
- 						int regnr = regNr(token2);
- 						if (regnr == -1) {
-	 						CAlias alias = aliases.get(token2.literal);
-	 						if (alias == null) {
-	 							error(String.format("Alias for Register %s not found", token2.literal));
-	 							return;
-	 						}
-	 						aliases.addAlias(token.literal, alias.mRegister);
- 						}
- 						else
- 							aliases.addAlias(token.literal, regnr);
- 					} else {
- 						mTokenizer.ungetToken(token2);
- 						aliases.addAlias(token.literal, mTokenizer.mFunctionLabel.mNextRegister++);	
- 					}
- 				}
+				} else {
+					mTokenizer.getToken(token2);
+					if (token2.token == Token.assign) {
+						mTokenizer.getToken(token2);
+
+						if (token.token != Token.literal) {
+							error("Var alias needs a literal");
+							return;
+						}
+						int regnr = regNr(token2);
+						if (regnr == -1) {
+							CAlias alias = aliases.get(token2.literal);
+							if (alias == null) {
+								error(String.format("Alias for Register %s not found", token2.literal));
+								return;
+							}
+							aliases.addAlias(token.literal, alias.mRegister);
+						} else
+							aliases.addAlias(token.literal, regnr);
+					} else {
+						mTokenizer.ungetToken(token2);
+						aliases.addFunctionAlias(token.literal, mFunctionLabel.mName, mFunctionLabel.mNextRegister);
+						mDebugSource.startAlias(pc, mFunctionLabel.mNextRegister,
+								String.format("%s_%s", mFunctionLabel.mName, token.literal));
+
+						mFunctionLabel.mNextRegister++;
+					}
+				}
 			}
 		}
 	}
@@ -1457,15 +1456,15 @@ public class CChip8Assembler {
 	private void unalias(int pc, String literal) {
 		mTokenizer.mMapAlias.remove(literal);
 		if (mPass == 2) {
-			CC8Label label = mLabels.get("alias_"+token.literal);
-			if (label != null) 
+			CC8Label label = getLabel("alias_" + token.literal);
+			if (label != null)
 				label.endRange(pc);
 			mDebugSource.stopAlias(pc, literal);
 		}
 	}
 
 	private void compileSwitch(CToken token) {
-		int blockPatchAddr=0;
+		int blockPatchAddr = 0;
 		nextToken(token);
 		int patchAdr;
 		ArrayList<Integer> patchAddresses = new ArrayList<Integer>();
@@ -1476,10 +1475,12 @@ public class CChip8Assembler {
 				return;
 			}
 		}
-		if (!expect(Token.octobegin)) return;
+		if (!expect(Token.octobegin))
+			return;
 		while (mTokenizer.hasData()) {
-			nextNonWhiteToken(token);			// must be case or end
-			if (token.token == Token.octoend) break;
+			nextNonWhiteToken(token); // must be case or end
+			if (token.token == Token.octoend)
+				break;
 			if (token.token != Token.octocase) {
 				error("Expected case");
 				return;
@@ -1493,13 +1494,13 @@ public class CChip8Assembler {
 			mTokenizer.ungetToken(token);
 			if (token.token == Token.octobegin) {
 				if (regnr == -1) {
-					writeCode(0x6, 0xf, ilit);				// vf := token.iliteral	
-					writeCode(0xe, 0xf, 0x9e);							// skip key not vf
+					writeCode(0x6, 0xf, ilit); // vf := token.iliteral
+					writeCode(0xe, 0xf, 0x9e); // skip key not vf
 				} else {
-					writeCode(0x03, regnr, ilit);				// skip if reg != token.iliteral
+					writeCode(0x03, regnr, ilit); // skip if reg != token.iliteral
 				}
 				patchAdr = pc;
-				writeCode(0x1, 0);										// jump
+				writeCode(0x1, 0); // jump
 				compileBlock(token);
 				if (regnr != -1) {
 					patchAddresses.add(pc);
@@ -1508,20 +1509,20 @@ public class CChip8Assembler {
 				patch(patchAdr, pc);
 			} else {
 				if (regnr == -1) {
-					writeCode(0x6, 0xf, ilit);					// vf := token.iliteral	
-					writeCode(0xe, 0xf, 0xa1);					// skip key not vf
+					writeCode(0x6, 0xf, ilit); // vf := token.iliteral
+					writeCode(0xe, 0xf, 0xa1); // skip key not vf
 				} else {
-					writeCode(0x04, regnr, ilit);				// skip if reg != token.iliteral
+					writeCode(0x04, regnr, ilit); // skip if reg != token.iliteral
 				}
 				compileBlock(token);
-				
+
 			}
-			
+
 		}
-		for (Integer adr: patchAddresses) {
+		for (Integer adr : patchAddresses) {
 			patch(adr, pc);
 		}
-		
+
 	}
 
 	private void compileBlock(CToken token) {
@@ -1534,18 +1535,20 @@ public class CChip8Assembler {
 			}
 			if (token.token == Token.octoend) {
 				level--;
-				if (level == 0) break;
+				if (level == 0)
+					break;
 			}
 			assembleStatement(token);
-			if (level == 0) break;
+			if (level == 0)
+				break;
 		}
-		
+
 	}
 
 	private void compileTiles(CToken token) {
 		CC8Label label = new CC8Label();
-		int w,h;
-		switch(token.token) {
+		int w, h;
+		switch (token.token) {
 		case dotTiles:
 			label.mLabelType = C8LabelType.TILES;
 			break;
@@ -1557,24 +1560,34 @@ public class CChip8Assembler {
 			break;
 		}
 		nextToken(token);
-		if (token.token != Token.literal) {error("Expected label name"); return; }
+		if (token.token != Token.literal) {
+			error("Expected label name");
+			return;
+		}
 		label.mName = token.literal;
 		label.mTarget = pc;
 		mLabels.put(label.mName, label);
 		expect(Token.comma);
 		expr(token);
-		if (!(token.token == Token.number)) {error("Expected width"); return; }
+		if (!(token.token == Token.number)) {
+			error("Expected width");
+			return;
+		}
 		expect(Token.comma);
 		expr(token);
-		if (!(token.token == Token.number)) {error("Expected height"); return; }
+		if (!(token.token == Token.number)) {
+			error("Expected height");
+			return;
+		}
 		expectBegin();
-		
+
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
 			if (token.token == Token.curlybracketclose || token.token == Token.octoend) {
 				break;
 			}
-			if (token.token == Token.comma || token.token == Token.comment || token.token == Token.newline) continue;
+			if (token.token == Token.comma || token.token == Token.comment || token.token == Token.newline)
+				continue;
 			if (token.token == Token.label) {
 				CC8Label label2 = new CC8Label();
 				label2.mName = token.literal;
@@ -1584,7 +1597,7 @@ public class CChip8Assembler {
 				continue;
 			}
 			if (token.token == Token.number) {
-				mCode[pc++] = (byte)(token.iliteral & 0xff);
+				mCode[pc++] = (byte) (token.iliteral & 0xff);
 			}
 		}
 	}
@@ -1596,16 +1609,16 @@ public class CChip8Assembler {
 			filename = token.literal;
 			String text = Tools.loadTextFile(filename);
 			if (text == null) {
-				filename = mFolder.trim()+"/"+token.literal;
+				filename = mFolder.trim() + "/" + token.literal;
 				text = Tools.loadTextFile(filename);
 			}
 			if (text == null) {
-				error("File "+filename+" not found");
+				error("File " + filename + " not found");
 			}
 			CTokenizer tokenizer = mTokenizer;
 			CMemoryStatistic memoryStatistic = mMemoryStatistic;
 			mMemoryStatistic = new CMemoryStatistic();
-			if (mPass == 2) 
+			if (mPass == 2)
 				mMemoryStatistics.add(mMemoryStatistic);
 			mMemoryStatistic.file = filename;
 			mTokenizer = new CTokenizer();
@@ -1620,16 +1633,16 @@ public class CChip8Assembler {
 					break;
 				}
 			}
-			pc+=2;
+			pc += 2;
 			mTokenizer = tokenizer;
 			mMemoryStatistic = memoryStatistic;
-			
+
 		}
-		
+
 	}
 
 	private void compileStructByte(CToken token) {
-		CC8Label label = mLabels.get(token.literal);
+		CC8Label label = getLabel(token.literal);
 		if (label == null) {
 			for (int i = 0; i < token.iliteral; i++) {
 				mCode[pc++] = 0;
@@ -1646,7 +1659,8 @@ public class CChip8Assembler {
 			// now we find x = number until }
 			while (mTokenizer.hasData()) {
 				mTokenizer.getToken(token, false);
-				if (token.token == Token.newline || token.token == Token.whitespace || token.token == Token.comment) continue;
+				if (token.token == Token.newline || token.token == Token.whitespace || token.token == Token.comment)
+					continue;
 				if (token.token == Token.curlybracketclose)
 					break;
 				if (token.token != Token.literal) {
@@ -1671,7 +1685,7 @@ public class CChip8Assembler {
 		}
 
 		for (int i = 0; i < data.length; i++) {
-			mCode[pc++] = (byte)data[i];
+			mCode[pc++] = (byte) data[i];
 		}
 
 	}
@@ -1683,7 +1697,7 @@ public class CChip8Assembler {
 			error("Erwarte: Name");
 			return;
 		}
-		structLabel = mLabels.get(token.literal);
+		structLabel = getLabel(token.literal);
 		if (structLabel == null) {
 			error("Struct " + token.literal + " not found");
 			return;
@@ -1693,11 +1707,12 @@ public class CChip8Assembler {
 			return;
 		}
 		mTokenizer.pushStruct(structLabel);
-		//expect(Token.curlybracketopen);
-		if (!expectBegin()) return;
+		// expect(Token.curlybracketopen);
+		if (!expectBegin())
+			return;
 		while (mTokenizer.hasData()) {
 			nextToken(token);
-			if (token.token == Token.curlybracketclose || token.token == Token.octoend )
+			if (token.token == Token.curlybracketclose || token.token == Token.octoend)
 				break;
 			assembleStatement(token);
 		}
@@ -1706,24 +1721,24 @@ public class CChip8Assembler {
 	}
 
 	private void compileStruct(CToken token) {
-		int register=0;
+		int register = 0;
 		mTokenizer.getToken(token);
 		if (token.token != Token.literal) {
 			error("Expected name");
 			return;
 		}
-		CC8Label label = mLabels.get(token.literal);
+		CC8Label label = getLabel(token.literal);
 		if (label == null) {
 			label = new CC8Label();
 			label.mName = token.literal;
 			label.mLabelType = C8LabelType.STRUCT;
 			mLabels.put(token.literal, label);
 		}
-		
+
 		mTokenizer.getToken(token);
 		if (token.token == Token.octoextends) {
 			mTokenizer.getToken(token, false);
-			CC8Label elabel = mLabels.get(token.literal);
+			CC8Label elabel = getLabel(token.literal);
 			if (elabel == null) {
 				error(String.format(":struct %s not found", token.literal));
 				return;
@@ -1731,24 +1746,21 @@ public class CChip8Assembler {
 			if (elabel.mLabelType != C8LabelType.STRUCT) {
 				error(String.format("label %s is not a struct", token.literal));
 				return;
-				
+
 			}
-			for (String var: elabel.mVariables) {
+			for (String var : elabel.mVariables) {
 				label.addVar(var);
 				mDebugSource.startAlias(pc, register++, String.format("%s.%s", label.mName, var));
-			
+
 			}
 			mTokenizer.getToken(token);
 		}
-		
-		if (token.token != Token.curlybracketopen)
-		{
+
+		if (token.token != Token.curlybracketopen) {
 			error("Expected {");
 			return;
 		}
 
-
-		
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token, false);
 			if (token.token == Token.curlybracketclose)
@@ -1833,7 +1845,7 @@ public class CChip8Assembler {
 			if (value != null) {
 				return value.intValue();
 			}
-			CC8Label label = mLabels.get(token.literal);
+			CC8Label label = getLabel(token.literal);
 			if (label != null) {
 				if (label.mValue != null)
 					return label.mValue.doubleValue();
@@ -1921,27 +1933,39 @@ public class CChip8Assembler {
 				compileMacroExpansion(macroData, token);
 
 			} else {
-				if (token.literal.compareTo("flagsnocarry") == 0) 
+				if (token.literal.compareTo("flagsnocarry") == 0)
 					System.out.println("Stop");
-				CC8Label label = mLabels.get(token.literal);
+				CC8Label label = getLabel(token.literal);
 				if (label == null && mPass == 2) {
-					error("Label "+token.literal+" not found");
+					error("Label " + token.literal + " not found");
 				}
 				if (label != null) {
-					if (mbCodegen) label.mReferences++;
-					switch(label.mLabelType) {
+					if (mbCodegen)
+						label.mReferences++;
+					switch (label.mLabelType) {
 					case STRINGMODE:
 						compileString(label);
 						break;
 					case CONST:
-						mCode[pc++] = (byte)(label.mTarget & 0xff);
+						mCode[pc++] = (byte) (label.mTarget & 0xff);
 						break;
+					case STRUCT: {
+						expect(Token.dot);
+						expect(Token.octobyte);
+						if (mbCodegen) {
+							for (int i = 0; i < label.mVariables.size(); i++) {
+								mCode[pc++] = 0;
+							}
+						}
+						break;
+					}
 					default:
 						writeCode(0x2, label.mTarget);
-						if (mPass == 1 && mbCodegen) label.mReferences++;
-						if (mTokenizer.mFunctionLabel != null) { 
+						if (mPass == 1 && mbCodegen)
+							label.mReferences++;
+						if (mFunctionLabel != null) {
 							if (label.mLabelType == C8LabelType.FUNCTION) {
-								mTokenizer.mFunctionLabel.addSubFunction(label);
+								mFunctionLabel.addSubFunction(label);
 							}
 						}
 						break;
@@ -1985,22 +2009,21 @@ public class CChip8Assembler {
 	private void compileFunction(CToken token) {
 		if (!mOptAnnotateAllLines)
 			writeSourceLine();
-		
+
 		mTokenizer.getToken(token);
 		if (token.token != Token.literal) {
 			error("Expected function name");
 			return;
 		}
 		expect(Token.curlybracketopen);
-		CC8Label saveFunctionLabel = mTokenizer.mFunctionLabel;
-		String   savePrefix = mTokenizer.mLabelPrefix;
-		Stack    saveAlias = mTokenizer.mStackAliases;
+		CC8Label saveFunctionLabel = mFunctionLabel;
+		Stack saveAlias = mTokenizer.mStackAliases;
 		mTokenizer.mStackAliases = new Stack<>();
-		boolean  saveCodegen = mbCodegen;
-		
+		boolean saveCodegen = mbCodegen;
+
 		String functionName = token.literal;
-		CC8Label functionLabel = mLabels.get(token.literal);
-		
+		CC8Label functionLabel = getLabel(token.literal);
+
 		if (functionLabel == null) {
 			functionLabel = new CC8Label();
 			functionLabel.mName = token.literal;
@@ -2010,24 +2033,22 @@ public class CChip8Assembler {
 		functionLabel.mNextRegister = 0;
 		if (functionLabel.mSkipCompiling)
 			mbCodegen = false;
-		
+
 		mLabels.put(functionLabel.mName, functionLabel);
-		mTokenizer.mFunctionLabel = functionLabel;
-		
+		mFunctionLabel = functionLabel;
+
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
-			if (token.token == Token.curlybracketclose) break;
+			if (token.token == Token.curlybracketclose)
+				break;
 			assembleStatement(token);
 		}
-		mTokenizer.mLabelPrefix = savePrefix;
-		mTokenizer.mFunctionLabel = saveFunctionLabel;
+		mFunctionLabel = saveFunctionLabel;
 		mbCodegen = saveCodegen;
 		mTokenizer.mStackAliases = saveAlias;
-		
-		
-		
+
 	}
-	
+
 	private void compileMacroExpansion(CMacroData macroData, CToken token) {
 
 		if (!mOptAnnotateAllLines)
@@ -2045,7 +2066,7 @@ public class CChip8Assembler {
 			} else {
 				if (token.token == Token.bracketopen) {
 					expr(token);
-					 
+
 					expect(Token.bracketclose);
 				}
 
@@ -2089,7 +2110,8 @@ public class CChip8Assembler {
 		macroData.name = token.literal;
 		while (mTokenizer.hasData()) {
 			nextToken(token);
-			if (isWhiteToken(token)) continue;
+			if (isWhiteToken(token))
+				continue;
 			if (token.token == Token.curlybracketopen) {
 				StringBuilder sb = new StringBuilder();
 				int level = 0;
@@ -2232,7 +2254,7 @@ public class CChip8Assembler {
 		}
 
 	}
-	
+
 	private void compileIf(CToken token) {
 		int reg1;
 		CBeginEndData beginEndData;
@@ -2263,7 +2285,7 @@ public class CChip8Assembler {
 		case octobegin:
 			mLevel++;
 			beginEndData = new CBeginEndData();
-		//	mBeginEndStack.push(beginEndData);
+			// mBeginEndStack.push(beginEndData);
 			break;
 		case octothen:
 			break;
@@ -2272,7 +2294,7 @@ public class CChip8Assembler {
 
 		}
 		compileCompare(reg1, token, compareToken, beginEndData);
-		
+
 		if (tokenb.token == Token.octobegin) {
 			while (mTokenizer.hasData()) {
 				nextNonWhiteToken(token);
@@ -2284,14 +2306,13 @@ public class CChip8Assembler {
 					patch(beginEndData.patchAdr, pc);
 					beginEndData.patchAdr = pc2;
 				} else if (token.token == Token.octoend) {
-					patch(beginEndData.patchAdr, pc);	
+					patch(beginEndData.patchAdr, pc);
 					break;
 				} else {
 					assembleStatement(token);
 				}
 			}
 		}
-		
 
 	}
 
@@ -2629,20 +2650,16 @@ public class CChip8Assembler {
 		compileBlock(token);
 		compileForEnd(forData);
 		/*
-		nextToken(token);
-		if (token.token == Token.octobegin) {
-			mBeginEndStack.push(forData);
-		} else {
-
-			assembleStatement(token);
-			compileForEnd(forData);
-		}
-		*/
+		 * nextToken(token); if (token.token == Token.octobegin) {
+		 * mBeginEndStack.push(forData); } else {
+		 * 
+		 * assembleStatement(token); compileForEnd(forData); }
+		 */
 
 	}
 
 	private void compileForEnd(CBeginEndData forData) {
-		
+
 		if (forData.forTargetReg >= 0) {
 			writeCode(0x9, forData.forRegister, forData.forTargetReg, 0); // 9xy0 - SNE Vx, Vy
 		} else {
@@ -2650,8 +2667,6 @@ public class CChip8Assembler {
 		}
 		int patchadr = pc;
 		writeCode(0x1, 0);
-		
-
 
 		if (forData.forStepReg != -1) {
 			writeCode(0x8, forData.forRegister, forData.forStepReg, 4); // 8xy4 - ADD Vx, Vy
@@ -2659,14 +2674,12 @@ public class CChip8Assembler {
 			writeCode(0x7, forData.forRegister, forData.forStepNr); // 7xkk - ADD Vx, byte
 		}
 		/*
-		if (forData.forTargetReg >= 0) {
-			writeCode(0x5, forData.forRegister, forData.forTargetReg, 0); // 5xy0 - SE Vx, Vy
-		} else {
-			writeCode(0x3, forData.forRegister, forData.forTargetNr); // 3xkk - SE Vx, byte
-		}
-		*/
+		 * if (forData.forTargetReg >= 0) { writeCode(0x5, forData.forRegister,
+		 * forData.forTargetReg, 0); // 5xy0 - SE Vx, Vy } else { writeCode(0x3,
+		 * forData.forRegister, forData.forTargetNr); // 3xkk - SE Vx, byte }
+		 */
 		writeCode(0x1, forData.pc);
-		if (mbCodegen) 
+		if (mbCodegen)
 			patch(patchadr, pc);
 	}
 
@@ -2853,7 +2866,7 @@ public class CChip8Assembler {
 			match(token, Token.number);
 			break;
 		case literal:
-			label = mLabels.get(token.literal);
+			label = getLabel(token.literal);
 			if (mPass == 2 && label == null)
 				error("Label " + token.literal + " not found");
 			stack.push(label == null ? 0 : label.mTarget);
@@ -2892,24 +2905,23 @@ public class CChip8Assembler {
 
 	private int labelTarget(String literal) {
 		int ret = 0;
-		CC8Label lbl = mLabels.get(literal);
+		CC8Label lbl = getLabel(literal);
 		if (lbl == null && mPass == 2) {
-			error("Label "+literal+" not found");
+			error("Label " + literal + " not found");
 		}
 		if (lbl != null)
 			ret = lbl.mTarget;
 		return ret;
 	}
-	
+
 	private CC8Label labelFromString(String literal) {
 		int ret = 0;
-		CC8Label lbl = mLabels.get(literal);
+		CC8Label lbl = getLabel(literal);
 		if (lbl == null && mPass == 2) {
-			error("Label "+literal+" not found");
+			error("Label " + literal + " not found");
 		}
 		return lbl;
 	}
-
 
 	private void writeCode(int code, int iliteral) {
 		int code1;
@@ -2987,19 +2999,21 @@ public class CChip8Assembler {
 	private boolean expectBegin() {
 		CToken token = new CToken();
 		if (nextToken(token)) {
-			if (token.token == Token.curlybracketopen || token.token ==Token.octobegin) return true;
+			if (token.token == Token.curlybracketopen || token.token == Token.octobegin)
+				return true;
 		}
 		return false;
-		
+
 	}
-	
+
 	private boolean expectEnd() {
 		CToken token = new CToken();
 		if (nextToken(token)) {
-			if (token.token == Token.curlybracketclose || token.token ==Token.octoend) return true;
+			if (token.token == Token.curlybracketclose || token.token == Token.octoend)
+				return true;
 		}
 		return false;
-		
+
 	}
 
 	private boolean expect(Token expected) {
@@ -3017,7 +3031,7 @@ public class CChip8Assembler {
 	private int regNr(CToken token) {
 		int r = -1;
 		CC8Label label;
-	
+
 		switch (token.token) {
 		case v0:
 			r = 0;
@@ -3067,8 +3081,12 @@ public class CChip8Assembler {
 		case vf:
 			r = 15;
 			break;
+		case octovar:
+			if (mFunctionLabel != null) {
+				r = mFunctionLabel.mNextRegister - 1;
+			}
 		case literal:
-			label = mLabels.get(token.literal);
+			label = getLabel(token.literal);
 			if (label != null) {
 				if (label.mLabelType == C8LabelType.STRUCT) {
 					return label.mVariables.size() - 1;
@@ -3083,18 +3101,31 @@ public class CChip8Assembler {
 		return r;
 	}
 
+	private CC8Label getLabel(String literal) {
+		CC8Label result = mLabels.get(labelName(literal));
+		if (result == null && mFunctionLabel != null)
+			result = mLabels.get(literal);
+		if (result != null) {
+			if (result.mLabelType != C8LabelType.FUNCTION)
+				result.mReferences++;
+		}
+		return result;
+	}
+
 	private void error(String string) {
 		if (mPass == 2) {
 			String file = "(editor)";
-			if (mTokenizer.mFilename != null) file = mTokenizer.mFilename;
-			if (mTokenizer.mHint != null) file += " ("+mTokenizer.mHint+") ";
-			System.out.println(
-					String.format("Error %s(%d)/%d:%s %s", file, mTokenizer.mLine, mTokenizer.mPosInLine, string, mContext));
+			if (mTokenizer.mFilename != null)
+				file = mTokenizer.mFilename;
+			if (mTokenizer.mHint != null)
+				file += " (" + mTokenizer.mHint + ") ";
+			System.out.println(String.format("Error %s(%d)/%d:%s %s", file, mTokenizer.mLine, mTokenizer.mPosInLine,
+					string, mContext));
 			System.out.println(mTokenizer.toString());
 			if (mSBErrors != null) {
 				Point p = mTokenizer.getLineFromPos();
-				mSBErrors.append(String.format("Error %s %d/%d:%s %s\nline %d+%d=%d", file, p.y, p.x, string,
-						mContext,mTokenizer.mBaseline,mTokenizer.mLine,mTokenizer.mBaseline+mTokenizer.mLine));
+				mSBErrors.append(String.format("Error %s %d/%d:%s %s\nline %d+%d=%d", file, p.y, p.x, string, mContext,
+						mTokenizer.mBaseline, mTokenizer.mLine, mTokenizer.mBaseline + mTokenizer.mLine));
 				mSBErrors.append(mTokenizer.toString() + "\n");
 
 			}
@@ -3102,7 +3133,8 @@ public class CChip8Assembler {
 		CToken token = new CToken();
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
-			if (token.token == Token.newline) break;
+			if (token.token == Token.newline)
+				break;
 		}
 
 	}

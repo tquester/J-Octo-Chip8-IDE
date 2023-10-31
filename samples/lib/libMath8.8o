@@ -1,22 +1,25 @@
 
-:const testLibMath8 1
+:const testLibMath8 0
 
 :if testLibMath8
-            jump startTestMath8
-:include "lib/libPrintDez8.8o"
 
-: startTestMath8
-            v0 := 10
-            v1 := 12
-            mul8bitClean
-            with PrintDez8
-            number := v0
-            x := 10
-            y := 10
-            digits := 3
-            printDez8
+#            startTestMath8
+#:include "lib/libPrintDez8.8o"
 
-loop again
+#:function startTestMath8 {
+#            v0 := 10
+#            v1 := 12
+#            mul8bitClean
+#            with PrintDez8
+#            number := v0
+#            x := 10
+#            y := 10
+#            digits := 3
+#            printDez8#
+#
+#loop again
+#return
+#}
 
 
 :end

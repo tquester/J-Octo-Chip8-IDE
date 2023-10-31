@@ -21,4 +21,13 @@ public class CAliases extends TreeMap<String, CAlias> {
 		
 	}
 
+	public void addFunctionAlias(String literal, String functionName, int register) {
+		CAlias alias = new CAlias();
+		alias.mRegister = register;
+		alias.mName = literal;
+		alias.mFunctionName = functionName;
+		put(literal, alias);
+		
+	}
+
 }

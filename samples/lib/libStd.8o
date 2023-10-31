@@ -1,5 +1,6 @@
 :const testLibStd 1
 
+# Parameter for printDez
 :struct PrintDez8 {
               number                                                  # v0 The number to be displayed
               digits                                                  # v1 The number of digits (1,2 or 3)
@@ -7,11 +8,19 @@
               y                                                       # v3 y position
             }
 
-:struct PrintDezVar extends PrintDez8 {
-              newx
-              newy
-              newdigits
+
+:struct Plot {
+              x0
+              y0
             }
+
+:struct Rect extends Plot {
+              x1
+              y1
+            }
+
+
+
 
 
 
@@ -29,26 +38,27 @@ loop again
               temp2 := 9
 
               number := temp1
-              x := 10
-              y := 0
+              x := 15
+              y := 5
               digits := 3
               printDez8
 
               number := temp2
+              x := 15
               y += 8
               printDez8
 
               i := spriteMal
-              x := 0
+              x := 5
               sprite x y 5
-              x := 10
 
               i := spriteGleich
-              x := 0
+              x := 5
               y += 8
 
               sprite x y 5
-              x := 10
+
+              x := 15
               y -= 8
 
 
@@ -59,10 +69,16 @@ loop again
               digits := 3
               y += 8
               printDez8
+              with Rect begin
+                x0 := 0
+                y0 := 0
+                x1 := 3
+                y1 := 30
+:breakpoint
+                drawRectangle
+              end
 
-              v1 := y
-              v1 += 8
-              for v0 = 0 to 32 plot
+
               return
 : spriteMal
               0x88 0x50 0x20 0x50 0x88
@@ -70,10 +86,20 @@ loop again
               0x00 0xf8 0x00 0xf8 0x00
             }
 
+####################################################################################################
+## Graphics section
+####################################################################################################
+
+
+####################################################################################################
+## Plot. Draws a pixel
+## Parametes: Plot
+####################################################################################################
+
 :function plot  {
 # draws a point at v0/v1
               i := spritePixel
-              sprite v0 v1 1
+              sprite Plot.x0 Plot.y0 1
               return
 
 : spritePixel
@@ -81,22 +107,132 @@ loop again
 
             }
 
+:function drawLine {
+####################################################################################################
+## Plot. Draws a pixel
+## Parametes: Line
+####################################################################################################
+
+              var Rect
+              var dx
+              var dy
+              var d0
+              var d1
+
+# pseudocode (wikipedia) https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+# plotLine(x0, y0, x1, y1)
+#    dx = x1 - x0
+#    dy = y1 - y0
+#    D = 2*dy - dx
+#    y = y0
+#
+#
+#    for x from x0 to x1
+#        plot(x, y)
+#        if D > 0
+#            y = y + 1
+#            D = D - 2*dx
+#        end if
+#        D = D + 2*dy
+# D is calculated with 16bit additon/subtraction, so wie use d0/d1 for D
+
+              var temp
+              i := buf
+              save var
+
+              if x0 == x1 begin
+                for y0 = y0 to y1 plot
+              else
+                dx := x1                                              # dx = x1 - x0
+                dx -= x0
+                dy := y1                                              # dy = y1 - y0
+                dy -= y0                                              # y = y0
+                d0 := dy                                              # D = 2*dy - dx
+                d0 += d0
+                d0 -= dx
+                for x0 = x0 to x1 begin
+                  plot
+                  if d1 > 0 begin
+                    y0 += 1                                           # y = y + 1
+                    temp = dx
+                    temp += temp
+                    d0 -= temp
+                    if vf == 1 then d1 -= 1
+                  end
+                  temp = dy
+                  temp += temp
+                  d0 += temp
+                  d1 += vf
+                end
+              end
+
+              i := buf
+              load var
+              return
+: buf         var.byte
+            }
+
+:function drawRectangle {
+####################################################################################################
+## drawRectangle. Draws a rectangle
+## Parametes: Rect
+####################################################################################################
+
+              var Rect
+              var xa
+              var ya
+              var xb
+              var yb
+
+              i := buf
+             # save var
+              xa := x0
+              xb := x1
+              ya := y0
+              yb := y1
+              for x0 = xa to xb begin
+                y0 := ya
+                plot
+                y0 := yb
+                plot
+              end
+              x0 := xa
+              y0 += 1
+              y1 -= 1
+              for y0 = y0 to y1 begin
+                x0 := xa
+                plot
+                x0 := xb
+                plot
+              end
+
+              i := buf
+              load var
+              return
+: buf         var.byte
+            }
 
 
+####################################################################################################
+## printDez8. Prints a decimal number at position x,y with a given amount of digits.
+## Parameter: PrintDez
+## Destorys: nothing
+####################################################################################################
 
 
+:struct PrintDezVar extends PrintDez8 {
+              newx
+              newy
+              newdigits
+            }
 
 
-
-
-: dezsave
-            PrintDezVar.byte
 
 :function printDez8 {
               var PrintDezVar
 
               i := dezsave
-              save newdigits
+              save var
 
               newx := x
               newy := y
@@ -117,7 +253,13 @@ loop again
               load newdigits
               return
 
-: dezbuf 0 0 0
+: dezbuf
+              var.byte
+
+
+
+: dezsave
+              PrintDezVar.byte
 
             }
 

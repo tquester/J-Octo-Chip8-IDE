@@ -16,9 +16,6 @@ public class C8DisassEmitter extends C8Emitter {
 	String autocomment;
 	
 	void emitAliase(int pos) {
-		
-		
-		
 		if (mSourceHints != null) {
 			List<String> lcomment = mSourceHints.getComments(pos);
 			if (lcomment != null) {
@@ -26,9 +23,6 @@ public class C8DisassEmitter extends C8Emitter {
 					emitLine(pos, "# "+str);
 				}
 			}
-			
-			
-			
 			List<CAliasRange> aliase = mSourceHints.getAliasesAtAddress(pos);
 			if (aliase != null) {
 				for (CAliasRange range: aliase) {
@@ -39,6 +33,12 @@ public class C8DisassEmitter extends C8Emitter {
 		
 
 	}
+
+	@Override
+	public void startSourcecode(int pos) {
+		emitLine(pos,": main");
+	}
+
 
 	@Override
 	public int emitOpcode(byte[] code, int pos) {
@@ -370,7 +370,7 @@ public class C8DisassEmitter extends C8Emitter {
 				mLastType = type;
 				 if (itemsPerRow == 1) {
 					 strCmd = String.format("0x%02x", data);
-					 strComment = String.format("#%s %c", bin(data),chr(data));
+					 strComment = String.format("#\t%s %c", bin(data),chr(data));
 				 } else {
 					 strCmd = String.format("0x%02x", data);
 					 strComment = String.format("\t#%c",chr(data));
@@ -389,19 +389,19 @@ public class C8DisassEmitter extends C8Emitter {
 			case SPRITE8:
 				checkLineSpace(label);
 				strCmd = String.format(" 0x%02x", data);
-				strComment = String.format("\t#%s", bin(data));
+				strComment = String.format("\t#\t%s", bin(data));
 				break;
 			case SPRITE16:
 				checkLineSpace(label);
 				data2 = chip8Memory[pc] & 0xff;
 				pc++;
 				strCmd = String.format("0x%02x 0x%02x", data,data2);
-				strComment = String.format("\t#%s%s", bin(data),bin(data2));
+				strComment = String.format("\t#\t%s%s", bin(data),bin(data2));
 				break;
 			default:
 				mLastType = type;
 				 strCmd = String.format("0x%02x", data);
-				 strComment = String.format("\t#%s %c", bin(data),chr(data));
+				 strComment = String.format("\t#\t%s %c", bin(data),chr(data));
 				 break;
 		}
 		line += strCmd+"\t"+strComment;
