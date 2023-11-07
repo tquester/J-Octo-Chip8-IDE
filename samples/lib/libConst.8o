@@ -1,0 +1,19 @@
+:const OCTO_KEY_1 1
+:const OCTO_KEY_2 2
+:const OCTO_KEY_3 3
+:const OCTO_KEY_4 0xC
+
+:const OCTO_KEY_Q 4
+:const OCTO_KEY_W 5
+:const OCTO_KEY_E 6
+:const OCTO_KEY_R 0xD
+
+:const OCTO_KEY_A 7
+:const OCTO_KEY_S 8
+:const OCTO_KEY_D 9
+:const OCTO_KEY_F 0xE
+
+:const OCTO_KEY_Y 0xA
+:const OCTO_KEY_X 0
+:const OCTO_KEY_C 0xB
+:const OCTO_KEY_V 0xF

@@ -105,6 +105,7 @@ public class OctoLineStyler implements LineStyleListener {
 				// not
 				// bold. Keywords are bolded.
 				if ((!color.equals(defaultFgColor))) {
+					
 					StyleRange style = new StyleRange(token.pos - 1 + event.lineOffset, token.length(), color, null);
 					if (isKeyword(token)) {
 						style.fontStyle = SWT.BOLD;

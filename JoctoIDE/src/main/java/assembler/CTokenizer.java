@@ -132,6 +132,12 @@ public class CTokenizer {
 			token.token = Token.newline;
 			myassert(token.token != null);
 			return true;
+		case '[':
+			token.token = Token.arrayopen;
+			return true;
+		case ']':
+			token.token = Token.arraytclose;
+			return true;
 		case '.':
 			token.token = Token.dot;
 			return true;
@@ -211,15 +217,16 @@ public class CTokenizer {
 				if (isMathChar(c)) {
 
 					while (mPos < mEnd) {
-						if (c == ')' || c == '(') {
+						if (c == ')' || c == '(' || c == '[' || c == ']') {
 
 							break;
 						}
 						c = nextChar();
-						if (!isMathChar(c)) {
-							mPos--;
-							break;
-						}
+			
+							if (!isMathChar(c)) {
+								mPos--;
+								break;
+							}
 						sb.append(c);
 					}
 					token.literal = replace(sb.toString());
@@ -236,7 +243,7 @@ public class CTokenizer {
 					mPos--;
 					break;
 				}
-				if (c == '#' || c == ';' || c == ',' || c == '.') {
+				if (c == '#' || c == ';' || c == ',' || c == '.' || c== '[' || c == ']') {
 					mPos--;
 					break;
 				}
@@ -459,7 +466,7 @@ public class CTokenizer {
 		
 	}
 	
-	private boolean findStructSymbol(CToken token) {
+	boolean findStructSymbol(CToken token) {
 		if (mStackStruct.size() != 0) {
 			for (int i = mStackStruct.size()-1;i>=0;i--) {
 				CC8Label structlabel = mStackStruct.get(i);
@@ -467,6 +474,7 @@ public class CTokenizer {
 				if (reg != -1) {
 					token.addReplacement(reg, String.format("%s.%s", structlabel.mName,token.literal));
 					token.token = structlabel.TokenForReg(reg);
+					token.literal = token.token.toString();
 					return true;
 				}
 			}
@@ -483,6 +491,7 @@ public class CTokenizer {
 					}
 						
 					token.token = TokenForReg(alias.mRegister);
+					token.literal = token.token.toString();
 					return true;
 					
 				}

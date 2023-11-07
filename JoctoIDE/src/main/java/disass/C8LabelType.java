@@ -18,6 +18,7 @@ public enum C8LabelType {
 	TILESET,
 	ALIAS,
 	FUNCTION			// A function is a block of code with private internal labels
+, VECTOR
 	;
 };
 

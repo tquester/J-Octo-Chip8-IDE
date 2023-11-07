@@ -1,0 +1,183 @@
+
+            jump start
+:include "lib/libStd.8o"
+
+
+:struct DrawData extends Rect {
+              cursorx
+              cursory
+              ipoint                                                  # 0 = first point, 2 = second point
+            }
+
+
+: start
+            demo
+
+:function demo {
+              var Rect
+              var a b
+              hires
+              i := drawData
+              load DrawData
+              drawCross
+
+              loop
+                processKeyboard
+
+              again
+
+            }
+
+
+:function processKeyboard {
+              var DrawData
+              var moved temp drawit
+              i := drawData
+              load DrawData
+              i := drawDataSave
+              save DrawData
+
+              moved := 0
+              drawit := 0
+              switch key begin
+                case OCTO_KEY_A begin
+                  if ipoint == 0 begin
+                    x0 -= 1
+                  else
+                    x1 -= 1
+                  end
+                  moved := 1
+                end
+                case OCTO_KEY_S begin
+                  if ipoint == 0 begin
+                    x0 += 1
+                  else
+                    x1 += 1
+                  end
+                  moved := 1
+                end
+                case OCTO_KEY_D begin
+                  if ipoint == 0 begin
+                    y0 += 1
+                  else
+                    y1 += 1
+                  end
+                  moved := 1
+                end
+                case OCTO_KEY_F begin
+                  if ipoint == 0 begin
+                    y0 -= 1
+                  else
+                    y1 -= 1
+                  end
+                  moved := 1
+                end
+                case OCTO_KEY_W begin
+                  temp := 1
+                  ipoint ^= temp
+                  moved := 1
+                  for temp := 0 to 100 temp += 0
+                end
+                case OCTO_KEY_E
+                begin
+                  clear
+                  drawCross
+                end
+
+                case OCTO_KEY_Q begin
+                  drawit := 1
+                end
+              end
+
+              temp := 127
+              x0 &= temp
+              x1 &= temp
+              temp := 63
+              y0 &= temp
+              y1 &= temp
+              i := drawData
+              save DrawData
+              if moved == 1 begin
+                i := drawDataSave
+                load DrawData
+                drawCross
+                i := drawData
+                load var
+                drawCross
+              end
+              if drawit == 1 begin
+                x0 += 4
+                y0 += 4
+                x1 += 4
+                y1 += 4
+                drawLine
+              end
+              return
+
+            }
+
+:function drawCross {
+              var DrawData
+              var cx0 cx1 cy0 cy1
+              cx0 := x0
+              cy0 := y0
+              cx1 := x1
+              cy1 := y1
+
+              if ipoint == 0 begin
+                i := cross
+                sprite x0 y0 8
+                i := cross+8
+                sprite x1 y1 8
+              else
+                i := cross+8
+                sprite x0 y0 8
+                i := cross
+                sprite x1 y1 8
+              end
+              with PrintDez8 begin
+                digits := 3
+                x := 0
+                y := 0
+                number := cx0
+#                printDez8
+                x += 20
+                number := cy0
+#                printDez8
+
+                x := 50
+                number := cx1
+#                printDez8
+                x += 20
+                number := cy1
+#                printDez8
+
+
+
+              end
+
+              return
+            }
+
+
+: drawDataSave
+            DrawData.byte
+            DrawData.byte
+: drawData
+            DrawData.byte {
+              x0 := 4
+              y0 := 4
+              x1 := 20
+              y1 := 35
+              ipoint = 0
+            }
+
+            DrawData.byte
+
+
+
+
+:sprite cross, 8,8 {
+              0x10 0x10 0x10 0xfe 0x10 0x10 0x10 0x00
+              0x00 0x00 0x00 0x10 0x00 0x00 0x00 0x00
+            }

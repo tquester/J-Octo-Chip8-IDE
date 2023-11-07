@@ -1,0 +1,167 @@
+            testlibStd
+loop again
+
+:struct Test (
+	a b
+}
+
+: data
+	Test.byte[100]
+
+
+
+:include "lib/libStd.8o"
+
+
+
+
+:function testlibStd {
+              var PrintDez8
+              var temp1 temp2
+              loop
+                clear
+                hires
+
+
+                playMetafile metafile
+                v0 := key
+                clear
+
+
+
+
+                temp1 := rnd 7
+                temp2 := rnd 31
+
+                number := temp1
+                x := 15
+                y := 5
+                digits := 3
+                printDez8
+
+                number := temp2
+                x := 15
+                y += 8
+                printDez8
+
+                i := spriteMal
+                x := 5
+                sprite x y 5
+
+                i := spriteGleich
+                x := 5
+                y += 8
+
+                sprite x y 5
+
+                x := 15
+                y -= 8
+
+
+                v0 := temp1
+                v1 := temp2
+                mul8bitClean
+                number := v0
+                digits := 3
+                y += 8
+                printDez8
+                with ColoredRect begin
+                  x0 := 0
+                  y0 := 0
+                  x1 := 30
+                  y1 := 30
+                  color := 1
+
+                  drawRectangle
+                end
+
+
+                with ColoredCircle begin
+                  x0 := 75
+                  y0 := 30
+                  radius := 30
+                  color := 1
+                #  drawCircle
+                  drawFill
+                end
+
+
+
+                loop
+                  with ColoredRect begin
+                    y0 := 0
+                    x0 := 64
+                    y1 := 60
+                    color := 1
+
+                    for x1 := 0 to 128 step 4 begin
+                      drawLine
+                    end
+
+                  end
+
+                  with ColoredRect begin
+                    y0 := 0
+                    x0 := 64
+                    y1 := 60
+                    color := 0
+
+                    for x1 := 0 to 128 step 4 begin
+                      drawLine
+                    end
+
+                  end
+                again
+
+
+                v0 := key
+                loop
+
+
+                again
+
+
+                return
+
+
+: spriteMal
+                0x88 0x50 0x20 0x50 0x88
+: spriteGleich
+                0x00 0xf8 0x00 0xf8 0x00
+
+: metafile  TYP_HIRES
+    TYP_POINT 9 57
+    TYP_RECT 96 18
+    TYP_POINT 41 57
+    TYP_RECT 53 42
+    TYP_POINT 12 44
+    TYP_RECT 38 32
+    TYP_POINT 57 44
+    TYP_RECT 89 32
+    TYP_POINT 12 21
+    TYP_RECT 38 28
+    TYP_POINT 57 21
+    TYP_RECT 89 28
+    TYP_POINT 57 21
+    TYP_RECT 89 28
+    TYP_POINT 57 21
+    TYP_RECT 89 28
+    TYP_POINT 9 18
+    TYP_LINE 53 5
+    TYP_LINE 96 18
+    TYP_POINT 73 11
+    TYP_LINE 73 2
+    TYP_LINE 78 2
+    TYP_LINE 78 13
+    TYP_POINT 41 50
+    TYP_LINE 43 50
+    TYP_LINE 43 52
+    TYP_FILL 3 3
+    TYP_FILL 72 10
+
+
+
+                TYP_STOP
+}
+
+              

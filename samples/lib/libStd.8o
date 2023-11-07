@@ -1,4 +1,42 @@
-:const testLibStd 1
+
+
+:const OCTO_KEY_1 1
+:const OCTO_KEY_2 2
+:const OCTO_KEY_3 3
+:const OCTO_KEY_4 0xC
+
+:const OCTO_KEY_Q 4
+:const OCTO_KEY_W 5
+:const OCTO_KEY_E 6
+:const OCTO_KEY_R 0xD
+
+:const OCTO_KEY_A 7
+:const OCTO_KEY_S 8
+:const OCTO_KEY_D 9
+:const OCTO_KEY_F 0xE
+
+:const OCTO_KEY_Y 0xA
+:const OCTO_KEY_X 0
+:const OCTO_KEY_C 0xB
+:const OCTO_KEY_V 0xF
+
+:const COLOR_XOR 2
+:const COLOR_DRAW 1
+:const COLOR_ERASE 0
+
+:const TYP_STOP 0
+:const TYP_POINT 1
+:const TYP_LINE  2
+:const TYP_RECT  3
+:const TYP_CIRCLE 4
+:const TYP_FILL  5
+:const TYP_COLOR 6
+:const TYP_HIRES 7
+:const TYP_LORES 8
+:const TYP_ERASEPOINT 9
+:const TYP_ERASELINE 10
+:const TYP_ERASERECT  11
+:const TYP_ERASECIRCLE 12
 
 # Parameter for printDez
 :struct PrintDez8 {
@@ -9,209 +47,148 @@
             }
 
 
-:struct Plot {
-              x0
+
+
+:struct Point {
+              x0                                                      # x and y coordinates
               y0
             }
 
-:struct Rect extends Plot {
-              x1
+:struct ColoredPoint extends Point {
+              color
+            }
+
+:struct Circle extends Point {
+              radius
+            }
+
+:struct ColoredCircle extends Circle {
+              color
+            }
+
+:struct Rect extends Point {
+              x1                                                      # second coordinates, for line, rectangle etc.
               y1
             }
 
-
-
-
-
-
-:if testLibStd
-            testMultPrint
-loop again
-:end
-
-:function testMultPrint {
-              var PrintDez8
-              var temp1 temp2
-
-
-              temp1 := 17
-              temp2 := 9
-
-              number := temp1
-              x := 15
-              y := 5
-              digits := 3
-              printDez8
-
-              number := temp2
-              x := 15
-              y += 8
-              printDez8
-
-              i := spriteMal
-              x := 5
-              sprite x y 5
-
-              i := spriteGleich
-              x := 5
-              y += 8
-
-              sprite x y 5
-
-              x := 15
-              y -= 8
-
-
-              v0 := temp1
-              v1 := temp2
-              mul8bitClean
-              number := v0
-              digits := 3
-              y += 8
-              printDez8
-              with Rect begin
-                x0 := 0
-                y0 := 0
-                x1 := 3
-                y1 := 30
-:breakpoint
-                drawRectangle
-              end
-
-
-              return
-: spriteMal
-              0x88 0x50 0x20 0x50 0x88
-: spriteGleich
-              0x00 0xf8 0x00 0xf8 0x00
+:struct ColoredRect extends Rect {
+              color
             }
 
-####################################################################################################
-## Graphics section
-####################################################################################################
 
 
-####################################################################################################
-## Plot. Draws a pixel
-## Parametes: Plot
-####################################################################################################
 
-:function plot  {
-# draws a point at v0/v1
-              i := spritePixel
-              sprite Plot.x0 Plot.y0 1
-              return
 
-: spritePixel
-              0x80
 
+
+
+
+
+:macro Add16bit ah al bh bl {
+
+              al += bl
+              ah += vf
+              ah += bh
             }
 
-:function drawLine {
-####################################################################################################
-## Plot. Draws a pixel
-## Parametes: Line
-####################################################################################################
-
-              var Rect
-              var dx
-              var dy
-              var d0
-              var d1
-
-# pseudocode (wikipedia) https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-# plotLine(x0, y0, x1, y1)
-#    dx = x1 - x0
-#    dy = y1 - y0
-#    D = 2*dy - dx
-#    y = y0
-#
-#
-#    for x from x0 to x1
-#        plot(x, y)
-#        if D > 0
-#            y = y + 1
-#            D = D - 2*dx
-#        end if
-#        D = D + 2*dy
-# D is calculated with 16bit additon/subtraction, so wie use d0/d1 for D
-
-              var temp
-              i := buf
-              save var
-
-              if x0 == x1 begin
-                for y0 = y0 to y1 plot
+:macro ext16bit ah al x {
+              al := x
+              vf := x
+              vf <<= vf
+              if vf == 0 begin
+                ah := 0
               else
-                dx := x1                                              # dx = x1 - x0
-                dx -= x0
-                dy := y1                                              # dy = y1 - y0
-                dy -= y0                                              # y = y0
-                d0 := dy                                              # D = 2*dy - dx
-                d0 += d0
-                d0 -= dx
-                for x0 = x0 to x1 begin
-                  plot
-                  if d1 > 0 begin
-                    y0 += 1                                           # y = y + 1
-                    temp = dx
-                    temp += temp
-                    d0 -= temp
-                    if vf == 1 then d1 -= 1
-                  end
-                  temp = dy
-                  temp += temp
-                  d0 += temp
-                  d1 += vf
-                end
+                ah := 0xff
               end
-
-              i := buf
-              load var
-              return
-: buf         var.byte
             }
 
-:function drawRectangle {
-####################################################################################################
-## drawRectangle. Draws a rectangle
-## Parametes: Rect
-####################################################################################################
 
-              var Rect
-              var xa
-              var ya
-              var xb
-              var yb
-
-              i := buf
-             # save var
-              xa := x0
-              xb := x1
-              ya := y0
-              yb := y1
-              for x0 = xa to xb begin
-                y0 := ya
-                plot
-                y0 := yb
-                plot
+:macro Add8to16bit ah al b {
+              vf := b
+              vf <<= vf
+              if vf == 0 begin
+                Add16bit ah al 0 b
+              else
+                Add16bit ah al 255 b
               end
-              x0 := xa
-              y0 += 1
-              y1 -= 1
-              for y0 = y0 to y1 begin
-                x0 := xa
-                plot
-                x0 := xb
-                plot
-              end
-
-              i := buf
-              load var
-              return
-: buf         var.byte
             }
 
+
+:macro Sub8to16bit ah al b {
+              vf := b
+              vf <<= vf
+              if vf == 0 begin
+                Sub16bit ah al 0 b
+              else
+                Sub16bit ah al 255 b
+              end
+            }
+
+
+
+
+
+:macro absx value temp {
+              if value < 0 begin
+                temp := 0
+                temp -= value
+                value := temp
+              end
+            }
+
+
+:macro Sub16bit ah al bh bl {
+              al -= bl
+              if vf == 0 then ah -= 1
+              ah -= bh
+            }
+
+:macro Shl16bit ahigh alow {
+              ahigh <<= ahigh
+              alow <<= alow
+              ahigh += vf
+            }
+
+
+
+:macro subabs result a b {
+              if a < b begin
+                result := b
+                result -= a
+              else
+                result := a
+                result -= b
+              end
+            }
+
+
+:macro swap a b {
+              vf := a
+              a := b
+              b := vf
+            }
+
+:macro playMetafile datafile {
+              v9 := 0
+              loop
+                i := datafile
+                i += v9
+                v9 += 1
+                load v0
+                while v0 != TYP_STOP
+
+                i := datafile
+                i += v9
+                playMetafileEntry
+              again
+            }
+
+
+
+
+####################################################################################################
+## Math functions
+####################################################################################################
 
 ####################################################################################################
 ## printDez8. Prints a decimal number at position x,y with a given amount of digits.
@@ -221,56 +198,56 @@ loop again
 
 
 :struct PrintDezVar extends PrintDez8 {
-              newx
-              newy
-              newdigits
-            }
+                newx
+                newy
+                newdigits
+              }
 
 
 
 :function printDez8 {
-              var PrintDezVar
+                var PrintDezVar
 
-              i := dezsave
-              save var
+                i := dezsave
+                save var
 
-              newx := x
-              newy := y
-              newdigits := digits
+                newx := x
+                newy := y
+                newdigits := digits
 
-              i := dezbuf
-              bcd number
-              load v2
+                i := dezbuf
+                bcd number
+                load v2
 
-              if newdigits == 3 then printHex
-              if newdigits >= 2 begin
-                v0 := v1
+                if newdigits == 3 then printHex
+                if newdigits >= 2 begin
+                  v0 := v1
+                  printHex
+                end
+                v0 := v2
                 printHex
-              end
-              v0 := v2
-              printHex
-              i := dezsave
-              load newdigits
-              return
+                i := dezsave
+                load newdigits
+                return
 
 : dezbuf
-              var.byte
+                var.byte
 
 
 
 : dezsave
-              PrintDezVar.byte
+                PrintDezVar.byte
 
-            }
+              }
 
 :function printHex {
-              with PrintDezVar {
-                i := hex v0
-                sprite newx newy 5
-                newx += 5
+                with PrintDezVar {
+                  i := hex v0
+                  sprite newx newy 5
+                  newx += 5
+                }
+                return
               }
-              return
-            }
 
 
 :function mul8bitClean {
@@ -280,15 +257,15 @@ loop again
 #   Preserves all variables
 ######################################################################################
 
-              i := mathsave
-              save v3
-              mul8bit
-              i := mathsave
-              save v0
-              i := mathsave
-              load v3
-              return
-            }
+                i := mathsave
+                save v3
+                mul8bit
+                i := mathsave
+                save v0
+                i := mathsave
+                load v3
+                return
+              }
 
 :function mul8bit {
 ######################################################################################
@@ -296,27 +273,27 @@ loop again
 #     v0 := v0 * v1
 #     Destroys v1, v2, v3
 ######################################################################################
-              var result                                              # v0
-              var param                                               # v1
-              var sum                                                 # v2
-              var counter                                             # v3
-              var alsoTheCounter = counter                            # v3
-              var anotherAliasTocounter = v3
-              sum := 0
-              counter := 8
-              loop
-                sum += sum
-                param <<= param
-                if vf == 1 begin
-                  sum += result
-                  param += 1
-                end
-                counter -= 1
-                if counter != 0 then
-              again
-              result := sum
-              return
-            }
+                var result                                            # v0
+                var param                                             # v1
+                var sum                                               # v2
+                var counter                                           # v3
+                var alsoTheCounter = counter                          # v3
+                var anotherAliasTocounter = v3
+                sum := 0
+                counter := 8
+                loop
+                  sum += sum
+                  param <<= param
+                  if vf == 1 begin
+                    sum += result
+                    param += 1
+                  end
+                  counter -= 1
+                  if counter != 0 then
+                again
+                result := sum
+                return
+              }
 
 
 :function div8clean {
@@ -335,37 +312,557 @@ loop again
 #  Destroys: v4 v5 v6 v7 v8
 ######################################################################################
 
-              i := mathsave
-              save v3
-              div8bit
-              i := mathsave
-              save v0
-              i := mathsave
-              load v3
-              return
-            }
+                i := mathsave
+                save v3
+                div8bit
+                i := mathsave
+                save v0
+                i := mathsave
+                load v3
+                return
+              }
 
 
 
 :function div8bit {
-              v2 := 0                                                 # xor a
-              v3 := 8                                                 # ld b,8
+                v2 := 0                                               # xor a
+                v3 := 8                                               # ld b,8
 
-              loop
-                v2 += v2                                              # add hl, hl, rla,
-                v0 <<= v0
-                v2 += vf
-                if v2 >= v1 begin                                     # if v1 fits into vd
-                  v2 -= v1                                            # subtract
-                  v0 += 1                                             # and set the leftmost bit in vd
-                end
-                v3 -= 1
-                if v3 != 0 then
-              again
-              return
-            }
+                loop
+                  v2 += v2                                            # add hl, hl, rla,
+                  v0 <<= v0
+                  v2 += vf
+                  if v2 >= v1 begin                                   # if v1 fits into vd
+                    v2 -= v1                                          # subtract
+                    v0 += 1                                           # and set the leftmost bit in vd
+                  end
+                  v3 -= 1
+                  if v3 != 0 then
+                again
+                return
+              }
 
 
 
 : mathsave
-            0 0 0 0
+              0 0 0 0
+
+####################################################################################################
+## Graphics section
+####################################################################################################
+
+
+####################################################################################################
+## Plot. Draws a pixel
+## Parametes: Plot
+####################################################################################################
+
+:function plot  {
+# draws a point at v0/v1
+                i := spritePixel
+                sprite Point.x0 Point.y0 1
+                if vf == 1 then sprite Point.x0 Point.y0 1
+
+                return
+              }
+
+:function unplot  {
+# draws a point at v0/v1
+                i := spritePixel
+                sprite Point.x0 Point.y0 1
+                if vf == 0 then sprite Point.x0 Point.y0 1
+                return
+              }
+
+: spritePixel
+              0x80
+
+:function drawLine {
+                var ColoredRect
+                var dx dy
+                var xi
+                var yi=xi
+                var dl dh
+                var temp temph templ=temp
+                var absx = dh
+                var absy = dl
+                i := buf
+                save var
+                subabs absy y0 y1                                     # absy = abs(y0-y1)
+                subabs absx x0 x1                                     # absx = abs(x0-x1)
+                if absy < absx begin                                  # if absy < absx begin
+                  if x0 > x1 begin
+                    swap x0 x1
+                    swap y0 y1
+                  end
+                  drawLineLow
+                else
+                  if y0 > y1 begin
+                    swap x0 x1
+                    swap y0 y1
+                  end
+                  drawLineHigh
+                end
+                i := buf
+                load var
+                return
+
+
+drawLineHigh:
+
+                dx := x1
+                dx -= x0
+                dy := y1
+                dy -= y0
+                xi := 1
+                vf := dx
+                vf <<= vf
+
+                if vf == 1 begin
+
+                  xi := 255
+                  temp := 0
+                  temp -= dx
+                  dx := temp
+                end
+                dh := 0
+                dl := 0
+
+                Add8to16bit dh dl dx                                  # D = (2 * dx) - dy , d = dx
+                Shl16bit dh dl                                        # d = d * 2
+                Sub8to16bit dh dl dy                                  # d - dy
+
+                for y0 := y0 to y1 begin
+                  plot1
+                  temp := dh
+                  temp <<= temp
+                  if vf == 0 begin
+                    x0 += xi                                          # x = x + xi
+                    ext16bit temph templ dx                           # temp := dx, extend to 16 bit
+                    Sub8to16bit temph templ dy                        # temp = dx-dy
+                    Shl16bit temph templ                              # temp = 2*(dx - dy)
+                    Add16bit dh dl temph templ                        # D = D + (2*(dx-dy))
+                  else
+                    Add8to16bit dh dl dx                              # D = D + 2 * dx
+                    Add8to16bit dh dl dx
+                  end
+                end
+                return
+
+drawLineLow:
+                dx := x1
+                dx -= x0
+                dy := y1
+                dy -= y0
+                yi := 1                                               # yi = 1
+                vf := dy
+                vf <<= vf
+                if vf ==1 begin
+                  yi := -1                                            # yi = -1
+                  temp := 0                                           # dy = -dy
+                  temp -= dy
+                  dy := temp
+                end
+
+                dh := 0
+                Add8to16bit dh dl dy                                  # D = (2*dy) - dx
+                Shl16bit dh dl
+                Sub8to16bit dh dl dx
+                for x0 := x0 to x1 begin
+                  plot1
+
+                  temp := dh
+                  temp <<= temp
+                  if vf == 0 begin                                    # if D > 0
+                    y0 += yi                                          # y = y + 1
+                    temph := 0                                        # D = D + (2 * dy-dx)
+                    temp := dy
+                    Sub8to16bit temph templ dx                        # temp = dy - l
+                    Shl16bit temph templ
+                    Add16bit dh dl temph templ
+                  else
+                    ext16bit temph templ dy
+                    Add16bit dh dl temph templ
+                    Add16bit dh dl temph templ
+                  end
+                end
+                return
+
+: addTempToD
+                Add16bit dh dl temph templ
+                return
+
+
+: plot1
+                if color == 1 begin
+                  plot
+                else
+                  unplot
+                end
+                return
+
+buf: var.byte
+
+              }
+
+
+# draw the pixel sprite at x y with color mode color
+# i is not set and should be set to spritePixel
+# used internally in circle
+
+:macro csprite x y color {
+                sprite x y 1
+                if vf == 1 begin
+                  if color == COLOR_DRAW then sprite x y 1
+                else
+                  if color == COLOR_ERASE then sprite x y 1
+                end
+              }
+
+:function drawCircle {
+                var ColoredCircle                                     # v0 v1 v2
+                var x y dh dl                                         # v2 v3 v4
+                var temph templ temp=templ                            # v5 v6
+                var xcPlusX                                           # v7 v8
+                var xcMinusX                                          # v9
+                var ycPlusY=temph
+                var ycMinusY=templ
+                var xcMinusY                                          # vb
+                var ycMinusX                                          # vc
+                var ycPlusX                                           # vd
+                var xcPlusY = v2                                      # ve
+
+                i := buf
+                save var
+
+                x := 0
+                y := radius
+                temp = radius                                         # d = 3-(2*r)
+                temp += radius                                        # temp = 2*r
+                temph := 3
+                temph -= temp                                         # temph = 3-2*r
+                ext16bit dh dl temp                                   # d = 3-2*r
+
+
+
+                plotCirclePixel
+
+                loop
+                  temp := dh
+                  temp <<= temp                                       # check if dhdl is negative
+                  if vf == 1 begin                                    # if d < 0 then d = d + 4 * (x-y) + 10
+                    ext16bit temph templ x                            # temphl = x
+                    Shl16bit temph templ                              # temphl = 2*x
+                    Shl16bit temph templ                              # temphl = 4*x
+                    Add8to16bit temph templ 6                         # temphl = 4+x+6
+                    Add16bit dh dl temph templ                        # d = d + 4*x+6
+
+                  else                                                # d = d + 4*(x-y)+10
+                    Add8to16bit dh dl 10                              # d = d + 10
+                    ext16bit temph templ x                            # temphl = x
+                    Sub8to16bit temph templ y                         # temphl = x-y
+                    Shl16bit temph templ                              # temphl = 2*(x-y)
+                    Shl16bit temph templ                              # temphl = 4*(x-y)
+                    Add16bit dh dl temph templ                        # d = d + 4*(x-y)+10
+
+
+                    y -= 1
+                  end
+                  x += 1
+
+                  plotCirclePixel
+                  if x < y then
+                again
+                i := buf
+                load var
+
+                return
+: buf
+                var.byte
+
+
+
+: plotCirclePixel
+                i := spritePixel
+                xcPlusX := x0
+                xcPlusX += x
+
+                xcMinusX := x0
+                xcMinusX -= x
+                xcMinusY := x0
+                xcMinusY -= y
+                xcPlusY := x0
+                xcPlusY += y
+
+                ycPlusX := y0
+                ycPlusX += x
+                ycPlusY := y0
+                ycPlusY += y
+                ycMinusY := y0
+                ycMinusY -= y
+                ycMinusX := y0
+                ycMinusX -= x
+
+                csprite xcPlusX ycPlusY color                         # putpixel(xc+x, yc+y, RED);
+                csprite xcMinusX ycPlusY color                        # putpixel(xc-x, yc+y, RED);
+                csprite xcPlusX ycMinusY color                        # putpixel(xc+x, yc-y, RED);
+                csprite xcMinusX ycMinusY color                       # putpixel(xc-x, yc-y, RED);
+
+                csprite xcPlusY ycPlusX color                         # putpixel(xc+y, yc+x, RED);
+                csprite xcMinusY ycPlusX color                        # putpixel(xc-y, yc+x, RED);
+                csprite xcPlusY ycMinusX color                        # putpixel(xc+y, yc-x, RED);
+                csprite xcMinusY ycMinusX color                       # putpixel(xc-y, yc-x, RED);
+                return
+
+
+              }
+
+:function playMetafileEntry {
+
+
+                var x = v0
+                var y = v1
+                var x1 = v2
+                var y1 = v3
+                var lastx = vd
+                var lasty := ve
+                var ofs2 = va
+                ofs2 := 2
+
+
+
+                switch v0 begin
+                  case TYP_POINT begin
+                    load v1
+                    v9 += 2
+                    lastx := x
+                    lasty := y
+                    plot
+                  end
+                  case TYP_ERASEPOINT begin
+                    load v1
+                    v9 += 2
+                    lastx := x
+                    lasty := y
+                    unplot
+                  end
+                  case TYP_LINE begin
+                    load v1
+                    v9 += 2
+                    ColoredRect.color := 1
+                    x1 := lastx
+                    y1 := lasty
+                    drawLine
+                    lastx := x
+                    lasty := y
+                  end
+                  case TYP_ERASELINE begin
+                    load v1
+                    v9 += 2
+                    x1 := lastx
+                    y1 := lasty
+                    ColoredRect.color := 0
+                    drawLine
+                    lastx := x
+                    lasty := y
+                  end
+                  case TYP_RECT begin
+
+                    load v1
+                    v9 += 2
+                    ColoredRect.color := 1
+                    v2 := x
+                    v3 := y
+                    v0 := lastx
+                    v1 := lasty
+                    drawRectangle
+                    lastx := x1
+                    lasty := y1
+                  end
+                  case TYP_ERASERECT begin
+                    load v1
+                    v9 += 2
+                    ColoredRect.color := 0
+                    x1 := lastx
+                    y1 := lasty
+                    drawRectangle
+                    lastx := x
+                    lasty := y
+                  end
+                  case TYP_FILL begin
+                    load v1
+                    v9 += 2
+                    ColoredPoint.color = 1
+                    drawFill
+                  end
+                  case TYP_CIRCLE begin
+                    load Circle
+                    v9 += Circle.length
+                    ColoredCircle.color := 1
+                    drawCircle
+                  end
+                  case TYP_ERASECIRCLE begin
+                    load Circle
+                    v9 += Circle.length
+                    ColoredCircle.color := 0
+                    drawCircle
+                  end
+                  case TYP_HIRES begin
+                    hires
+                  end
+
+
+                  case TYP_LORES begin
+                    lores
+                  end
+
+
+                end
+                return
+
+              }
+
+
+
+
+:function drawRectangle {
+####################################################################################################
+## drawRectangle. Draws a rectangle
+## Parametes: Rect
+####################################################################################################
+
+                var Rect
+                var xa
+                var ya
+                var xb
+                var yb
+                i := buf
+                save var
+                xa := x0
+                xb := x1
+                ya := y0
+                yb := y1
+                for x0 = xa to xb begin
+                  y0 := ya
+                  plot
+                  y0 := yb
+                  plot
+                end
+                x0 := xa
+
+                if ya < yb begin
+                  y0 := ya
+                  y0 += 1
+                  y1 := yb
+                  y1 -= 1
+                else
+                  y0 := yb
+                  y0 += 1
+                  y1 := ya
+                  y1 -= 1
+                end
+
+
+                for y0 = y0 to y1 begin
+                  x0 := xa
+                  plot
+                  x0 := xb
+                  plot
+                end
+
+                i := buf
+                load var
+                return
+
+
+: buf         var.byte
+              }
+
+
+:macro pushv0v1 stack stackPtr {
+                stackPtr -= 2
+                i := stack
+                i += stackPtr
+                save v1
+              }
+
+:macro popv0v1 stack stackPtr {
+                i := stack
+                i += stackPtr
+                load v1
+                stackPtr += 2
+              }
+
+
+
+:function drawFill {
+                var ColoredPoint
+                var x y
+                var stackPtr
+                var dx
+                var dy
+
+
+
+                stackPtr := stackEnd - stack
+                pushv0v1 stack stackPtr
+
+
+                dy := 1
+                filly
+
+                popv0v1 stack stackPtr
+                dy := -1
+                y0 -= 1
+                filly
+
+                return
+
+
+: filly
+                loop
+                  x := x0
+                  y := y0
+                  dx := 1
+                  fillRow
+                  x0 := x
+                  x0 -= 1
+                  y0 := y
+                  dx := 255
+                  fillRow
+                  x0 := x
+                  y0 := y
+                  y0 += dy
+                  i := spritePixel
+                  sprite x0 y0 1
+                  if vf == 1 begin
+                    sprite x0 y0 1
+                    return
+                  end
+                  sprite x0 y0 1
+                again
+
+
+
+
+                return
+
+: fillRow
+                loop
+                  i := spritePixel
+                  sprite x0 y0 1
+                  if vf == 1 begin
+                    sprite x0 y0 1
+                    return
+                  end
+                  x0 += dx
+                again
+
+
+
+
+
+: stack
+                0 0 0 0 0 0 0 0 0 0
+: stackEnd
+              }

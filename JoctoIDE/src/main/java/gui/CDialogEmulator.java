@@ -337,7 +337,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onResize();
 			}
 		});
-		shlChipsuperChipxoChip.setSize(986, 594);
+		shlChipsuperChipxoChip.setSize(1077, 594);
 		shlChipsuperChipxoChip.setText("Chip8/Super Chip8/XO Chip8");
 		shlChipsuperChipxoChip.addFocusListener(new FocusListener() {
 
@@ -369,7 +369,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		mCanvasScreen.setBounds(10, 71, 576, 278);
 
 		mCompositeRegister = new Composite(shlChipsuperChipxoChip, SWT.BORDER);
-		mCompositeRegister.setBounds(737, 10, 224, 465);
+		mCompositeRegister.setBounds(737, 10, 313, 465);
 
 		Composite composite_2 = new Composite(shlChipsuperChipxoChip, SWT.NONE);
 		composite_2.setBounds(10, 10, 576, 40);
@@ -736,8 +736,8 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	private void disassAndInitDebugger(String filename) {
 
-		mFilename = filename;
 		C8DebugSource sourceHints = mDebugSource;
+		mFilename = filename;
 		
 		mDisassEmitter.createDebugSource();
 		if (filename != null) {

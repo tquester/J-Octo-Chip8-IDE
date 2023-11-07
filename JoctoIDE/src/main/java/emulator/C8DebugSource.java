@@ -3,6 +3,7 @@ package emulator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.xml.transform.dom.DOMSource;
 
@@ -116,10 +117,14 @@ public class C8DebugSource extends ArrayList<C8DebugSourceLine> {
 
 	public String getRegisterAliases(int pc, int register) {
 		String name="v"+Integer.toString(register,16);
+		TreeSet<String> set = new TreeSet<>();
 		for (CAliasRange range: mAliasRanges) {
 			if (range.register == register) {
 				if (range.start <= pc && range.end >= pc) {
-					name += ", "+range.name;
+					if (!set.contains(range.name)) {
+						name += ", "+range.name;
+						set.add(range.name);
+					}
 				}
 			}
 		}

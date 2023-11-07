@@ -210,7 +210,7 @@
                 newtyp := typ
                 typ = nothing
                 save SpriteData
-                SpriteData.typ := newtyp
+                typ := newtyp
                 drawEnemyOldPos
                 if newtyp == goodItem begin
                   i := goodCounter                                    # a good item arrives at the bottom
@@ -232,11 +232,11 @@
                 if vf == 1 begin
                   drawEnemy
                   i := spriteDataArray
-                  i += SpriteVar.forindex
+                  i += forindex
                   newtyp = typ
                   typ = nothing
                   save SpriteData
-                  if SpriteData.typ == goodItem begin
+                  if typ == goodItem begin
                     i := goodCounter                                  # if you shoot any good item, reduce the number of sweeties (if there any)
                     load v0
                     if v0 > 0 then v0 -= 1
@@ -286,8 +286,8 @@
             SpriteVar.drawx := SpriteVar.x
             SpriteVar.drawy := SpriteVar.y
 
-            with SpriteData begin
-              x += SpriteVar.newtyp
+            with SpriteVar begin
+              x += newtyp
               if x < cannonstep then x += cannonstep
               if x > 116 then x -= cannonstep
             end

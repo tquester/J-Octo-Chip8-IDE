@@ -1,0 +1,88 @@
+: main
+:alias x vd
+:alias y ve
+:alias al v0
+:alias ah v1
+:alias bh v2
+:alias bl v3
+:alias value vc
+:alias temp vb
+
+:macro Add16bit ah al bh bl {
+              al += bl
+              ah += vf
+              ah += bh
+            }
+
+:macro Sub16bit ah al bh bl {
+              al -= bl
+              if vf == 0 then ah -= 1
+              ah -= bh
+            }
+
+:macro Add8to16bit ah al b {
+              vf := b
+              vf <<= vf
+              if vf == 0 begin
+ 				Add16bit ah al 0 b
+              else
+                Add16bit ah al 255 b
+              end
+            }
+
+
+:macro println a b {
+              vc := a
+              print
+              vc := b
+              print
+              newline
+            }
+            hires
+
+            x := 0
+            y := 0
+ah := 128
+
+
+
+
+
+
+
+            ah := 0xff
+            al := 0xf1
+            bh := 0xff
+            bl := 0xf1
+
+            println ah al
+            println 0 bl
+            Add8to16bit ah al bl
+            println ah al
+            Sub16bit ah al bh bl
+            println ah al
+            loop
+            again
+
+
+: print
+            temp := value
+            temp >>= temp
+            temp >>= temp
+            temp >>= temp
+            temp >>= temp
+            i := hex temp
+            sprite x y 5
+            x += 5
+            temp := 0xf
+            value &= temp
+            i := hex value
+            sprite x y 5
+            x += 5
+
+            return
+
+: newline
+            x := 0
+            y += 8
+            return

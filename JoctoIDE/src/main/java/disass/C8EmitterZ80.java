@@ -693,6 +693,7 @@ public class C8EmitterZ80 extends C8DisassEmitter {
 			break;
 
 		}
+		if (firstCmd >= mZ80Commands.size()) return pos;
 		CZ80Command startCommand = mZ80Commands.get(firstCmd);
 		CC8Label lbl = mLabels.get(startpos);
 		String strlbl = "";

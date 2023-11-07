@@ -1,0 +1,16 @@
+# array test
+:struct Element {
+	a 
+	b
+}
+	i := daten[5]
+	for v0 := 1 to 100 begin
+		i := daten [v0] using v3 v4
+		v1 := v0
+		v1 += v1
+		save v1
+    end
+    return
+
+: daten 
+	Element.byte[100]

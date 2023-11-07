@@ -47,6 +47,7 @@ public class CToken {
 	}
 	public int length() {
 		if (token == Token.label) return literal.length()+2;
+		if (token == Token.comment) return literal.length()+1;
 		return literal.length();
 
 	}

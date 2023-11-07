@@ -22,6 +22,7 @@ public class CChip8Assembler {
 		public int sizeCode = 0;
 		public int sizeData = 0;
 	}
+	public TreeMap<String, Integer> mMapFunctionSize = new TreeMap<>();
 
 	CMemoryStatistic mMemoryStatistic = new CMemoryStatistic();
 	public ArrayList<CMemoryStatistic> mMemoryStatistics = new ArrayList<>();
@@ -334,6 +335,14 @@ public class CChip8Assembler {
 	public String mFolder;
 	private CC8Label mFunctionLabel = null;
 
+	public boolean mbError=false;
+
+	private CC8Label mExprLabel;
+
+	private int mExprLabelCount;
+
+	private CC8Label mLastLabel=null;
+
 	void initData() {
 		mStackLoopData.clear();
 		mBeginEndStack.clear();
@@ -437,6 +446,7 @@ public class CChip8Assembler {
 	public void Assemble(String code, String filename) {
 		try {
 
+			mbError = false;
 			mMemoryStatistic = new CMemoryStatistic();
 			mMemoryStatistics = new ArrayList<>();
 			mMemoryStatistics.add(mMemoryStatistic);
@@ -444,24 +454,28 @@ public class CChip8Assembler {
 
 			mTokenizer.start(code);
 			pc = 0x200;
-			mSBErrors = null;
+			mSBErrors = new StringBuilder();
 			mPass = 1;
 			System.out.println("Pass 1");
 			compileCode(code);
 			mPass = 2;
-			mSBErrors = new StringBuilder();
+			
 			// mTokenizer.deleteAllAlias();
 			System.out.println("Pass 2");
 			compileCode(code);
 
-			if (cleanupSymbols()) {
+//			if (cleanupSymbols()) {
 				mDebugSource = new C8DebugSource();
 				System.out.println("Pass 2a");
 				mPass = 1;
 				compileCode(code);
 				mPass = 2;
 				compileCode(code);
-			}
+			//} else {
+			//	if (mSBErrors != null) {
+				//		mSBErrors.append("Skipping second compile\n");
+				//	}
+				//}
 
 			removeUnusedFunctionLabels();
 
@@ -490,10 +504,16 @@ public class CChip8Assembler {
 	}
 
 	private void compileCode(String code) {
+		System.out.println(String.format("Compiling pass %d", mPass));
+		if (mSBErrors != null) {
+			mSBErrors.append(String.format("Compiling pass %d\n", mPass));
+		}
+
 		pc = 0x200;
 		mTokenizer.start(code);
 		mTokenizer.mMapAlias.clear();
 		while (mTokenizer.hasData()) {
+			if (mbError) break;
 			try {
 				assembleLine();
 			} catch (Exception e) {
@@ -588,12 +608,11 @@ public class CChip8Assembler {
 
 		Token token1, token2, token3;
 		CC8Label label;
+		String key;
 		int reg1;
 		int reg2;
 		int nr;
-		if (pc == 556)
-			System.out.println("stop");
-
+		
 		String astr;
 		CBeginEndData beginEndData;
 
@@ -604,6 +623,7 @@ public class CChip8Assembler {
 		}
 		switch (token.token) {
 		case label:
+			
 			label = getLabel(token.literal);
 			if (label == null) {
 				label = new CC8Label();
@@ -613,9 +633,10 @@ public class CChip8Assembler {
 					label.mPackage = mTokenizer.mPackage;
 				mTokenizer.mPublic = false;
 				System.out.println(String.format("Label %s = %04x", token.literal, pc));
-				mLabels.put(token.literal, label);
+				mLabels.put(label.mName, label);
 			}
 			label.mTarget = pc;
+			mLastLabel = label;
 			break;
 		case org:
 			expr(token);
@@ -1024,10 +1045,10 @@ public class CChip8Assembler {
 			}
 			break;
 		case number:
-			if (mbCodegen) {
+			//if (mbCodegen) {
 				mCode[pc++] = (byte) (token.iliteral & 0xff);
 				mMemoryStatistic.sizeData++;
-			}
+			//}
 			break;
 
 		case i:
@@ -1293,6 +1314,16 @@ public class CChip8Assembler {
 			}
 			mbCodegen = token.iliteral != 0;
 			break;
+		case dotifdef:
+			mTokenizer.getToken(token);
+			if (token.token != Token.literal) {
+				error("Expected label name");
+				break;
+			}
+			label = getLabel(token.literal);
+			if (label == null)
+				skipToDotEnd(token);
+			break;
 
 		case dotelse:
 			mbCodegen = !mbCodegen;
@@ -1347,6 +1378,7 @@ public class CChip8Assembler {
 			break;
 		case dotTiles:
 		case dotSprites:
+		case dotVector:
 		case dotTileset: {
 			compileTiles(token);
 			break;
@@ -1374,6 +1406,16 @@ public class CChip8Assembler {
 
 	}
 
+	private void skipToDotEnd(CToken token) {
+		while (mTokenizer.hasData()) {
+			mTokenizer.getToken(token);
+			if (token.token == Token.dotend || token.token == Token.dotelse) break;
+			
+		}
+		
+		
+	}
+
 	private String labelName(String literal) {
 		if (mFunctionLabel == null)
 			return literal;
@@ -1389,6 +1431,7 @@ public class CChip8Assembler {
 		CC8Label label;
 		CAliases aliases = new CAliases();
 		mTokenizer.mStackAliases.push(aliases);
+		
 
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
@@ -1415,6 +1458,7 @@ public class CChip8Assembler {
 						}
 						for (String variable : label.mVariables) {
 							aliases.addAlias(label.mName, variable, mFunctionLabel.mNextRegister++);
+							
 						}
 
 					} else {
@@ -1549,6 +1593,9 @@ public class CChip8Assembler {
 		CC8Label label = new CC8Label();
 		int w, h;
 		switch (token.token) {
+		case dotVector:
+			label.mLabelType = C8LabelType.VECTOR;
+			break;
 		case dotTiles:
 			label.mLabelType = C8LabelType.TILES;
 			break;
@@ -1567,17 +1614,19 @@ public class CChip8Assembler {
 		label.mName = token.literal;
 		label.mTarget = pc;
 		mLabels.put(label.mName, label);
-		expect(Token.comma);
-		expr(token);
-		if (!(token.token == Token.number)) {
-			error("Expected width");
-			return;
-		}
-		expect(Token.comma);
-		expr(token);
-		if (!(token.token == Token.number)) {
-			error("Expected height");
-			return;
+		if (label.mLabelType != C8LabelType.VECTOR) {
+			expect(Token.comma);
+			expr(token);
+			if (!(token.token == Token.number)) {
+				error("Expected width");
+				return;
+			}
+			expect(Token.comma);
+			expr(token);
+			if (!(token.token == Token.number)) {
+				error("Expected height");
+				return;
+			}
 		}
 		expectBegin();
 
@@ -1596,7 +1645,7 @@ public class CChip8Assembler {
 				mLabels.put(label2.mName, label2);
 				continue;
 			}
-			if (token.token == Token.number) {
+			if (token.token == Token.number /* && mbCodegen */) {
 				mCode[pc++] = (byte) (token.iliteral & 0xff);
 			}
 		}
@@ -1642,6 +1691,7 @@ public class CChip8Assembler {
 	}
 
 	private void compileStructByte(CToken token) {
+		
 		CC8Label label = getLabel(token.literal);
 		if (label == null) {
 			for (int i = 0; i < token.iliteral; i++) {
@@ -1650,12 +1700,27 @@ public class CChip8Assembler {
 			return;
 
 		}
+		int startPC = pc;
+		
+		
 		int count = label.mVariables.size();
 		int data[] = new int[count];
+		
 		for (int i = 0; i < count; i++)
 			data[i] = 0;
 		mTokenizer.getToken(token, false);
-		if (token.token == Token.curlybracketopen) {
+		if (token.token == Token.arrayopen) {
+			expr(token);
+			if (token.token == Token.number) {
+				count = count * token.iliteral;
+				data = new int[count];
+				for (int i=0;i<count;i++) data[i] = 0;
+				expect(Token.arraytclose);
+			} else {
+				error("Expected number");
+				return;
+			}
+		} else if (token.token == Token.curlybracketopen) {
 			// now we find x = number until }
 			while (mTokenizer.hasData()) {
 				mTokenizer.getToken(token, false);
@@ -1684,9 +1749,16 @@ public class CChip8Assembler {
 			mTokenizer.ungetToken(token);
 		}
 
-		for (int i = 0; i < data.length; i++) {
+		for (int i = 0; i < count; i++) {
 			mCode[pc++] = (byte) data[i];
 		}
+		
+		if (mLastLabel != null) {
+			if (mLastLabel.mTarget == startPC) {
+				mLastLabel.mElementSize = label.mVariables.size();
+			}
+		}
+
 
 	}
 
@@ -2007,6 +2079,8 @@ public class CChip8Assembler {
 	}
 
 	private void compileFunction(CToken token) {
+		mLevel = 0;
+		int startPC = pc;
 		if (!mOptAnnotateAllLines)
 			writeSourceLine();
 
@@ -2036,6 +2110,7 @@ public class CChip8Assembler {
 
 		mLabels.put(functionLabel.mName, functionLabel);
 		mFunctionLabel = functionLabel;
+		int aliasStackSize = mTokenizer.mStackAliases.size();
 
 		while (mTokenizer.hasData()) {
 			mTokenizer.getToken(token);
@@ -2043,9 +2118,22 @@ public class CChip8Assembler {
 				break;
 			assembleStatement(token);
 		}
+		
+		while (mTokenizer.mStackAliases.size() > aliasStackSize)
+		{
+			CAliases aliases = mTokenizer.mStackAliases.pop();
+			
+			for (CAlias alias: aliases.values()) {
+				mDebugSource.stopAlias(pc, alias.getAliasName());
+			}
+		}
+
+		
+		
 		mFunctionLabel = saveFunctionLabel;
 		mbCodegen = saveCodegen;
 		mTokenizer.mStackAliases = saveAlias;
+		mMapFunctionSize.put(functionName, new Integer(pc-startPC));
 
 	}
 
@@ -2058,8 +2146,9 @@ public class CChip8Assembler {
 		tempTokenizer.mHint = macroData.name;
 		tempTokenizer.mBaseline = mTokenizer.mLine;
 		for (int i = 0; i < macroData.parameters.size(); i++) {
-			// nextToken(token);
-			nextToken(token);
+			 nextToken(token);
+			//mTokenizer.getToken(token);
+			//mTokenizer.findStructSymbol(token);
 			if (token.token == Token.curlybracketopen) {
 				expr(token);
 				expect(Token.curlybracketclose);
@@ -2109,7 +2198,7 @@ public class CChip8Assembler {
 		}
 		macroData.name = token.literal;
 		while (mTokenizer.hasData()) {
-			nextToken(token);
+			mTokenizer.getToken(token,  false);
 			if (isWhiteToken(token))
 				continue;
 			if (token.token == Token.curlybracketopen) {
@@ -2689,10 +2778,53 @@ public class CChip8Assembler {
 	// i := bighex vx
 	private void compileI(CToken token) {
 		int reg1;
+		int usereg1 = -1;
+		int usereg2 = -1;
+		int index=-1;
+		int indexreg=-1;
+		CToken token2 = new CToken();
 		nextToken(token);
 		switch (token.token) {
 		case assign: // Annn - LD I, addr
+			CC8Label label = null;
 			expr(token);
+			if (mExprLabelCount == 1) label = mExprLabel;
+			
+			
+			mTokenizer.getToken(token2);
+			if (token2.token == Token.arrayopen) {
+				
+				expr(token2);
+				if (token2.token == Token.number) {
+					index = token2.iliteral;
+				} else {
+					indexreg = regNr(token2);
+					if (indexreg == -1) {
+						error("Expected register or number");
+						return;
+					}
+				}
+				expect(Token.arraytclose);
+				mTokenizer.getToken(token2);
+				if (token2.token == Token.using) {
+					mTokenizer.getToken(token2);
+					usereg1 = regNr(token2);
+					if (usereg1 == -1)  {
+						error("Expected register or number");
+						return;
+					}
+					mTokenizer.getToken(token2);
+					usereg2 = regNr(token2);
+					if (usereg2 == -1) 
+						mTokenizer.ungetToken(token2);
+				} else 
+					mTokenizer.ungetToken(token2);
+				
+			} else {
+				mTokenizer.ungetToken(token2);
+			}
+				
+			
 			switch (token.token) {
 			case number:
 				writeCode(0xA, token.iliteral);
@@ -2708,9 +2840,153 @@ public class CChip8Assembler {
 				writeCode(0xf, reg1, 0x30);
 				break;
 
-			default:
-				error("Expected constant expression");
+			default: 
+				if (mPass == 1) writeCode(0xA, 0);
+				else error("Expected constant expression");
+			
+				
 			}
+			int faktor = 1;
+			if (label != null) {
+				faktor = label.mElementSize;
+			}
+
+			if (index != -1) {
+				writeCode(0x6, 0xf, faktor * index); // 6f 64       vf := $64
+				writeAddI(15);
+				
+			}
+			if (indexreg != -1) {
+				writeLdRegV0(usereg1, indexreg);
+				switch(faktor) {
+				case 1:
+					writeAddI(15);
+					break;
+				case 2:
+					checkusereg1(usereg1);
+					writeDup(usereg1);
+					writeAddI(usereg1);
+					break;
+				case 3:
+					checkusereg1(usereg1);
+					writeDup(usereg1);
+					writeAddvxvy(usereg1, indexreg);
+					writeAddI(usereg1);
+					break;
+				case 4:
+					checkusereg1(usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeAddI(usereg1);
+					break;
+				case 5:
+					checkusereg1(usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeAddI(usereg1);
+					writeAddvxvy(usereg1, indexreg);					
+					break;
+				case 6:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeLdRegV0(usereg2, usereg1);
+					writeDup(usereg1);						// *4
+					writeAddvxvy(usereg1, usereg2);			// *6
+					writeAddI(usereg1);
+					writeAddvxvy(usereg1, indexreg);					
+					break;
+				case 7:
+					checkusereg1(usereg1);
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeLdRegV0(usereg2, usereg1);
+					writeDup(usereg1);						// *4
+					writeAddvxvy(usereg1, usereg2);			// *6
+					writeAddvxvy(usereg1, indexreg);			// *6
+					
+					writeAddI(usereg1);
+					writeAddvxvy(usereg1, 0);					
+					break;
+				case 8:
+					checkusereg1(usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeAddI(usereg1);
+					break;
+				case 9:
+					checkusereg1(usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeAddvxvy(usereg1, indexreg);			// *6
+					writeAddI(usereg1);
+					break;
+				case 10:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);
+					writeLdRegV0(usereg2, usereg1);
+					writeDup(usereg1);
+					writeDup(usereg1);
+					writeAddvxvy(usereg1, usereg2);			// *6
+					writeAddI(usereg1);
+					break;
+				case 11:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeLdRegV0(usereg2, usereg1);
+					writeDup(usereg1);						// *4
+					writeDup(usereg1);						// *8
+					writeAddvxvy(usereg1, usereg2);			// *10
+					writeAddvxvy(usereg1, indexreg);		// *11
+					writeAddI(usereg1);
+					break;
+				case 12:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeDup(usereg1);						// *4
+					writeLdRegV0(usereg2, usereg1);			
+					writeDup(usereg1);						// *8
+					writeAddvxvy(usereg1, usereg2);			// *12
+					writeAddI(usereg1);
+					break;
+				case 13:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeDup(usereg1);						// *4
+					writeLdRegV0(usereg2, usereg1);			
+					writeDup(usereg1);						// *8
+					writeAddvxvy(usereg1, usereg2);			// *12
+					writeAddvxvy(usereg1, indexreg);		// *13
+					writeAddI(usereg1);
+					break;
+				case 14:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeDup(usereg1);						// *4
+					writeLdRegV0(usereg2, usereg1);			
+					writeDup(usereg1);						// *8
+					writeAddvxvy(usereg1, usereg2);			// *12
+					writeAddvxvy(usereg1, usereg2);			// *14
+					writeAddI(usereg1);
+					break;
+				case 15:
+					checkusereg2(usereg1, usereg2);
+					writeDup(usereg1);						// *2
+					writeDup(usereg1);						// *4
+					writeLdRegV0(usereg2, usereg1);			
+					writeDup(usereg1);						// *8
+					writeAddvxvy(usereg1, usereg2);			// *12
+					writeAddvxvy(usereg1, usereg2);			// *14
+					writeAddvxvy(usereg1, indexreg);		// *15
+					writeAddI(usereg1);
+					break;
+				}
+				
+			}
+			
+			
+			
 			break;
 		case plusassign: // Fx1E - ADD I, Vx
 			nextToken(token);
@@ -2724,6 +3000,37 @@ public class CChip8Assembler {
 		}
 	}
 
+	private void checkusereg2(int usereg1, int usereg2) {
+		if (usereg1 == -1 || usereg2 == -1)
+		error("expected using with at leat one register");
+		
+	}
+
+	private void writeAddvxvy(int reg1, int reg2) {
+		writeCode(0x8, reg1, reg2, 4);
+		
+	}
+
+	private void writeLdRegV0(int reg1, int reg2) {
+		writeCode(0x8, reg1, reg2, 0);			// vx := v0
+	}
+	
+
+	private void writeAddI(int usereg1) {
+		writeCode(0xf, usereg1, 0x1e);
+		
+	}
+
+	private void writeDup(int usereg1) {
+		writeCode(0x8, usereg1, usereg1, 4);		
+	}
+
+	private void checkusereg1(int usereg1) {
+		if (usereg1 == -1)
+			error("expected using with at leat one register");
+		
+	}
+
 	/*
 	 * Expr in this case is a constant expression, we return a number. If the first
 	 * token is a register, we return the token but set the register number in the
@@ -2735,6 +3042,8 @@ public class CChip8Assembler {
 	 */
 
 	private void expr(CToken token) {
+		mExprLabel = null;
+		mExprLabelCount = 0;
 		if (nextToken(token)) {
 
 			token.register = regNr(token);
@@ -2866,7 +3175,10 @@ public class CChip8Assembler {
 			match(token, Token.number);
 			break;
 		case literal:
+			
 			label = getLabel(token.literal);
+			mExprLabel = label;
+			mExprLabelCount++;
 			if (mPass == 2 && label == null)
 				error("Label " + token.literal + " not found");
 			stack.push(label == null ? 0 : label.mTarget);
@@ -2942,7 +3254,7 @@ public class CChip8Assembler {
 		if (mbCodegen) {
 			if (mPass == 2) {
 				String line = levelSpace() + mTokenizer.getCurrentLine().trim();
-				mDebugSource.addSourceLine(pc + 2, line);
+				mDebugSource.addSourceLine(pc, line);
 			}
 		}
 
@@ -2952,7 +3264,7 @@ public class CChip8Assembler {
 		String result = "";// TODO Auto-generated method stub
 		if (mOptIncludeSourceLine)
 			result = String.format("%-4d", mTokenizer.mLine + mTokenizer.mBaseline);
-		for (int i = 0; i < mLevel; i++)
+		for (int i = 0; i < Math.min(mLevel,3); i++)
 			result += "│ ";
 		return result;
 	}
@@ -3102,7 +3414,8 @@ public class CChip8Assembler {
 	}
 
 	private CC8Label getLabel(String literal) {
-		CC8Label result = mLabels.get(labelName(literal));
+		String key = labelName(literal);
+		CC8Label result = mLabels.get(key);
 		if (result == null && mFunctionLabel != null)
 			result = mLabels.get(literal);
 		if (result != null) {
@@ -3113,7 +3426,9 @@ public class CChip8Assembler {
 	}
 
 	private void error(String string) {
-		if (mPass == 2) {
+		mbError = true;
+		//if (mPass == 2) {
+			{
 			String file = "(editor)";
 			if (mTokenizer.mFilename != null)
 				file = mTokenizer.mFilename;

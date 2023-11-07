@@ -561,7 +561,8 @@ public class CDialogIDE extends Dialog {
 		assembler.assemble(getTextSource().getText(), mFilename);
 		String errors = assembler.getErrors();
 		mTextErrors.setText(errors);
-		if (errors.trim().length() == 0) {
+		boolean ok = !assembler.mbError;
+		if (ok) {
 			CDialogDisassembler dlgEmu = new CDialogDisassembler(shlJoctoIde,
 					SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
 			// dlgEmu.mDecoder.setMemory(assembler.getCode());
@@ -899,6 +900,13 @@ public class CDialogIDE extends Dialog {
 				dlg.open();
 			}
 		})
+		.add("&Vector drawing", new CCallback() {
+			@Override
+			public void callback() {
+				CDialogVectorDraw dlg = new CDialogVectorDraw(shlJoctoIde, SWT.CLOSE | SWT.TITLE | SWT.RESIZE);
+				dlg.open();
+			}
+		})
 		
 		;
 
@@ -1107,9 +1115,15 @@ public class CDialogIDE extends Dialog {
 		assembler.assemble(getTextSource().getText(), mFilename);
 
 		String errors = assembler.getErrors();
-		boolean ok = errors.trim().length() == 0;
+		boolean ok = !assembler.mbError;
 		errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(),
 				4096 - 0x200 - assembler.getCodeSize());
+		
+		for (String fnname : assembler.mMapFunctionSize.keySet()) {
+			Integer size = assembler.mMapFunctionSize.get(fnname);
+			errors += String.format("function %s = %d bytes\n", fnname, size.intValue());
+		}
+		
 		for (CMemoryStatistic stat : assembler.mMemoryStatistics) {
 			errors += String.format("%s: %d (code: %d, data: %d)\n", stat.file, stat.sizeCode + stat.sizeData,
 					stat.sizeCode, stat.sizeData);
@@ -1441,6 +1455,7 @@ public class CDialogIDE extends Dialog {
 				case dotTiles:
 				case dotSprites:
 				case dotTileset:
+				case dotFunction:
 					tokenizer.getToken(token);
 					if (token.token == Token.literal) {
 						list.add(token.literal);

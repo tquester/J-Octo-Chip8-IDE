@@ -41,6 +41,7 @@ public class CC8Label {
 	public String               mPackage=null;					// inside a include, if a package is defined, the label is package private
 	public boolean              mSkipCompiling = false;			// if the compiler found out, that a function is unused, it skips it from compiling
 	public int 					mNextRegister=0;
+	public int 					mElementSize=1;
 	
 	
 	public void addVar(String var) {

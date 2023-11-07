@@ -93,7 +93,10 @@ public class CTokens {
 	        {"}",  Token.curlybracketclose},
 	        {"(",  Token.bracketopen},
 	        {")",  Token.bracketclose},
+	        {"[",  Token.arrayopen},
+	        {"]",  Token.arraytclose},
 	        {"[i]",  Token.iindirect},
+	        {"using", Token.using },
 	        
 	        // octo keywords
 	        
@@ -197,6 +200,7 @@ public class CTokens {
 	        {"step", Token.octostep},
 	        
 	        {":if", Token.dotif},
+	        {":ifdef", Token.dotifdef},
 	        {":else", Token.dotelse},
 	        {":end", Token.dotend},
 	        {"with", Token.octowith},
@@ -210,6 +214,7 @@ public class CTokens {
 	        {":struct", Token.dotStruct },
 	        {"extends", Token.octoextends },
 	        {":tileset", Token.dotTileset },
+	        {":vector", Token.dotVector },
 	        {":tiles", Token.dotTiles },
 	        {":sprites", Token.dotSprites },
 	        {":sprite", Token.dotSprites },

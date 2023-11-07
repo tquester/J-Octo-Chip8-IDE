@@ -80,7 +80,7 @@
                 if y <= miny then enemyReverseY                       # reverse at start
                 if y >= maxy then enemyReverseY                       # and end
               end
-              frame += Enemy.dframe                                   # go to next/prev frame
+              frame += dframe                                   # go to next/prev frame
               if frame < 0 begin
                 enemyReverseFrame                                     # if it was the first frame count forward
                 frame += dframe
