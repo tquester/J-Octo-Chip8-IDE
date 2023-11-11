@@ -5,6 +5,7 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.RGBA;
 import org.eclipse.swt.graphics.Rectangle;
 
 public class Chip8GPU {
@@ -14,7 +15,9 @@ public class Chip8GPU {
 	public boolean hires = false;
 	public int width = 64;
 	public int height = 32;
+	public boolean mega = false;
 	static String OS = System.getProperty("os.name").toLowerCase();
+	public RGBA palette[] = new RGBA[256];
 
 	public int drawMask = 0x01;
 	GC gc = null;
@@ -31,6 +34,14 @@ public class Chip8GPU {
 	public int tileWidth;
 
 	public int tileHeight;
+
+	public int megaSpriteH;
+
+	public int megaSpriteW;
+
+	public int megaAlpha;
+
+	public int megaBlend;
 
 	public void initImage(Device device, int width, int height) {
 		mImage = new Image(device, width, height);
@@ -61,14 +72,19 @@ public class Chip8GPU {
 	}
 
 	public void lowres() {
-		width = 128;
-		height = 64;
+		width = 64;
+		height = 32;
 
 	}
 
 	public void hires() {
-		width = 128;
-		height = 64;
+		if (mega) {
+			width = 256;
+			height = 192;
+		} else {
+			width = 128;
+			height = 64;
+		}
 
 	}
 
@@ -160,6 +176,11 @@ public class Chip8GPU {
 	}
 
 	public int draw(int address, int x, int y, int height) {
+		if (mega) {
+			return drawMega(address, x,y);
+			
+			
+		}
 		int collision = 0;
 		try {
 			int chip8Width = this.width;
@@ -244,6 +265,48 @@ public class Chip8GPU {
 		return collision;
 	}
 
+	private int drawMega(int address, int x, int y) {
+		int chip8Width = this.width;
+		int chip8Height = this.height;
+		Rectangle bounds = mImage.getBounds();
+		tileWidth = (bounds.width) / chip8Width;
+		tileHeight = (bounds.height) / chip8Height;
+		int imgx, imgy, imgx1;
+		x &= 255;
+		y &= 255;
+		waitSemaphore();
+		GC gc = new GC(mImage);
+		setSemaphore(true);
+		RGBA rgba=null;
+		Color col=null;
+		int prevpix=-1;
+		int iy = y * tileHeight;
+		for (int ih = 0;ih < megaSpriteH;ih++) {
+			int ix = x * tileWidth;
+			for (int iw = 0; iw < megaSpriteW; iw++) {
+				int pix = memory[address++];
+				if (pix != prevpix) {
+					prevpix = pix;
+					rgba = palette[pix];
+					col = new Color(gc.getDevice(), rgba.rgb.red, rgba.rgb.green, rgba.rgb.blue, rgba.alpha);
+					gc.setBackground(col);
+					gc.setForeground(col);
+				}
+				if (pix != 0) 
+					gc.fillRectangle(ix,iy,tileWidth, tileHeight);
+				ix+=tileHeight;
+			}
+			iy += tileHeight;
+		}
+		
+
+		gc.dispose();
+		setSemaphore(false);
+		// updateImage();
+		dirty = true;
+		return 0;
+	}
+
 	public void setSemaphore(boolean b) {
 		mSemaphore = b;
 
@@ -315,6 +378,35 @@ public class Chip8GPU {
 	public int lastKey() {
 		// TODO Auto-generated method stub
 		return 0;
+	}
+
+	public void megaLoadPalette(Chip8CPU cpu, int count) {
+		int ptr = cpu.regI;
+		int ipal=1;
+		palette[0] = new RGBA(0,0,0,0);
+		for (int i=0;i<count;i++) {
+			int a = cpu.memory[ptr] & 0xff;
+			int r = cpu.memory[ptr+1] & 0xff;
+			int g = cpu.memory[ptr+2] & 0xff;
+			int b = cpu.memory[ptr+3] & 0xff;
+			ptr+=4;
+			palette[ipal] = new RGBA(r, g, b, a);
+			ipal++;
+		}
+		
+		
+	}
+
+	public void megaOff() {
+		mega = false;
+		width = 64;
+		height = 32;
+		
+	}
+
+	public void megaOn() {
+		mega = true;
+		
 	}
 
 }
