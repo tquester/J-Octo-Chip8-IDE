@@ -105,7 +105,7 @@ public class CC8Decoder {
 		}
 		
 		lbl	= new CC8Label(C8LabelType.CODE);
-		lbl.mReferences=1;
+		lbl.addRef();
 		mLabels.put(adr, lbl);
 
 	}
@@ -128,7 +128,7 @@ public class CC8Decoder {
 		//System.out.println(String.format("Add data Label %4x %d",adr,adr));
 			
 		lbl	= new CC8Label(C8LabelType.DATA);
-		lbl.mReferences++;
+		lbl.addRef();
 		lbl.mItemsPerRow = 1;
 		mLabels.put(adr, lbl);
 
@@ -150,14 +150,19 @@ public class CC8Decoder {
 	 *  
 	 */
 
+	// 01nn nnnn and
+	// F000 nnnn are 4 byte commands
 	void crawl(int pc) {
 
+		int adr;
 		//System.out.println(String.format("---- crawling %x ------",pc));
 		addCodeLabel(pc);
 		boolean inSkip = false;
 		boolean stop = false;
 		CC8Label skipLabel = null;
+		int addpc;
 		while (stop == false) {
+			addpc = 0;
 			if (pc == chip8Memory.length) 
 				break;
 		/*	if (pc == 0x029e) {
@@ -177,6 +182,13 @@ public class CC8Decoder {
 			
 			switch(highnib) {
 			case 0x00:
+					if (high2 ==0x01) {
+						adr = low << 16;
+						adr += ((chip8Memory[pc+2] & 0xff) * 256) + (chip8Memory[pc+3] & 0xff);
+						addDataLabel(adr);
+						addpc = 2;
+						mSetVisited.add(pc+2);
+					}
 					if (low == 0xee) { // return
 						if (!inSkip) stop = true;
 					}
@@ -184,7 +196,7 @@ public class CC8Decoder {
 			case 0x01:
 			case 0x0b:
 			case 0x02: {
-					int adr = high2 * 256 + low;
+					adr = high2 * 256 + low;
 					if (adr == 0x4c2) {
 						System.out.println("debug");
 					}
@@ -204,14 +216,14 @@ public class CC8Decoder {
 				//saveSkipLabel(skipLabel, pc);
 				if (emitter.wantsSkipLabels()) {
 					skipLabel = new CC8Label(C8LabelType.SKIP);
-					skipLabel.mReferences++;
+					skipLabel.addRef();
 					skipLabel.mTarget = pc+4;
 					mLabels.put(pc+4, skipLabel);
 				}
 				inSkip = true;
 				break;
 			case 0x0a:  {
-				int adr = high2 * 256 + low;
+				adr = high2 * 256 + low;
 				addDataLabel(adr);
 				//skipLabel = saveSkipLabel(skipLabel, pc);
 				inSkip = false;
@@ -225,7 +237,7 @@ public class CC8Decoder {
 					if (emitter.wantsSkipLabels()) {
 						//saveSkipLabel(skipLabel, pc);
 						skipLabel = new CC8Label(C8LabelType.SKIP);
-						skipLabel.mReferences++;
+						skipLabel.addRef();
 						skipLabel.mTarget = pc+4;
 						mLabels.put(pc+4, skipLabel);
 					}
@@ -235,13 +247,15 @@ public class CC8Decoder {
 					inSkip = false;
 				}
 				break;
+			case 0x0f:
+				if (low == 0) addpc = 2;
 				
 			default:
 				//skipLabel = saveSkipLabel(skipLabel, pc);
 				inSkip = false;
 			}
 		
-			pc+=2;
+			pc+=2+addpc;
 		}
 		
 	}
@@ -268,8 +282,7 @@ public class CC8Decoder {
 				if (label != null)
 					lastLabel = label;
 					 
-				emitter.emitOpcode(chip8Memory, pc);
-				pc+=2;
+				pc = emitter.emitOpcode(chip8Memory, pc);
 			} else {
 				label = mLabels.get(pc);
 				if (label != null)
@@ -321,7 +334,7 @@ public class CC8Decoder {
 			String lines[] = text.split("\n");
 			for (String line: lines) {
 				CC8Label label = new CC8Label();
-				label.mReferences=1;
+				label.addRef();
 				label.load(line);;
 				mLabels.put(label.mTarget, label);
 			}

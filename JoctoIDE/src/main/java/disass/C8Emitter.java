@@ -17,6 +17,7 @@ public abstract class C8Emitter {
 	public boolean showAlias = false;
 	public boolean commenAlias = false;
 	public boolean replaceAlias = false;
+	public boolean skipData = false;
 
 	public C8DebugSource mDebugSource=null;
 	public C8DebugSource mSourceHints=null;
@@ -49,6 +50,7 @@ public abstract class C8Emitter {
 	}
 
 	public void emitLine(int address, String text) {
+		//System.out.println(String.format("%04x %s", address, text));
 		if (mSB != null) mSB.append(text+"\n");
 		if (mDebugSource != null) mDebugSource.addSourceLine(address, text);
 		
@@ -57,6 +59,8 @@ public abstract class C8Emitter {
 	TreeMap<Integer, CC8Label> mLabels = new TreeMap<>();
 	public TreeSet<Integer> mSetVisited;
 	public abstract int emitOpcode(byte[] code, int pos);
+	public abstract int emitOpcode(boolean usecomments, byte[] code, int pos);
+	
 	public boolean wantsSkipLabels() {
 		return false;
 	}
@@ -80,6 +84,11 @@ public abstract class C8Emitter {
 		return mSB.toString();
 	}
 	
+	public String disassLine(boolean usecomments, byte[] code, int pc) {
+		mSB = new StringBuilder();
+		emitOpcode(usecomments, code, pc);
+		return mSB.toString();
+	}
 	
 	
 	void checkLineSpace(CC8Label label) {

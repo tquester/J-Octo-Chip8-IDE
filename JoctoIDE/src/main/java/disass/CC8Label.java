@@ -28,7 +28,7 @@ public class CC8Label {
 	public Double				mValue=null;
 	public int					mEnd=0;
 	public int 					mItemsPerRow=1;
-	public int					mReferences=0;					// Add 1 each time the label has been used (i := xxx, jump or call)
+	private int					mReferences=0;					// Add 1 each time the label has been used (i := xxx, jump or call)
 	public String				mMacro=null;
 	public ArrayList<String>	mVariables=null;
 	public TreeMap<String, CAlias> mAliase=null;
@@ -42,6 +42,13 @@ public class CC8Label {
 	public boolean              mSkipCompiling = false;			// if the compiler found out, that a function is unused, it skips it from compiling
 	public int 					mNextRegister=0;
 	public int 					mElementSize=1;
+	
+	
+	public void addRef() {
+		mReferences++; 
+		}
+	public void subRef() { if (mReferences > 0) mReferences--; }
+	public int getRef() { return mReferences; }
 	
 	
 	public void addVar(String var) {
@@ -228,6 +235,16 @@ public class CC8Label {
 		else {
 			sublabel.count++;
 		}
+		
+	}
+	public void clearRef() {
+		mReferences = 0;
+		
+	}
+	public void subRef(int count) {
+		mReferences -= count;
+		if (mReferences < 0) 
+			mReferences = 0;
 		
 	}
 	

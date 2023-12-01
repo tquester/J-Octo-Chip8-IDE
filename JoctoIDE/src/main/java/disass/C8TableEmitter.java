@@ -55,7 +55,7 @@ public class C8TableEmitter extends C8Emitter {
 		mSB.append(line+"\n");
 
 
-		return 2;
+		return pos+2;
 	}
 	@Override
 	protected void clear() {
@@ -81,6 +81,11 @@ public class C8TableEmitter extends C8Emitter {
 	@Override
 	public String getText() {
 		return mSB.toString();
+	}
+	@Override
+	public int emitOpcode(boolean usecomments, byte[] code, int pos) {
+		// TODO Auto-generated method stub
+		return 0;
 	}
 	
 	

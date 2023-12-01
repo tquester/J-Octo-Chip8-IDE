@@ -196,41 +196,84 @@ public class Chip8CPU {
 		// 00FE switch to lores mode (64x32) [Quirk 3]
 		// 00FF switch to hires mode (128x64) [Quirk 3]
 		case 0x00:
-			switch (low) {
-			case 0xE0:
-				gpu.cls();
+			switch(highnib) {
+			case 0x01:
+				regI = low << 16;
+				int h = memory[pc] & 0xff;
+				int l = memory[pc+1] & 0xff;
+				regI += h * 256 + l;
+				
 				break;
-			case 0xFB:
-				gpu.scrollRight();
+			case 0x02:
+				gpu.megaLoadPalette(this,low);
 				break;
-			case 0xFC:
-				gpu.scrollLeft();
+			case 0x03:
+				
+				gpu.megaSpriteH = low == 0 ? 256 : low;
 				break;
-			case 0xFE:
-				gpu.lowres();
+			case 0x04:
+				gpu.megaSpriteW = low == 0 ? 256 : low;
 				break;
-			case 0xFF:
-				gpu.hires();
+			case 0x05:
+				gpu.megaAlpha = low;
 				break;
-			case 0xFD:
-				mStop = true;
+			case 0x06:
+				megaPlay(low & 0x0f);
 				break;
-			case 0xEE:
-				pc = stack.pop().intValue();
+			case 0x07:
+				megaPlayStop();
 				break;
+			case 0x08:
+				gpu.megaBlend = low;
+				break;
+				
+				 
 			default:
-				n = low & 0x0f;
-				low &= 0xf0;
 				switch (low) {
-				case 0xC0:
-					gpu.scrollDown(n);
+				case 0x10:
+					gpu.megaOff();
 					break;
-				case 0xD0:
-					gpu.scrollUp(n);
+				case 0x11:
+					gpu.megaOn();
+					break;
+				case 0xE0:
+					gpu.cls();
+					break;
+				case 0xFB:
+					gpu.scrollRight();
+					break;
+				case 0xFC:
+					gpu.scrollLeft();
+					break;
+				case 0xFE:
+					gpu.lowres();
+					break;
+				case 0xFF:
+					gpu.hires();
+					break;
+				case 0xFD:
+					mStop = true;
+					break;
+				case 0xEE:
+					pc = stack.pop().intValue();
 					break;
 				default:
-					invalidOpcode();
+					n = low & 0x0f;
+					low &= 0xf0;
+					switch (low) {
+					case 0xC0:
+						gpu.scrollDown(n);
+						break;
+					case 0xD0:
+						gpu.scrollUp(n);
+						break;
+					default:
+						invalidOpcode();
+					}
 				}
+				break;
+
+			
 			}
 			break;
 
@@ -355,13 +398,15 @@ public class Chip8CPU {
 				// vx[15] = a < 0 ? 0 : 1;
 				break;
 			case 0x06:
-				a = vx[highnib] & 0x01;
+				
 				b = mNewShift ? getvx(highnib) : reg2;
+				a = b & 0x01;
 				setvx(highnib, b >> 1);
 				vx[15] = (byte) (a & 0xff);
 				break;
 			case 0x07:
 				a = (reg2 - getvx(highnib)) & 0xff;
+				
 				setvx(highnib, a);
 				vx[15] = a < 128 ? 1 : 0;
 				// a = expand(reg2) - expand(vx[highnib]);
@@ -369,8 +414,8 @@ public class Chip8CPU {
 				// vx[15] = a < 0 ? 0 : 1;
 				break;
 			case 0x0E:
-				a = vx[highnib] & 0x80;
 				b = mNewShift ? vx[highnib] : reg2;
+				a = b & 0x01;
 				setvx(highnib, b << 1);
 				vx[15] = a == 0 ? 0 : 1;
 				break;
@@ -398,7 +443,8 @@ public class Chip8CPU {
 
 		// Cxnn set vx to a random value masked (bitwise AND) with NN
 		case 0xC0: {
-			int temp = (int) (Math.random() * 256);
+			double r = Math.random()*256;
+			int temp = (int) (r);
 			vx[highnib] = temp & low;
 			//System.out.println(String.format("Random %d & %d = %d", temp, low, vx[highnib]));
 			break;
@@ -471,6 +517,7 @@ public class Chip8CPU {
 				vx[highnib] = regDelay;
 				break;
 			case 0x0A:
+				gpu.updateMegaScreen();
 				a = getKeyPressed();
 				if (a != -1) {
 					System.out.println(String.format("Key Pressed %d",a));
@@ -535,6 +582,16 @@ public class Chip8CPU {
 			break;
 
 		}
+	}
+
+	private void megaPlayStop() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	private void megaPlay(int i) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	private int getvx(int regnr) {

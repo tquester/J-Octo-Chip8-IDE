@@ -117,8 +117,9 @@ public enum Token {
 	tilde, exclamation, sin, cos, tan, exp, log, abs, sqrt, sign, ceil, floor, atsym, pow, min, max, strlen, none, notkey, 
 	dotif, dotelse, dotend, dotunless, dotinclude, dotsegment, data, code, dotlog, dodumpoptions, dotconst, octofor, octoto, octostep, dotStruct, dot, internaldefs, whitespace, octowith, dotTileset, dotTiles, dotSprites, octoswitch, octocase, 
 	octobreak, octoPackage, octoPublic, unalias, length, dotFunction, octovar, octoextends,
-	dotifdef, dotVector, arrayopen, arraytclose, using
+	dotifdef, dotVector, arrayopen, arraytclose, using,
 
+	octoLong, megaOn, megaOff, megaPal, megaSpritew, megaSpriteh, megaAlpha, megaBlend, megaCollisioncolor, megaplay, megastop, octoldhi
 	
 };
 

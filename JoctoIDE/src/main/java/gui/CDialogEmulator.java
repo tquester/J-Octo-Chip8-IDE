@@ -65,10 +65,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	protected Object result;
 	protected Shell shlChipsuperChipxoChip;
 	List mListMemory;
-	Label registerLabels[] = new Label[19];
-	Label registerLabelTitles[] = new Label[19];
+	Label registerLabels[] = new Label[30];
+	Label registerLabelTitles[] = new Label[30];
 	String titles[] = { "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "VA", "VB", "VC", "VD", "VE", "VF",
-			"W", "Snd", "I" };
+			"W", "Snd", "I", "SPRW", "SPRH", "Blend", "Alpha", "screenw", "screenh" };
 
 	Composite mCompositeRegister;
 	Composite mCanvasScreen;
@@ -79,7 +79,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	Label lblPosition;
 	TabFolder mTabFolder;
 	Combo mComboSpeed;
+	Button btnStart;
 	public boolean startRunning = false;
+	int screenh=10;
+	int screenw=10;
 
 	private String mChip8Filename;
 	private Color colors[];
@@ -95,6 +98,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	public void run() {
 		mCPU.run();
+		btnStart.setEnabled(false);
 	}
 
 	/**
@@ -107,6 +111,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		super(parent, style);
 		setText("SWT Dialog");
 		mDisassembler.setMemory(mCPU.getMemory());
+		mDisassEmitter.skipData = true;
 		mDisassembler.emitter = mDisassEmitter;
 
 	}
@@ -160,10 +165,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 			mDisassEmitter.mSourceHints = mDebugSource;
 			mDisassEmitter.showAlias = true;
 		}
-			disassAndInitDebugger(null);
-			// initListDebugSource();
-			displayDebug();
-		
+		disassAndInitDebugger(null);
+		// initListDebugSource();
+		displayDebug();
+
 		if (startRunning)
 			run();
 		mCPU.gpu.mIEmulator = this;
@@ -184,13 +189,13 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				shlChipsuperChipxoChip.close();
 			}
 		});
-		
+
 		mMainMenus.addMenu("&Edit").add("&Refresh", new CCallback() {
 			@Override
 			public void callback() {
 				onRefresh();
 			}
-			
+
 		});
 
 		mMainMenus.addMenu("&Debug").add("&Run\tF5", SWT.F5, new CCallback() {
@@ -219,7 +224,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	protected void onRefresh() {
 		disassAndInitDebugger(mFilename);
-		
+
 	}
 
 	protected void onKeyUp(char character, int keyCode) {
@@ -234,7 +239,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	}
 
 	protected void onKeyDown(char character, int keyCode) {
-		System.out.println(String.format("Key pressed: %c",character));
+		System.out.println(String.format("Key pressed: %c", character));
 		mCPU.addKey(character);
 
 	}
@@ -337,7 +342,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onResize();
 			}
 		});
-		shlChipsuperChipxoChip.setSize(1077, 594);
+		shlChipsuperChipxoChip.setSize(1077, 644);
 		shlChipsuperChipxoChip.setText("Chip8/Super Chip8/XO Chip8");
 		shlChipsuperChipxoChip.addFocusListener(new FocusListener() {
 
@@ -366,10 +371,10 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 				onRepaintScreen(e);
 			}
 		});
-		mCanvasScreen.setBounds(10, 71, 576, 278);
+		mCanvasScreen.setBounds(20, 56, 512, 384);
 
 		mCompositeRegister = new Composite(shlChipsuperChipxoChip, SWT.BORDER);
-		mCompositeRegister.setBounds(737, 10, 313, 465);
+		mCompositeRegister.setBounds(737, 10, 313, 597);
 
 		Composite composite_2 = new Composite(shlChipsuperChipxoChip, SWT.NONE);
 		composite_2.setBounds(10, 10, 576, 40);
@@ -384,7 +389,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		btnOpenChip.setBounds(0, 10, 139, 25);
 		btnOpenChip.setText("open chip8");
 
-		Button btnStart = new Button(composite_2, SWT.FLAT);
+		btnStart = new Button(composite_2, SWT.FLAT);
 		btnStart.setToolTipText("F6");
 		btnStart.addSelectionListener(new SelectionAdapter() {
 			@Override
@@ -467,49 +472,47 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 		mLblDisass = new Label(shlChipsuperChipxoChip, SWT.NONE);
 		mLblDisass.setText("200 00 00 NOP");
-		mLblDisass.setBounds(115, 348, 471, 20);
+		mLblDisass.setBounds(115, 446, 471, 20);
 
 		mLblData = new Label(shlChipsuperChipxoChip, SWT.BORDER | SWT.WRAP);
 		mLblData.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
-		mLblData.setBounds(592, 29, 137, 339);
+		mLblData.setBounds(538, 56, 178, 384);
 		mLblData.setText("0000 00 ");
 
 		mTabFolder = new TabFolder(shlChipsuperChipxoChip, SWT.NONE);
-		mTabFolder.setBounds(10, 374, 721, 161);
+		mTabFolder.setBounds(20, 473, 721, 134);
 
 		TabItem tbtmDisassembler = new TabItem(mTabFolder, SWT.NONE);
 		tbtmDisassembler.setText("Disassembler");
-
-		mListSource = new List(mTabFolder, SWT.BORDER | SWT.V_SCROLL);
-		tbtmDisassembler.setControl(mListSource);
-		mListSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
+		
+				mListSource = new List(mTabFolder, SWT.BORDER | SWT.V_SCROLL);
+				tbtmDisassembler.setControl(mListSource);
+				mListSource.setFont(SWTResourceManager.getFont("Courier New", 9, SWT.NORMAL));
 
 		TabItem tbtmLog = new TabItem(mTabFolder, SWT.NONE);
 		tbtmLog.setText("Log");
 
 		mTextLog = new Text(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL | SWT.CANCEL | SWT.MULTI);
 		tbtmLog.setControl(mTextLog);
-		
+
 		TabItem mTabMemory = new TabItem(mTabFolder, SWT.NONE);
 		mTabMemory.setText("Memory");
-		
+
 		mListMemory = new List(mTabFolder, SWT.BORDER | SWT.H_SCROLL | SWT.V_SCROLL);
 		mListMemory.setFont(SWTResourceManager.getFont("Courier New", 10, SWT.NORMAL));
 		mTabMemory.setControl(mListMemory);
-		
+
 		TabItem tbtmMonitor = new TabItem(mTabFolder, SWT.NONE);
 		tbtmMonitor.setText("Monitor");
-		
+
 		Composite composite = new Composite(mTabFolder, SWT.NONE);
 		tbtmMonitor.setControl(composite);
-		
+
 		lblPosition = new Label(shlChipsuperChipxoChip, SWT.NONE);
-		lblPosition.setBounds(10, 348, 70, 20);
+		lblPosition.setBounds(10, 446, 70, 20);
 		lblPosition.setText("0/0");
 
 	}
-	
-	
 
 	protected void onMouseMoveCanvas(MouseEvent e) {
 		int pixelHeight = mCPU.gpu.tileHeight;
@@ -517,7 +520,7 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		if (pixelHeight != 0 && pixelWidth != 0) {
 			int x = e.x / pixelWidth;
 			int y = e.y / pixelHeight;
-			lblPosition.setText(String.format("%d/%d",x,y));
+			lblPosition.setText(String.format("%d/%d", x, y));
 		}
 	}
 
@@ -656,10 +659,15 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		int i;
 		String strValue;
 		int value;
+		btnStart.setEnabled(true);
+		if (mCPU.gpu.dirty)
+			mCPU.gpu.updateMegaScreen();
+		mCanvasScreen.redraw();
 		for (i = 0; i <= 15; i++) {
 			value = mCPU.vx[i] & 0xff;
 			strValue = String.format("$%02x %d", value, value);
-			registerLabelTitles[i].setText(mDisassEmitter.mSourceHints.getRegisterAliases(mCPU.pc, i));
+			if (mDisassEmitter.mSourceHints != null)
+					registerLabelTitles[i].setText(mDisassEmitter.mSourceHints.getRegisterAliases(mCPU.pc, i));
 			registerLabels[i].setText(strValue);
 		}
 		value = mCPU.regDelay;
@@ -668,10 +676,22 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		registerLabels[17].setText(String.format("$%02x %d", value, value));
 		value = mCPU.regI;
 		registerLabels[18].setText(String.format("$%04x %d", value, value));
-		String command = mDisassEmitter.disassLine(mCPU.getMemory(), mCPU.pc);
+		value = mCPU.gpu.megaSpriteW;
+		registerLabels[19].setText(String.format("$%04x %d", value, value));
+		value = mCPU.gpu.megaSpriteH;
+		registerLabels[20].setText(String.format("$%04x %d", value, value));
+		value = mCPU.gpu.megaAlpha;
+		registerLabels[21].setText(String.format("$%04x %d", value, value));
+		value = mCPU.gpu.megaBlend;
+		registerLabels[22].setText(String.format("$%04x %d", value, value));
+		value = mCPU.gpu.width;
+		registerLabels[23].setText(String.format("$%04x %d", value, value));
+		value = mCPU.gpu.height;
+		registerLabels[24].setText(String.format("$%04x %d", value, value));
+		String command = mDisassEmitter.disassLine(false, mCPU.getMemory(), mCPU.pc);
 		mLblDisass.setText(command);
 		if (mDebugSource != null) {
-			int line = mDebugSource.getLineForCode(mCPU.pc-2);
+			int line = mDebugSource.getLineForCode(mCPU.pc - 2);
 			if (line != -1) {
 				mListSource.setSelection(line);
 			}
@@ -681,16 +701,15 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 		String key;
 		for (i = 0; i < 20; i++) {
 			try {
-			byte data = (byte) (mCPU.getMemory()[adr++] & 0xff);
-			if (i <= 15) {
-				key = String.format("Key %01x=%d", i, mCPU.keyPressed[i]);
-			} else
-				key = "";
+				byte data = (byte) (mCPU.getMemory()[adr++] & 0xff);
+				if (i <= 15) {
+					key = String.format("Key %01x=%d", i, mCPU.keyPressed[i]);
+				} else
+					key = "";
 
-			String str = String.format("%04x %02x %04d %s %s\n", adr, data, data, int2bin(data), key);
-			sb.append(str);
-			}
-			catch(Exception ex) {
+				String str = String.format("%04x %02x %04d %s %s\n", adr, data, data, int2bin(data), key);
+				sb.append(str);
+			} catch (Exception ex) {
 				sb.append(ex.getLocalizedMessage());
 			}
 		}
@@ -736,39 +755,48 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 
 	private void disassAndInitDebugger(String filename) {
 
+		System.out.println("disassAndInitDebug");
 		C8DebugSource sourceHints = mDebugSource;
 		mFilename = filename;
-		
+
+		System.out.println("disassAndInitDebug CreateDebug>Source");
 		mDisassEmitter.createDebugSource();
+		System.out.println("disassAndInitDebug loading hints");
 		if (filename != null) {
 			mDisassembler.loadHints(filename + ".hints");
 		} else {
 			if (mLabels != null)
 				mDisassembler.setAssemblerLabels(mLabels);
 		}
+		System.out.println("disassAndInitDebug start Disass");
 		mDisassembler.start(mCPU.getMemory(), bytesRead);
+		sourceHints = null;
+		System.out.println("disassAndInitDebug get Debug Source");
 		mDebugSource = mDisassEmitter.getDebugSource(sourceHints);
+		System.out.println("disassAndInitDebug init Memory");
 		mListMemory.removeAll();
 		int pc = 0;
-		while (pc < bytesRead+0x200) {
+		while (pc < bytesRead + 0x200) {
 			String str = memoryLine(pc, 16);
 			pc += 16;
 			mListMemory.add(str);
 		}
+		System.out.println("disassAndInitDebug init List Source");
 
 		if (mDebugSource != null)
 			initListDebugSource();
+		System.out.println("disassAndInitDebug finished");
 
 	}
 
 	private String memoryLine(int pc, int len) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("%04x ", pc));
-		for (int i=0;i<len;i++) {
+		for (int i = 0; i < len; i++) {
 			int b = mCPU.memory[pc++];
 			sb.append(String.format("%02x ", b & 0xff));
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -781,6 +809,30 @@ public class CDialogEmulator extends Dialog implements IEmulator {
 	}
 
 	protected void onRepaintScreen(PaintEvent e) {
+		/*
+		if (screenh != mCPU.gpu.width ||
+			screenw != mCPU.gpu.height) {
+				switch(mCPU.gpu.width) {
+				case 64:
+					screenw = 512;
+					screenh = 256;
+					break;
+				case 128:
+					screenw = 512;
+					screenh = 256;
+					break;
+				case 256:
+					screenw = 512;
+					screenh = 384;
+					break;
+				}
+				screenh = mCPU.gpu.width;
+				screenh = mCPU.gpu.height;
+				onResize();
+				mCanvasScreen.redraw();
+				return;
+			}
+			*/
 		if (mCPU.gpu.mImage != null) {
 			try {
 				mCPU.gpu.waitSemaphore();

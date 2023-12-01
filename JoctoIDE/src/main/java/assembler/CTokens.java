@@ -226,6 +226,24 @@ public class CTokens {
 	        {"length", Token.length },
 	        {":function", Token.dotFunction },
 	        
+	        {"long", Token.octoLong },
+	        {"ldhi", Token.octoldhi },
+	        {"megaon", Token.megaOn },
+	        {"megaoff", Token.megaOff },
+	        {"ldpal", Token.megaPal },
+	        {"digisnd", Token.megaplay },
+	        {"stopsnd", Token.megastop },
+	        
+	        {"spw", Token.megaSpritew },
+	        {"sprw", Token.megaSpritew },
+	        {"sprh", Token.megaSpriteh },
+	        {"spriteh", Token.megaSpriteh },
+	        {"alpha", Token.megaAlpha },
+	        {"bmode", Token.megaBlend },
+	        {"ccol", Token.megaCollisioncolor},
+	        
+	        
+	        
 	        {"var", Token.octovar },
 	        
 	        

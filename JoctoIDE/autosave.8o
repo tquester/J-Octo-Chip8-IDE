@@ -1,17 +1,28 @@
-# array test
-:struct Element {
-	a 
-	b 
-	c d e f g h j
-}
-	i := daten[5]
-	for v0 := 1 to 100 begin
-		i := daten [v0] using vd ve
-		v1 := v0
-		v1 += v1
-		save v1
-    end
-    return
 
-: daten 
-	Element.byte[10]
+            start
+loop again
+
+:include "lib/libStd.8o"
+
+
+#    TYP_POINT 42 35
+#    TYP_LINE 69 16
+#    TYP_POINT 38 16
+#    TYP_LINE 68 33
+
+: start
+
+            hires
+            with ColoredRect begin
+              color := COLOR_DRAW
+              x0 := 42
+              y0 := 35
+              x1 := 69
+              y1 := 16
+              drawRectangle
+              drawLine
+
+
+
+            end
+            return

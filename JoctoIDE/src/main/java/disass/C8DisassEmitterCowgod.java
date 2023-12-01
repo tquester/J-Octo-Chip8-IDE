@@ -343,4 +343,10 @@ public class C8DisassEmitterCowgod extends C8Emitter {
 		return mSB.toString();
 	}
 
+	@Override
+	public int emitOpcode(boolean usecomments, byte[] code, int pos) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
 }

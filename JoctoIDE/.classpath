@@ -30,5 +30,12 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="swing2swt.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding_1.13.0.v20230501-1533.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding_1.13.0.v20230501-1533.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding.beans_1.10.0.v20230317-0802.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding.beans_1.10.0.v20230317-0802.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding.observable_1.13.0.v20230501-1533.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding.observable_1.13.0.v20230501-1533.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding.property_1.10.0.v20230317-0802.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/org.eclipse.core.databinding.property_1.10.0.v20230317-0802.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/org.eclipse.jface.databinding_1.15.0.v20230317-0802.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/org.eclipse.jface.databinding_1.15.0.v20230317-0802.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/org.eclipse.equinox.common_3.18.0.v20230523-2142.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/org.eclipse.equinox.common_3.18.0.v20230523-2142.jar"/>
+	<classpathentry kind="lib" path="C:/Users/Admin/.p2/pool/plugins/com.ibm.icu_73.1.0.jar" sourcepath="C:/Users/Admin/.p2/pool/plugins/com.ibm.icu_73.1.0.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>
