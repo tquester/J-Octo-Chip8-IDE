@@ -1,28 +1,328 @@
+            hires
+            clear
+            loop
+              start
+:log "start stopped"
+              v0 := key
+              clear
+              v0 := key
 
-            start
-loop again
+            again
 
+:include "lib/libText.8o"
 :include "lib/libStd.8o"
 
-
-#    TYP_POINT 42 35
-#    TYP_LINE 69 16
-#    TYP_POINT 38 16
-#    TYP_LINE 68 33
-
-: start
-
-            hires
-            with ColoredRect begin
-              color := COLOR_DRAW
-              x0 := 42
-              y0 := 35
-              x1 := 69
-              y1 := 16
-              drawRectangle
-              drawLine
+: textbase
+: txtCmdGo   tinytext8 "go#"
+: txtCmdLook tinytext8 "look#"
+: txtCmdOpen tinytext8 "open#"
+: txtCmdUse  tinytext8 "use#"
+: txtNorth   tinytext8 "north#"
+: txtSouth   tinytext8 "south#"
+: txtWest    tinytext8 "west#"
+: txtEast    tinytext8 "east#"
+: txtKey     tinytext8 "key#"
+: txtSword   tinytext8 "sword#"
+: txtSceneBridge1 tinytext8 "There is#"
+: txtSceneBridge2 tinytext8 "a river#"
+: txtSceneBridge3 tinytext8 "and a #"
+: txtSceneBridge4 tinytext8 "bridge#"
 
 
+:const CMD_GO 0
+:const CMD_LOOK 1
+:const CMD_OPEN 2
+:const CMD_USE 3
 
-            end
-            return
+:const CMDSET_DIRECTIONS 4
+:const CMD_DIR_NORTH 4
+:const CMD_DIR_SOUTH 5
+:const CMD_DIR_WEST 6
+:const CMD_DIR_EAST 7
+
+:const CMD_USE_KEY 8
+:const CMD_USE_SWORD 9
+
+: commands  db txtCmdGo - textbase
+            db txtCmdLook - textbase
+            db txtCmdOpen - textbase
+            db txtCmdUse - textbase
+            255
+: directions
+            db txtNorth - textbase
+            db txtSouth - textbase
+            db txtWest - textbase
+            db txtEast - textbase
+            db 255
+: usees   db txtKey - textbase
+            db txtSword - textbase
+            db 255
+
+:struct MenuData {
+              dat
+              drawx
+              y
+              sel
+              commandset
+              x
+              nextx
+
+
+            }
+
+:function getCommandset {
+              var MenuData
+              i := commands
+              if commandset == 4 then i := directions
+
+
+              return
+            }
+
+:function showWord {
+              var MenuData
+              var letter
+              var commandset2 = v8
+              i := buf
+              save v8
+              commandset2 := commandset
+
+              letter := 0
+              loop
+                commandset := commandset2
+                getCommandset
+                i += sel
+                load dat
+                i := textbase
+                i += dat
+                i += letter
+                load dat
+                if dat == 0 begin
+                  i := buf
+                  load v8
+                  return
+                end
+                drawTinyLetter2
+
+
+                letter += 1
+              again
+: buf
+              0 0 0 0 0 0 0 0 0
+            }
+
+
+
+
+
+
+
+
+:function menu {
+              var MenuData
+              var newsel
+              var temp
+
+              drawx := x
+              y := 58
+              sel := 0
+
+              i := menuData
+              save MenuData
+
+              showWord
+              loop
+                newsel := sel
+                switch key begin
+                  case OCTO_KEY_A begin
+                    newsel -= 1
+                    if newsel == 255 then newsel = 0
+                    v0 := OCTO_KEY_A
+                    waitKeyRelease
+
+                  end
+                  case OCTO_KEY_D begin
+                    newsel += 1
+                    getCommandset
+                    i += newsel
+                    load v0
+                    if v0 == 255 then newsel -= 1
+                    v0 := OCTO_KEY_D
+                    waitKeyRelease
+                  end
+                  case OCTO_KEY_W begin
+                    v0 := OCTO_KEY_W
+                    waitKeyRelease
+                    v0 := sel
+                    return
+                  end
+
+                end
+
+                if sel != newsel begin
+                  drawx := x
+                  showWord
+                  sel := newsel
+                  drawx := x
+                  showWord
+                  nextx := v1
+                end
+              again
+            }
+: menuData
+            MenuData.byte
+
+
+
+:function waitKeyRelease {
+              loop
+                if v0 key then
+              again
+              return
+            }
+
+
+
+
+: selectedCommands
+            0 0 0 0
+:function start  {
+
+
+
+              playMetafile scene
+              Tinytext 86 35 txtSceneBridge1
+              Tinytext 86 40 txtSceneBridge2
+              Tinytext 86 45 txtSceneBridge3
+              Tinytext 86 50 txtSceneBridge4
+
+
+
+              with MenuData begin
+                y := 58
+                x := 5
+                commandset := 0
+                menu
+                i := selectedCommands
+                save v0
+                x := nextx
+                x += 8
+                switch sel begin
+                  case CMD_GO begin
+                    commandset := CMDSET_DIRECTIONS
+                    x += 15
+                    menu
+                    clear
+
+                    return
+
+
+:log "direction menu exit with " v0
+                  end
+                end
+
+
+                x := 20
+
+
+
+              end
+:log "exit game"
+
+              return
+
+
+: scene
+
+              TYP_HIRES
+              TYP_POINT 40 1
+              TYP_LINE 22 54
+              TYP_LINE 80 54
+              TYP_LINE 65 1
+              TYP_LINE 40 1
+              TYP_POINT 37 10
+              TYP_LINE 36 2
+              TYP_LINE 22 43
+              TYP_LINE 22 53
+              TYP_POINT 67 10
+              TYP_LINE 67 2
+              TYP_LINE 80 46
+              TYP_LINE 80 53
+              TYP_POINT 67 2
+              TYP_LINE 80 46
+              TYP_POINT 39 4
+              TYP_LINE 66 4
+              TYP_POINT 37 10
+              TYP_LINE 68 10
+              TYP_POINT 35 16
+              TYP_LINE 69 16
+              TYP_POINT 32 24
+              TYP_LINE 72 24
+              TYP_POINT 28 35
+              TYP_LINE 75 35
+              TYP_POINT 23 50
+              TYP_LINE 79 50
+              TYP_FILL 42 45
+              TYP_FILL 44 21
+              TYP_FILL 51 7
+              TYP_POINT 68 12
+              TYP_LINE 77 10
+              TYP_LINE 85 10
+              TYP_LINE 95 8
+              TYP_LINE 102 8
+              TYP_LINE 127 11
+              TYP_POINT 127 30
+              TYP_LINE 120 29
+              TYP_LINE 113 30
+              TYP_LINE 105 31
+              TYP_LINE 95 32
+              TYP_LINE 89 33
+              TYP_LINE 81 34
+              TYP_LINE 74 34
+              TYP_POINT 29 34
+              TYP_LINE 20 33
+              TYP_LINE 10 33
+              TYP_POINT 2 34
+              TYP_LINE 10 33
+              TYP_POINT 0 35
+              TYP_LINE 2 34
+              TYP_POINT 0 8
+              TYP_LINE 7 7
+              TYP_LINE 14 7
+              TYP_LINE 23 8
+              TYP_LINE 31 9
+              TYP_LINE 37 10
+              TYP_POINT 3 10
+              TYP_POINT 8 10
+              TYP_POINT 17 11
+              TYP_POINT 23 11
+              TYP_POINT 27 16
+              TYP_POINT 25 20
+              TYP_POINT 24 25
+              TYP_POINT 24 28
+              TYP_POINT 20 28
+              TYP_POINT 12 26
+              TYP_POINT 15 21
+              TYP_POINT 18 23
+              TYP_POINT 6 15
+              TYP_POINT 2 20
+              TYP_POINT 10 21
+              TYP_POINT 76 12
+              TYP_POINT 82 12
+              TYP_POINT 97 18
+              TYP_POINT 103 12
+              TYP_POINT 112 11
+              TYP_POINT 120 13
+              TYP_POINT 125 18
+              TYP_POINT 124 24
+              TYP_POINT 117 26
+              TYP_POINT 108 19
+              TYP_STOP
+
+
+
+
+
+
+
+            }

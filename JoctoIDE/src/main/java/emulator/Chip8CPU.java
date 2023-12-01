@@ -26,7 +26,7 @@ public class Chip8CPU {
 	private boolean mStop=false;
 	public boolean mRunning;
 	private boolean mNewShift = true;
-	private boolean mNewLoad = false;
+	private boolean mNewLoad = true;
 	//int mBreakpoints[] = new int[10];
 	//int mNumbBreakpoints = 0;
 
@@ -415,7 +415,7 @@ public class Chip8CPU {
 				break;
 			case 0x0E:
 				b = mNewShift ? vx[highnib] : reg2;
-				a = b & 0x01;
+				a = b & 0x80;
 				setvx(highnib, b << 1);
 				vx[15] = a == 0 ? 0 : 1;
 				break;
