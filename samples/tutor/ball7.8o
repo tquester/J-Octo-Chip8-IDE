@@ -1,0 +1,145 @@
+# bouncing ball
+
+:struct Balldata {
+              ballnr
+              x
+              y
+              dx
+              dy
+              savex
+              savey
+            }
+
+            gameLoop
+
+:function gameLoop {
+              var Balldata
+              var temp
+              var ballindex = temp
+
+              hires
+              with Balldata begin
+                i := ball1
+                initDrawBall
+                i := ball2
+                initDrawBall
+
+
+                loop
+                  for ballindex = 1 to 4 begin
+                    ballnr = ballindex
+                    moveBall
+                  end
+
+
+
+                  for temp := 0 to 20
+                  temp += 0
+
+                again
+              end
+            }
+
+:function ballCallback {
+              var Balldata
+              switch ballnr begin
+                case 1 i := ball1
+                case 2 i := ball2
+                case 3 i := ball2
+                case 4 i := ball2
+              end
+              return
+            }
+
+
+
+
+
+:function initDrawBall {
+              var Balldata
+              load Balldata
+              i := ball
+              sprite x y 8
+              return
+            }
+
+
+:function moveBall {
+              var Balldata
+              var temp
+              ballCallback
+              load Balldata
+              i := ball
+              savex := x
+              savey := y
+              x += dx
+              y += dy
+              if x < 0 then negx
+              if x > 128 - 8 then negx
+              if y < 0 then negy
+              if y > 64 - 8 then negy
+              sprite savex savey 8
+              sprite x y 8
+              ballCallback
+              save Balldata
+              return
+
+: negx
+              vf := dx
+              dx = 0
+              dx -= vf
+              x += dx
+              return
+
+: negy
+              vf := dy
+              dy = 0
+              dy -= vf
+              y += dy
+              return
+            }
+
+
+
+
+: ball1
+            Balldata.byte {
+              ballnr = 1
+              x = 1
+              y = 1
+              dx = 1
+              dy = 2
+            }
+
+: ball2
+            Balldata.byte {
+              ballnr = 2
+              x = 30
+              y = 1
+              dx = -2
+              dy = 1
+            }
+
+: ball3
+            Balldata.byte {
+              ballnr = 2
+              x = 30
+              y = 50
+              dx = -2
+              dy = 1
+            }
+
+: ball4
+            Balldata.byte {
+              ballnr = 2
+              x = 120
+              y = 0
+              dx = -2
+              dy = 1
+            }
+
+# Defines the sprite, so that the sprie editor can find it automatically
+
+:sprite ball, 8,8 {
+              0x00 0x18 0x3c 0x7e 0x7e 0x3c 0x18 0x00
+            }

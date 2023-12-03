@@ -1,0 +1,47 @@
+# bouncing ball
+
+:alias x v0
+:alias y v1
+:alias dx v2
+:alias dy v3
+:alias savex v4
+:alias savey v5
+:alias temp v6
+            x := 1
+            y := 1
+            dx := 2
+            dy := 1
+            loop
+              i := ball
+              sprite x y 8
+              savex := x
+              savey := y
+              x += dx
+              y += dy
+              if x < 0 then negx
+              if x > 64 - 8 then negx
+              if y < 0 then negy
+              if y > 32 - 8 then negy
+              for temp = 0 to 20 temp += 0
+              sprite savex savey 8
+            again
+
+: negx
+            vf := dx
+            dx = 0
+            dx -= vf
+            x += dx
+            return
+
+: negy
+            vf := dy
+            dy = 0
+            dy -= vf
+            y += dy
+            return
+
+# Defines the sprite, so that the sprie editor can find it automatically
+
+:sprite ball, 8,8 {
+              0x00 0x18 0x3c 0x7e 0x7e 0x3c 0x18 0x00
+            }

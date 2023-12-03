@@ -1,0 +1,43 @@
+
+            start
+loop again
+
+:include "lib/libStd.8o"
+
+
+#    TYP_POINT 42 35
+#    TYP_LINE 69 16
+#    TYP_POINT 38 16
+#    TYP_LINE 68 33
+:const ax 42
+:const  ay 35
+#:const  bx 69
+#:const  by 16
+
+:const  bx 69
+:const  by 16
+
+:function start {
+
+            hires
+            with ColoredRect begin
+              color := COLOR_DRAW
+              x0 := ax
+              y0 := ay
+              plot
+              x0 := bx
+              y0 := by
+              plot
+
+              x0 := ax
+              y0 := ay
+              x1 := bx
+              y1 := by
+
+
+              drawLine
+
+
+            end
+            return
+}

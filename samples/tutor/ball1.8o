@@ -1,0 +1,40 @@
+# bouncing ball
+
+            v0 := 1                                                   # x
+            v1 := 1                                                   # y
+            v2 := 2                                                   # delta x
+            v3 := 1                                                   # delta y
+            loop
+              i := ball                                               # draw the ball
+              sprite v0 v1 8
+              v4 := v0                                                # save x and y
+              v5 := v1                                                # to v4/v5
+              v0 += v2                                                # x = x + delta x
+              v1 += v3                                                # y = y + delta y
+              if v0 < 0 then negx                                     # if the ball is out of
+              if v0 > 64 - 8 then negx                                # the coordinates
+              if v1 < 0 then negy                                     # negate delta x or delta y
+              if v1 > 32 - 8 then negy                                # and add the value
+              for v6 = 0 to 20 v6 += 0                                # loop doing nothing
+              sprite v4 v5 8                                          # erase the ball
+            again
+
+: negx
+            vf := v2                                                  # since there is no neg function
+            v2 = 0                                                    # we subtract:
+            v2 -= vf                                                  # delta x = 0 - delta x
+            v0 += v2                                                  # x = x + delta x
+            return
+
+: negy
+            vf := v3                                                  # deta y = 0 - delta y
+            v3 = 0
+            v3 -= vf
+            v1 += v3                                                  # y = y + delta y
+            return
+
+# Defines the sprite, so that the sprie editor can find it automatically
+
+:sprite ball, 8,8 {
+              0x00 0x18 0x3c 0x7e 0x7e 0x3c 0x18 0x00
+            }

@@ -1108,35 +1108,41 @@ public class CDialogIDE extends Dialog {
 	}
 
 	protected void onCompile() {
-		autosave();
-		mFilename = getCurrentFilename();
-		CChip8Assembler assembler = new CChip8Assembler();
-		assembler.mFolder = mFolder;
-		assembler.assemble(getTextSource().getText(), mFilename);
-
-		String errors = assembler.getErrors();
-		boolean ok = !assembler.mbError;
-		errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(),
-				4096 - 0x200 - assembler.getCodeSize());
-		
-		for (String fnname : assembler.mMapFunctionSize.keySet()) {
-			Integer size = assembler.mMapFunctionSize.get(fnname);
-			errors += String.format("function %s = %d bytes\n", fnname, size.intValue());
+		try {
+			autosave();
+			mFilename = getCurrentFilename();
+			CChip8Assembler assembler = new CChip8Assembler();
+			assembler.mFolder = mFolder;
+			assembler.assemble(getTextSource().getText(), mFilename);
+	
+			String errors = assembler.getErrors();
+			boolean ok = !assembler.mbError;
+			errors += String.format("Code size = %d (%d remaining\n", assembler.getCodeSize(),
+					4096 - 0x200 - assembler.getCodeSize());
+			
+			for (String fnname : assembler.mMapFunctionSize.keySet()) {
+				Integer size = assembler.mMapFunctionSize.get(fnname);
+				errors += String.format("function %s = %d bytes\n", fnname, size.intValue());
+			}
+			
+			for (CMemoryStatistic stat : assembler.mMemoryStatistics) {
+				errors += String.format("%s: %d (code: %d, data: %d)\n", stat.file, stat.sizeCode + stat.sizeData,
+						stat.sizeCode, stat.sizeData);
+			}
+			mTextErrors.setText(errors);
+			if (ok) {
+				CDialogEmulator dlgEmu = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
+				dlgEmu.copyMemory(0x200, assembler.getCode(), assembler.getCodeSize());
+				dlgEmu.mCPU.mDebugEntries = assembler.mDebugEntries;
+				dlgEmu.startRunning = false;
+				dlgEmu.mLabels = assembler.mLabels;
+				dlgEmu.setDebugSource(assembler.mDebugSource);
+				dlgEmu.open();
+			}
 		}
+		catch(Exception ex) {
+			mLblStatus.setText(ex.toString());
 		
-		for (CMemoryStatistic stat : assembler.mMemoryStatistics) {
-			errors += String.format("%s: %d (code: %d, data: %d)\n", stat.file, stat.sizeCode + stat.sizeData,
-					stat.sizeCode, stat.sizeData);
-		}
-		mTextErrors.setText(errors);
-		if (ok) {
-			CDialogEmulator dlgEmu = new CDialogEmulator(shlJoctoIde, SWT.TITLE + SWT.RESIZE + SWT.MIN + SWT.MAX);
-			dlgEmu.copyMemory(0x200, assembler.getCode(), assembler.getCodeSize());
-			dlgEmu.mCPU.mDebugEntries = assembler.mDebugEntries;
-			dlgEmu.startRunning = false;
-			dlgEmu.mLabels = assembler.mLabels;
-			dlgEmu.setDebugSource(assembler.mDebugSource);
-			dlgEmu.open();
 		}
 
 	}

@@ -1,0 +1,20 @@
+
+	jump start
+:include "lib/libStd.8o"
+
+: start
+	with PrintDez8 begin
+		ve := 255
+		x := 0
+		y := 0
+		digits := 1
+		number := 1
+		if ve < 0 begin
+			number := 1
+		else
+			number := 0
+		end
+		printDez8
+	end
+	loop
+	again

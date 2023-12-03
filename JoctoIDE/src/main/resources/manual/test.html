@@ -1,0 +1,53 @@
+﻿<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta content="de" http-equiv="Content-Language" />
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
+
+</head>
+
+<body>
+
+<script type="javascript">
+ function onSerachPrj() 
+ {
+    alert("Test");
+ // https://jira.nexinsure.org/issues/?jql=project = "DKV Luxembourg S.A." and "External Ref. No." ~  "tmaiis-404"
+ 	var prj = formJira.txtProjekt.value
+ 	var ref = formJira.txtProjekt.value
+ 	var link = "https://jira.nexinsure.org/issues/?jql="
+ 	if (prj.length > 0) link += "project%20%3D%20%22" + prj + "%22%20and%20%"
+ 	link += "22External%20Ref.%20No.%22%20~%20%20%22" + ref + "%22"
+ 	alert(link)
+ 	
+ 	location = link
+ }
+ 
+
+</script>
+
+<h1>Ticket im Jira suchen mit externer Ref</h1>
+
+
+<form name="formJira" action="" method="post">
+	<table style="width: 100%">
+		<tr>
+			<td style="width: 166px">Projekt (Optional)</td>
+			<td><input name="txtProjekt" style="width: 368px" type="text" /></td>
+		</tr>
+		<tr>
+			<td style="width: 166px">Externe Ref</td>
+			<td><input name="txtRef" style="width: 375px" type="text" /></td>
+		</tr>
+		<tr>
+			<td style="width: 166px">&nbsp;</td>
+			<td>
+			<input name="btnSuchen" onclick="onSearchPrj()" style="width: 184px" type="button" value="Suchen" /></td>
+		</tr>
+	</table>
+</form>
+
+</body>
+
+</html>
