@@ -565,7 +565,7 @@
 
                 end
               end
-: scene1cont
+: scene4cont
               moveenemy enemydata1 drawCellphone                      # draw initial
               if vf == 1 then jump scene4
               moveenemy enemydata2 drawCellphone                      # move enemy2
