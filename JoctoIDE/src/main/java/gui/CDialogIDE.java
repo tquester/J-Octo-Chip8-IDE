@@ -910,6 +910,15 @@ public class CDialogIDE extends Dialog {
 		
 		;
 
+		
+		mMainMenus.addMenu("&Help").add("&Opcodes", new CCallback() {
+			@Override
+			public void callback() {
+			CDialogOpcodes dlg = new CDialogOpcodes(shlJoctoIde, SWT.CLOSE | SWT.RESIZE | SWT.TITLE);
+			dlg.open();
+			}
+		});
+
 	}
 
 	protected void onOpenFolder() {

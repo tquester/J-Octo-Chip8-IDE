@@ -26,7 +26,7 @@ public class Chip8CPU {
 	private boolean mStop=false;
 	public boolean mRunning;
 	private boolean mNewShift = true;
-	private boolean mNewLoad = true;
+	private boolean mNewLoad = false;
 	//int mBreakpoints[] = new int[10];
 	//int mNumbBreakpoints = 0;
 

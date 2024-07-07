@@ -10,7 +10,7 @@ import org.eclipse.swt.graphics.Rectangle;
 
 public class Chip8GPU {
 
-	static final int screenSize = 256 * 192;
+	static final int screenSize = 320 * 200;
 
 	public boolean hires = false;
 	public int width = 64;

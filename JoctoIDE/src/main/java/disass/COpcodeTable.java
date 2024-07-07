@@ -10,6 +10,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.swing.plaf.metal.MetalIconFactory.FileIcon16;
@@ -24,18 +25,30 @@ public class COpcodeTable {
 		CHIPPER
 	}
 	
-	class Chip8Opcode {
-		int		opcode;			// example 1000
-		int		mask;			// example F000
-		int		size;			// example 2
-		String	opcodePattern;	// example  1nnn
-		String  chipper;		// example JP NNN
-		String 	octo;			// example JUMP NNN
-		public void parse(String pattern, int mask, int size) {
+	public class Chip8Opcode {
+		public int		opcode;			// example 1000
+		public int		mask;			// example F000
+		public int		size;			// example 2
+		public String	opcodePattern;	// example  1nnn
+		public String   chipper;		// example JP NNN
+		public String 	octo;			// example JUMP NNN
+		private String description;
+		public TreeSet<String> plattforms;
+		public void parse(String pattern, int mask, int size, JSONArray plattforms, String description) {
 			this.size = size;
 			this.opcodePattern = pattern;
 			this.mask = mask;
+			this.description = description;
+			this.size = size;
+			this.plattforms = new TreeSet<String>();
+			if (plattforms != null) {
+				for (int i=0;i<plattforms.length();i++) {
+					String str = plattforms.getString(i);
+					this.plattforms.add(str);
+				}
+			}
 			String str="";
+			
 			for (int i=0;i<pattern.length();i++) {
 				char c = pattern.charAt(i);
 				if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F'))
@@ -91,13 +104,25 @@ public class COpcodeTable {
 				result = String.format("0x04x", opcode);
 			return result;
 		}
+		public String getPlattforms() {
+			String str = null;
+			for (String x : plattforms) {
+				if (str == null) str = x; else str += ", "+x; 
+			}
+			// TODO Auto-generated method stub
+			if (str == null) str = "-";
+			return str;
+		}
+		public String getDescription() {
+			return description == null ? "" : description;
+		}
 	}
 
 	private static final String FILE_URL = null;
 	
-	ArrayList<Chip8Opcode> mOpcodes = new ArrayList<>();
+	public ArrayList<Chip8Opcode> mOpcodes = new ArrayList<>();
 	
-	COpcodeTable() {
+	public COpcodeTable() {
 		try {
 		  String jsonString = getChip8Table();
 			
@@ -116,7 +141,14 @@ public class COpcodeTable {
 				  JSONObject  jop = opcodeArray.getJSONObject(i);
 				  Chip8Opcode op = new Chip8Opcode();
 				  mOpcodes.add(op);
-				  op.parse(jop.getString("opcode"), jop.getInt("mask"), jop.getInt("size"));
+				  op.parse(
+						  jop.getString("opcode"), 
+						  jop.getInt("mask"), 
+						  jop.getInt("size"),
+						  jop.getJSONArray("platforms"),
+						  jop.getString("description")
+		
+						  );
 			      op.chipper = getString(jop,"chipper");
 			      op.octo = getString(jop, "octo");
 			  }
